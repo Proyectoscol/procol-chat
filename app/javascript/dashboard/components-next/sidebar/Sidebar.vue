@@ -759,24 +759,28 @@ const menuItems = computed(() => {
         },
         {
           name: 'Settings Custom Roles',
+          hidden: true,
           label: t('SIDEBAR.CUSTOM_ROLES'),
           icon: 'i-lucide-shield-plus',
           to: accountScopedRoute('custom_roles_list'),
         },
         {
           name: 'Settings Sla',
+          hidden: true,
           label: t('SIDEBAR.SLA'),
           icon: 'i-lucide-clock-alert',
           to: accountScopedRoute('sla_list'),
         },
         {
           name: 'Conversation Workflow',
+          hidden: true,
           label: t('SIDEBAR.CONVERSATION_WORKFLOW'),
           icon: 'i-lucide-workflow',
           to: accountScopedRoute('conversation_workflow_index'),
         },
         {
           name: 'Settings Security',
+          hidden: true,
           label: t('SIDEBAR.SECURITY'),
           icon: 'i-lucide-shield',
           to: accountScopedRoute('security_settings_index'),
@@ -789,7 +793,12 @@ const menuItems = computed(() => {
         },
       ],
     },
-  ].filter(item => !item.hidden);
+  ]
+    .filter(item => !item.hidden)
+    .map(item => ({
+      ...item,
+      children: item.children?.filter(child => !child.hidden),
+    }));
 });
 </script>
 

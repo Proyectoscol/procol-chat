@@ -82,7 +82,7 @@ const menuItems = computed(() => {
       },
     },
     {
-      show: true,
+      show: false,
       showOnCustomBrandedInstance: false,
       label: t('SIDEBAR_ITEMS.DOCS'),
       icon: 'i-lucide-book',
@@ -91,7 +91,7 @@ const menuItems = computed(() => {
       target: '_blank',
     },
     {
-      show: true,
+      show: false,
       showOnCustomBrandedInstance: false,
       label: t('SIDEBAR_ITEMS.CHANGELOG'),
       icon: 'i-lucide-scroll-text',
@@ -100,7 +100,7 @@ const menuItems = computed(() => {
       target: '_blank',
     },
     {
-      show: currentUser.value.type === 'SuperAdmin',
+      show: false,
       showOnCustomBrandedInstance: true,
       label: t('SIDEBAR_ITEMS.SUPER_ADMIN_CONSOLE'),
       icon: 'i-lucide-castle',
