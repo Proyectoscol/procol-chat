@@ -56,32 +56,26 @@ const openConfig = () => {
       </h1>
 
       <template v-if="isShowingBoard">
-        <div class="relative">
-          <span
-            class="i-lucide-search size-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-n-slate-10 pointer-events-none"
-          />
+        <label
+          class="flex items-center gap-2 h-8 px-2.5 rounded-lg border border-n-weak bg-n-background hover:border-n-slate-4 focus-within:ring-1 focus-within:ring-n-brand transition-colors cursor-text w-52"
+        >
+          <span class="i-lucide-search size-4 text-n-slate-10 flex-shrink-0" />
           <input
             v-model="searchQuery"
             type="text"
             :placeholder="t('KANBAN.SEARCH_PLACEHOLDER')"
-            class="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-n-weak bg-n-background text-n-slate-12 placeholder:text-n-slate-10 focus:outline-none focus:ring-1 focus:ring-n-brand w-60"
+            class="flex-1 bg-transparent text-sm text-n-slate-12 placeholder:text-n-slate-10 focus:outline-none min-w-0"
           />
-        </div>
-
-        <div
-          v-if="config"
-          class="flex items-center gap-1.5 text-xs text-n-slate-10 border border-n-weak rounded-lg px-2.5 py-1.5"
-        >
-          <span class="i-lucide-tag size-3.5" />
-          {{ config.attributeName }}
-        </div>
+        </label>
 
         <button
-          class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-n-weak hover:bg-n-alpha-2 text-n-slate-11 transition-colors"
+          class="flex items-center gap-1.5 h-8 px-3 text-sm rounded-lg border border-n-weak hover:bg-n-alpha-2 text-n-slate-11 transition-colors flex-shrink-0"
           @click="openConfig"
         >
           <span class="i-lucide-settings-2 size-4" />
-          {{ t('KANBAN.CONFIGURE') }}
+          <span v-if="config" class="max-w-32 truncate text-xs">
+            {{ config.attributeName }}
+          </span>
         </button>
       </template>
     </header>
