@@ -35,9 +35,7 @@ const openModal = () => {
 
 <template>
   <div
-    class="bg-n-background rounded-lg border border-n-weak p-3 cursor-pointer hover:border-n-slate-4 hover:shadow-sm transition-all select-none group"
-    :class="{ 'cursor-grab active:cursor-grabbing': !isDragging }"
-    @click.stop="openModal"
+    class="bg-n-background rounded-lg border border-n-weak p-3 cursor-grab active:cursor-grabbing hover:border-n-slate-4 hover:shadow-sm transition-all select-none group"
   >
     <div class="flex items-start gap-2.5">
       <div class="flex-shrink-0">
@@ -79,9 +77,13 @@ const openModal = () => {
           class="i-lucide-sticky-note size-3 text-n-slate-10 flex-shrink-0"
           :title="t('KANBAN.CARD.HAS_NOTES')"
         />
-        <span
-          class="i-lucide-chevron-right size-3.5 text-n-slate-10 opacity-0 group-hover:opacity-100 transition-opacity"
-        />
+        <button
+          class="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-n-alpha-2 transition-opacity"
+          :title="t('KANBAN.CARD.VIEW_PROFILE')"
+          @click.stop="openModal"
+        >
+          <span class="i-lucide-chevron-right size-3.5 text-n-slate-10" />
+        </button>
       </div>
     </div>
   </div>
