@@ -383,6 +383,7 @@ const menuItems = computed(() => {
     },
     {
       name: 'Captain',
+      hidden: true,
       icon: 'i-woot-captain',
       label: t('SIDEBAR.CAPTAIN'),
       activeOn: ['captain_assistants_create_index'],
@@ -567,6 +568,7 @@ const menuItems = computed(() => {
     },
     {
       name: 'Campaigns',
+      hidden: true,
       label: t('SIDEBAR.CAMPAIGNS'),
       icon: 'i-lucide-megaphone',
       children: [
@@ -589,6 +591,7 @@ const menuItems = computed(() => {
     },
     {
       name: 'Portals',
+      hidden: true,
       label: t('SIDEBAR.HELP_CENTER.TITLE'),
       icon: 'i-lucide-library-big',
       children: [
@@ -786,7 +789,7 @@ const menuItems = computed(() => {
         },
       ],
     },
-  ];
+  ].filter(item => !item.hidden);
 });
 </script>
 
