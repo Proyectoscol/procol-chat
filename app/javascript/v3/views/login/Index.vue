@@ -232,17 +232,26 @@ export default {
 
 <template>
   <main
-    class="flex flex-col lg:flex-row min-h-screen bg-gradient-to-br from-rose-50 via-purple-50 to-sky-100 dark:from-n-background dark:via-n-background dark:to-n-background"
+    class="relative w-full min-h-screen flex items-center justify-center lg:justify-start p-4 lg:p-0"
   >
-    <!-- Left column: glass login panel -->
+    <!-- Full-page background image -->
+    <img
+      :src="loginHero"
+      alt=""
+      class="absolute inset-0 w-full h-full object-cover object-center"
+    />
+    <!-- Subtle dark scrim so the card is readable -->
+    <div class="absolute inset-0 bg-black/30" />
+
+    <!-- Glass card — left-anchored on desktop, centred on mobile -->
     <div
-      class="w-full lg:w-[50%] flex items-center justify-center p-6 lg:p-12 min-h-screen lg:min-h-auto"
+      class="relative z-10 w-full max-w-md lg:max-w-none lg:w-[46%] xl:w-[42%] lg:min-h-screen flex items-center justify-center p-6 lg:p-16"
     >
       <div
-        class="w-full max-w-[480px] bg-white/80 dark:bg-n-solid-2/90 backdrop-blur-xl rounded-3xl shadow-xl p-8 lg:p-10"
+        class="w-full max-w-[440px] bg-white/90 dark:bg-n-solid-2/95 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 lg:p-10"
         :class="{ 'animate-wiggle': loginApi.hasErrored }"
       >
-        <!-- Logo -->
+        <!-- Logo + title -->
         <div class="flex flex-col items-start mb-8">
           <img
             :src="globalConfig.logo"
@@ -362,27 +371,6 @@ export default {
           </div>
         </template>
       </div>
-    </div>
-
-    <!-- Right column: hero image (desktop only) -->
-    <div class="hidden lg:block lg:w-[50%] relative overflow-hidden">
-      <img
-        :src="loginHero"
-        alt=""
-        class="absolute inset-0 w-full h-full object-cover object-center"
-      />
-      <div
-        class="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent"
-      />
-    </div>
-
-    <!-- Bottom hero strip (mobile only) -->
-    <div class="lg:hidden relative h-64 overflow-hidden flex-shrink-0">
-      <img
-        :src="loginHero"
-        alt=""
-        class="absolute inset-0 w-full h-full object-cover object-center"
-      />
     </div>
   </main>
 </template>
