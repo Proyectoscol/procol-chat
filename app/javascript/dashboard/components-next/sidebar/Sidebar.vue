@@ -534,6 +534,13 @@ const menuItems = computed(() => {
       ],
     },
     {
+      name: 'Kanban',
+      label: t('SIDEBAR.KANBAN'),
+      icon: 'i-lucide-kanban',
+      to: accountScopedRoute('kanban_view'),
+      activeOn: ['kanban_view'],
+    },
+    {
       name: 'Reports',
       label: t('SIDEBAR.REPORTS'),
       icon: 'i-lucide-chart-spline',

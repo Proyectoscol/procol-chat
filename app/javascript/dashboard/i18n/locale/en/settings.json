@@ -306,6 +306,7 @@
     "PARTICIPATING_CONVERSATIONS": "Participating",
     "UNATTENDED_CONVERSATIONS": "Unattended",
     "REPORTS": "Reports",
+    "KANBAN": "Kanban",
     "SETTINGS": "Settings",
     "CONTACTS": "Contacts",
     "ACTIVE": "Active",
@@ -918,6 +919,33 @@
       "DESCRIPTION": "Are you sure you want to delete this policy? This action cannot be undone.",
       "CONFIRM_BUTTON_LABEL": "Delete",
       "CANCEL_BUTTON_LABEL": "Cancel"
+    }
+  },
+  "KANBAN": {
+    "TITLE": "Kanban",
+    "CONFIGURE": "Configure",
+    "SEARCH_PLACEHOLDER": "Search by name or phone...",
+    "ATTRIBUTE_LABEL": "Attribute",
+    "CONFIG": {
+      "TITLE": "Configure Kanban view",
+      "DESCRIPTION": "Select the list-type contact custom attribute to use as board columns.",
+      "EMPTY_STATE": "No list-type contact attributes found.",
+      "EMPTY_CTA": "Create one in Settings → Custom Attributes.",
+      "CREATE_BUTTON": "Create board"
+    },
+    "COLUMN": {
+      "EMPTY": "No contacts",
+      "LOAD_MORE": "Load more"
+    },
+    "CARD": {
+      "NO_NAME": "No name",
+      "VIEW_CONTACT": "View contact",
+      "VIEW_PROFILE": "View full profile",
+      "LAST_ACTIVITY": "Last activity:",
+      "HAS_NOTES": "Has notes"
+    },
+    "ERRORS": {
+      "UPDATE_FAILED": "Could not update contact. Please try again."
     }
   }
 }
