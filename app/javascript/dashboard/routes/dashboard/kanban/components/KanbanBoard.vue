@@ -13,7 +13,6 @@ const props = defineProps({
 });
 
 const store = useStore();
-const { showAlert } = useAlert();
 const { t } = useI18n();
 
 const columns = ref([]);
@@ -90,7 +89,7 @@ const onContactMoved = async ({ contact, targetValue }) => {
       customAttributes: { [props.attributeKey]: targetValue },
     });
   } catch {
-    showAlert(t('KANBAN.ERRORS.UPDATE_FAILED'));
+    useAlert(t('KANBAN.ERRORS.UPDATE_FAILED'));
   }
 };
 
