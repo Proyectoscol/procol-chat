@@ -12,7 +12,11 @@ const props = defineProps({
   searchQuery: { type: String, default: '' },
 });
 
+const emit = defineEmits(['openModal']);
+
 const store = useStore();
+
+const forwardOpenModal = contact => emit('openModal', contact);
 const { t } = useI18n();
 
 const columns = ref([]);
@@ -44,11 +48,7 @@ const fetchColumnContacts = async (colIndex, page = 1) => {
       ],
     });
     const incoming = data.payload || [];
-    if (page === 1) {
-      col.contacts = incoming;
-    } else {
-      col.contacts = [...col.contacts, ...incoming];
-    }
+    col.contacts = page === 1 ? incoming : [...col.contacts, ...incoming];
     col.page = page;
     col.hasMore = incoming.length === PAGE_SIZE;
   } catch {
@@ -71,24 +71,31 @@ const loadMore = colIndex => {
 };
 
 const onContactMoved = async ({ contact, targetValue }) => {
-  // Remove from source columns
-  columns.value.forEach(col => {
-    if (col.value !== targetValue) {
-      const idx = col.contacts.findIndex(c => c.id === contact.id);
-      if (idx !== -1) col.contacts.splice(idx, 1);
-    }
-  });
-  // Ensure contact is in target column
+  // Find source column before any mutation
+  const sourceCol = columns.value.find(col =>
+    col.contacts.some(c => c.id === contact.id)
+  );
+
+  // Drop on same column or already moved — no-op
+  if (!sourceCol || sourceCol.value === targetValue) return;
+
+  // Optimistic update
+  sourceCol.contacts = sourceCol.contacts.filter(c => c.id !== contact.id);
   const targetCol = columns.value.find(c => c.value === targetValue);
   if (targetCol && !targetCol.contacts.find(c => c.id === contact.id)) {
     targetCol.contacts.unshift(contact);
   }
+
   try {
     await store.dispatch('contacts/update', {
       id: contact.id,
       customAttributes: { [props.attributeKey]: targetValue },
     });
   } catch {
+    // Rollback
+    if (targetCol)
+      targetCol.contacts = targetCol.contacts.filter(c => c.id !== contact.id);
+    if (sourceCol) sourceCol.contacts = [contact, ...sourceCol.contacts];
     useAlert(t('KANBAN.ERRORS.UPDATE_FAILED'));
   }
 };
@@ -112,6 +119,7 @@ onMounted(fetchAll);
         :search-query="searchQuery"
         @contact-moved="onContactMoved"
         @load-more="loadMore(idx)"
+        @open-modal="forwardOpenModal"
       />
     </div>
   </div>

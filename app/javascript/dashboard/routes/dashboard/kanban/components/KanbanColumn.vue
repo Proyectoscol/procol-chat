@@ -9,9 +9,11 @@ const props = defineProps({
   searchQuery: { type: String, default: '' },
 });
 
-const emit = defineEmits(['contactMoved', 'loadMore']);
+const emit = defineEmits(['contactMoved', 'loadMore', 'openModal']);
 
 const { t } = useI18n();
+
+const isDragging = ref(false);
 
 // Local copy — avoids mutating prop; re-syncs when parent appends (loadMore)
 const localContacts = ref([]);
@@ -32,6 +34,14 @@ const filteredContacts = computed(() => {
       c.email?.toLowerCase().includes(q)
   );
 });
+
+const onDragStart = () => {
+  isDragging.value = true;
+};
+
+const onDragEnd = () => {
+  isDragging.value = false;
+};
 
 const onChange = event => {
   if (event.added) {
@@ -68,27 +78,41 @@ const onChange = event => {
         <span class="i-lucide-loader-2 size-5 text-n-slate-10 animate-spin" />
       </div>
 
+      <!-- Static list when search is active (no drag) -->
       <template v-else-if="searchQuery">
         <div class="flex flex-col gap-2">
           <KanbanCard
             v-for="contact in filteredContacts"
             :key="contact.id"
             :contact="contact"
+            :is-dragging="false"
+            @open-modal="$emit('openModal', $event)"
           />
         </div>
       </template>
 
+      <!-- Draggable list when no search -->
       <Draggable
         v-else
         v-model="localContacts"
         :group="{ name: 'kanban', pull: true, put: true }"
         item-key="id"
+        :delay="250"
+        :delay-on-touch-only="false"
+        :animation="200"
         class="flex flex-col gap-2 min-h-8"
-        ghost-class="opacity-30"
+        ghost-class="opacity-30 scale-[0.98]"
+        chosen-class="shadow-lg border-n-brand"
         @change="onChange"
+        @start="onDragStart"
+        @end="onDragEnd"
       >
         <template #item="{ element }">
-          <KanbanCard :contact="element" />
+          <KanbanCard
+            :contact="element"
+            :is-dragging="isDragging"
+            @open-modal="$emit('openModal', $event)"
+          />
         </template>
       </Draggable>
 

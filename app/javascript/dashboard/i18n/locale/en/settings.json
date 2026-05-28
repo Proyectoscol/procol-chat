@@ -941,8 +941,24 @@
       "NO_NAME": "No name",
       "VIEW_CONTACT": "View contact",
       "VIEW_PROFILE": "View full profile",
+      "GO_TO_CONVERSATION": "Go to conversation",
+      "NO_CONVERSATION": "No conversations found for this contact",
       "LAST_ACTIVITY": "Last activity:",
       "HAS_NOTES": "Has notes"
+    },
+    "MODAL": {
+      "CLOSE": "Close",
+      "LOADING": "Loading...",
+      "CREATED_AT": "Created",
+      "LAST_ACTIVITY": "Last activity",
+      "CUSTOM_ATTRIBUTES_TITLE": "Custom attributes",
+      "NO_CUSTOM_ATTRIBUTES": "No custom attributes",
+      "CONVERSATIONS_TITLE": "Conversations",
+      "NO_CONVERSATIONS": "No conversations",
+      "OPEN_STATUS": "Open",
+      "RESOLVED_STATUS": "Resolved",
+      "PENDING_STATUS": "Pending",
+      "VIEW_ALL_CONVERSATIONS": "View all conversations"
     },
     "ERRORS": {
       "UPDATE_FAILED": "Could not update contact. Please try again."

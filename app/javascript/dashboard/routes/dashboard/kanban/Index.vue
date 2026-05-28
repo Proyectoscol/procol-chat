@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
 import KanbanBoard from './components/KanbanBoard.vue';
 import KanbanConfigPanel from './components/KanbanConfigPanel.vue';
+import KanbanContactDetailModal from './components/KanbanContactDetailModal.vue';
 
 const store = useStore();
 const { t } = useI18n();
@@ -13,6 +14,8 @@ const contactAttributes = useMapGetter('attributes/getContactAttributes');
 const searchQuery = ref('');
 const config = ref(null);
 const showConfigPanel = ref(false);
+const selectedContact = ref(null);
+const modalRef = ref(null);
 
 const storageKey = computed(() => `kanban_config_v1_${accountId.value}`);
 
@@ -43,6 +46,12 @@ const onConfigure = newConfig => {
 const openConfig = () => {
   showConfigPanel.value = true;
 };
+
+const openContactModal = async contact => {
+  selectedContact.value = contact;
+  await nextTick();
+  modalRef.value?.open();
+};
 </script>
 
 <template>
@@ -56,6 +65,7 @@ const openConfig = () => {
       </h1>
 
       <template v-if="isShowingBoard">
+        <!-- Search: single border on label wrapper; input resets browser styles -->
         <label
           class="flex items-center gap-2 h-8 px-2.5 rounded-lg border border-n-weak bg-n-background hover:border-n-slate-4 focus-within:ring-1 focus-within:ring-n-brand transition-colors cursor-text w-52"
         >
@@ -64,7 +74,7 @@ const openConfig = () => {
             v-model="searchQuery"
             type="text"
             :placeholder="t('KANBAN.SEARCH_PLACEHOLDER')"
-            class="flex-1 bg-transparent text-sm text-n-slate-12 placeholder:text-n-slate-10 focus:outline-none min-w-0"
+            class="reset-base outline-none border-transparent shadow-none bg-transparent active:border-transparent active:shadow-none hover:border-transparent hover:shadow-none focus:border-transparent focus:shadow-none flex-1 text-sm text-n-slate-12 placeholder:text-n-slate-10 min-w-0"
           />
         </label>
 
@@ -91,6 +101,13 @@ const openConfig = () => {
       :attribute-key="config.attributeKey"
       :attribute-values="config.attributeValues"
       :search-query="searchQuery"
+      @open-modal="openContactModal"
+    />
+
+    <KanbanContactDetailModal
+      ref="modalRef"
+      :contact="selectedContact"
+      @close="selectedContact = null"
     />
   </div>
 </template>

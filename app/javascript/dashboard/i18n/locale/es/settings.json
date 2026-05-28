@@ -306,6 +306,7 @@
     "PARTICIPATING_CONVERSATIONS": "Participar",
     "UNATTENDED_CONVERSATIONS": "Desatendido",
     "REPORTS": "Informes",
+    "KANBAN": "Kanban",
     "SETTINGS": "Ajustes",
     "CONTACTS": "Contactos",
     "ACTIVE": "Activo",
@@ -918,6 +919,49 @@
       "DESCRIPTION": "Are you sure you want to delete this policy? This action cannot be undone.",
       "CONFIRM_BUTTON_LABEL": "Eliminar",
       "CANCEL_BUTTON_LABEL": "Cancelar"
+    }
+  },
+  "KANBAN": {
+    "TITLE": "Kanban",
+    "CONFIGURE": "Configurar",
+    "SEARCH_PLACEHOLDER": "Buscar por nombre o teléfono...",
+    "ATTRIBUTE_LABEL": "Atributo",
+    "CONFIG": {
+      "TITLE": "Configurar vista Kanban",
+      "DESCRIPTION": "Selecciona el atributo personalizado de contacto (tipo lista) que usarás como columnas del tablero.",
+      "EMPTY_STATE": "No hay atributos de contacto de tipo lista.",
+      "EMPTY_CTA": "Crea uno en Ajustes → Atributos personalizados.",
+      "CREATE_BUTTON": "Crear tablero"
+    },
+    "COLUMN": {
+      "EMPTY": "Sin contactos",
+      "LOAD_MORE": "Ver más"
+    },
+    "CARD": {
+      "NO_NAME": "Sin nombre",
+      "VIEW_CONTACT": "Ver contacto",
+      "VIEW_PROFILE": "Ver perfil completo",
+      "GO_TO_CONVERSATION": "Ir a conversación",
+      "NO_CONVERSATION": "No se encontraron conversaciones para este contacto",
+      "LAST_ACTIVITY": "Última actividad:",
+      "HAS_NOTES": "Tiene notas"
+    },
+    "MODAL": {
+      "CLOSE": "Cerrar",
+      "LOADING": "Cargando...",
+      "CREATED_AT": "Creado",
+      "LAST_ACTIVITY": "Última actividad",
+      "CUSTOM_ATTRIBUTES_TITLE": "Atributos personalizados",
+      "NO_CUSTOM_ATTRIBUTES": "Sin atributos personalizados",
+      "CONVERSATIONS_TITLE": "Conversaciones",
+      "NO_CONVERSATIONS": "Sin conversaciones",
+      "OPEN_STATUS": "Abierta",
+      "RESOLVED_STATUS": "Resuelta",
+      "PENDING_STATUS": "Pendiente",
+      "VIEW_ALL_CONVERSATIONS": "Ver todas las conversaciones"
+    },
+    "ERRORS": {
+      "UPDATE_FAILED": "No se pudo actualizar el contacto. Inténtalo de nuevo."
     }
   }
 }
