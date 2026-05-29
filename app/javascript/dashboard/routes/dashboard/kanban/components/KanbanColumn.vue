@@ -97,10 +97,11 @@ const onChange = event => {
         v-model="localContacts"
         :group="{ name: 'kanban', pull: true, put: true }"
         item-key="id"
-        :delay="250"
-        :delay-on-touch-only="false"
+        :delay="150"
+        delay-on-touch-only
+        fallback-on-body
         :animation="200"
-        class="flex flex-col gap-2 min-h-8"
+        class="flex flex-col gap-2 min-h-16"
         ghost-class="opacity-30"
         chosen-class="shadow-lg"
         @change="onChange"
