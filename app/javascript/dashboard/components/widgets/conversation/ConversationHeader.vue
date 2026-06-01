@@ -174,7 +174,7 @@ const copyConversationId = async () => {
         class="hidden md:flex"
       />
       <ConversationCallButton :inbox="inbox" :chat="currentChat" />
-      <MoreActions :conversation-id="currentChat.id" />
+      <MoreActions :conversation-id="currentChat.id" class="hidden" />
     </div>
   </div>
 </template>
