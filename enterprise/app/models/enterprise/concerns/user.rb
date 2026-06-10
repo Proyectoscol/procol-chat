@@ -6,6 +6,8 @@ module Enterprise::Concerns::User
 
     has_many :captain_responses, class_name: 'Captain::AssistantResponse', dependent: :nullify, as: :documentable
     has_many :copilot_threads, dependent: :destroy_async
+    # Identidad SIP por cuenta (multi-cliente): un asesor puede tener una por account.
+    has_many :sip_identities, dependent: :destroy_async
   end
 
   def ensure_installation_pricing_plan_quantity
