@@ -1,0 +1,35 @@
+# coturn (TURN/STUN) para travesía de NAT — VPS-2.
+# Sin esto, ~20% de asesores en NAT simétrico no tienen audio (ARQ-2).
+# Instalar: apt install coturn ; habilitar en /etc/default/coturn (TURNSERVER_ENABLED=1)
+
+listening-port=3478
+tls-listening-port=5349
+
+# IP pública del VPS-2
+listening-ip=0.0.0.0
+external-ip=__IP_PUBLICA_VPS2__
+
+# Rango de relay (abrir en firewall UDP)
+min-port=49152
+max-port=65535
+
+# Autenticación: usar credenciales de corto plazo (REST API), no estáticas.
+# Rails firma usuario/clave temporal y los entrega al navegador junto con los ICE servers
+# (VOICE_CALL_TURN_USER / VOICE_CALL_TURN_SECRET). Coincide con el modelo efímero (FIX-11).
+use-auth-secret
+static-auth-secret=__MISMO_VALOR_QUE_VOICE_CALL_TURN_SECRET_en_Rails__
+realm=tudominio.com
+
+# TLS (mismo dominio/cert que el WSS de Asterisk o uno propio)
+cert=/etc/letsencrypt/live/turn.tudominio.com/fullchain.pem
+pkey=/etc/letsencrypt/live/turn.tudominio.com/privkey.pem
+
+# Endurecimiento
+no-multicast-peers
+no-tcp-relay
+stale-nonce
+fingerprint
+# Evitar relay hacia rangos privados (anti-SSRF)
+denied-peer-ip=10.0.0.0-10.255.255.255
+denied-peer-ip=172.16.0.0-172.31.255.255
+denied-peer-ip=192.168.0.0-192.168.255.255

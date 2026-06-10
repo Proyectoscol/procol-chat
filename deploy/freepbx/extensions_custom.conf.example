@@ -1,0 +1,16 @@
+; Contexto que entrega la llamada entrante a la app Stasis (deploy/asterisk-stasis/).
+; En FreePBX: Inbound Route → Custom Destination → "procol-voice,s,1".
+; Editar en /etc/asterisk/extensions_custom.conf (sobrevive upgrades de FreePBX).
+
+[procol-voice]
+exten => s,1,NoOp(Entrega a Stasis procol-routing - llamada entrante)
+ same => n,Stasis(procol-routing)        ; ARI_APP de la Stasis app
+ same => n,Hangup()
+
+; Fallback: si la Stasis app no está corriendo o Rails no responde, la llamada
+; cae aquí en vez de colgarse en seco (FALLBACK_CONTEXT del .env).
+[from-voicemail]
+exten => s,1,NoOp(Fallback - sin asesor o routing caido)
+ same => n,Playback(vm-nobodyavail)       ; "no hay nadie disponible"
+ same => n,VoiceMail(general@default,u)    ; o encolar / callback
+ same => n,Hangup()

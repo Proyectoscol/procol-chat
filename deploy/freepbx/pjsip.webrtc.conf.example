@@ -1,0 +1,37 @@
+; Plantilla de referencia de una extensión PJSIP WebRTC (lo genera FreePBX al
+; marcar "WebRTC = Yes", aquí queda explícito para entender qué exige el navegador).
+; NO editar a mano en una instalación FreePBX: usar la UI. Esto es documentación.
+
+[1001](endpoint-template)        ; 1001 = ejemplo de extensión de un asesor
+type=endpoint
+transport=transport-wss          ; WebSocket seguro (puerto 8089)
+context=from-internal
+disallow=all
+allow=opus,alaw,ulaw             ; opus (WebRTC) + alaw (Claro = G.711A prioridad). Asterisk transcodifica.
+dtmf_mode=rfc4733                ; DTMF estable cruzando el transcode (IVR getDigit)
+webrtc=yes                       ; activa DTLS-SRTP, ICE, rtcp_mux, use_avpf
+use_avpf=yes
+media_encryption=dtls
+dtls_verify=fingerprint
+dtls_setup=actpass
+ice_support=yes
+rtcp_mux=yes
+auth=1001-auth
+aors=1001
+
+[1001-auth]
+type=auth
+auth_type=userpass
+username=1001
+; password: en v1 estático aquí; con realtime (FIX-11) lo gestiona Rails con TTL.
+password=__set_by_freepbx_or_rails_realtime__
+
+[1001]
+type=aor
+max_contacts=5                   ; MULTI-DISPOSITIVO: PC + Android + tablet + iPhone con el mismo sip_extension.
+                                 ; Asterisk hace fork a todos; contesta el primero. (plan §15.1)
+remove_existing=no               ; no expulsar registros viejos: cada dispositivo mantiene el suyo.
+                                 ; OJO: el conteo real de contactos alimenta sip_active_contacts (presencia).
+
+; ICE/STUN/TURN: el cliente JsSIP recibe los ICE servers desde Rails
+; (Call.default_ice_servers + VOICE_CALL_TURN_*). coturn corre aparte.

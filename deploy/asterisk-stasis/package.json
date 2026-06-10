@@ -1,0 +1,18 @@
+{
+  "name": "procol-asterisk-stasis",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stasis ARI routing app for ProCol Chat softphone (VPS-2, fuera del repo Rails)",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "ari-client": "^2.2.0",
+    "undici": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
