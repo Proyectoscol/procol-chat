@@ -60,8 +60,11 @@
 ```
 db/migrate/XXXX_create_sip_identities.rb             (tabla propia del fork, AISLADA del rebase)
   sip_identities:
-    user_id (FK a users, UNIQUE)     ← un asesor = una identidad SIP
-    sip_extension (string, UNIQUE)
+    account_id (FK)                  ← MULTI-CLIENTE (DEX-2): la identidad SIP es POR cuenta
+    user_id (FK a users)
+    sip_extension (string)
+    UNIQUE (account_id, sip_extension)  ← dos clientes pueden reusar '1001' sin chocar
+    UNIQUE (account_id, user_id)        ← un asesor, una identidad por cuenta
     sip_password (string, encrypts)  ← v1: estático (U2); efímero/realtime → fase 2
     sip_active_contacts (integer, default 0)  ← MULTI-DISPOSITIVO: nº de registros SIP activos
                                                 (PC+Android+tablet). Disponible si > 0. Reemplaza sip_online.
@@ -87,6 +90,8 @@ db/migrate/XXXX_create_channel_voice.rb              (NUEVO Channel, patrón Cha
       shared_numbers []          ← conmutadores: saltan match de contacto → IVR (R3-1)
       max_queue_size (default 10) ← cola máx; si se supera → rechazo + conversación (R4-2)
       staging (boolean, default false) ← inbox de pruebas; su routing nunca entra al RR de prod (R4-9)
+      absence_threshold_days (default 2) ← umbral de ausencia, tunable por cliente (DEX-3)
+      enable_callback (boolean, default true) ← on/off del callback ocupado/perdida (DEX-3)
     voice_enabled? / has_voice?  ← para isVoiceCallEnabled del FE
   crea su Inbox; inbox_members = asesores incluidos. working_hours del inbox + America/Bogota (R4-1/R4-4).
 
@@ -374,15 +379,53 @@ Flujo backend (común): Stasis detecta entrante → Rails busca `sip_fcm_token`/
 | Filtro `staging` en routing | MOD | excluye `9xxx` del RR de prod (R4-9). |
 
 ### 16.3 ✅ Schema de Lane A — CERRADO
-- **Modelo `SipIdentity`** en `enterprise/app/models/sip_identity.rb` (overlay); migración en `db/migrate/`. `belongs_to :user`; `User has_one :sip_identity` vía overlay enterprise.
-- **`sip_identities`** (final): `user_id` (UNIQUE FK), `sip_extension` (UNIQUE), `sip_password` (encrypts), `sip_active_contacts` (int, 0), `sip_last_registered_at`, `sip_absence_alerted_at`, `sip_absence_mode` (bool, false), `sip_fcm_token` (nullable), `sip_apns_voip_token` (nullable), `sip_push_token_updated_at` (nullable), timestamps.
-- **`Channel::Voice`** con `config.shared_numbers` (array), `max_queue_size` (10), `staging` (bool) — §2.
+- **Modelo `SipIdentity`** en `enterprise/app/models/sip_identity.rb` (overlay); migración en `db/migrate/`. `belongs_to :account, :user`; `User has_one :sip_identity` (por cuenta) vía overlay enterprise.
+- **`sip_identities`** (final, multi-cliente DEX-2): `account_id` (FK), `user_id` (FK), `sip_extension`; **UNIQUE (account_id, sip_extension)** + **UNIQUE (account_id, user_id)**; `sip_password` (encrypts), `sip_active_contacts` (int, 0), `sip_last_registered_at`, `sip_absence_alerted_at`, `sip_absence_mode` (bool, false), `sip_fcm_token` (nullable), `sip_apns_voip_token` (nullable), `sip_push_token_updated_at` (nullable), timestamps.
+- **`Channel::Voice`** con `config`: `shared_numbers` (array), `max_queue_size` (10), `staging` (bool), `absence_threshold_days` (2), `enable_callback` (bool) — §2.
 - **`Call.provider`** enum: `{ twilio:0, whatsapp:1, asterisk:2 }`.
 - **`config.time_zone = 'America/Bogota'`** en `config/application.rb` (Rails hoy UTC).
 - **i18n** bajo **`VOICE_TELEPHONY.*`** (`en.json` front) + `conversations.messages.voice_call.asterisk` (`en.yml` back).
 - **`calls_archive`** (R4-5) puede entrar en Lane A o como migración aparte (no bloquea).
 
 > Con esto, el contrato de datos de Lane A está completo y acordado. Lane A = migración `sip_identities` + `Channel::Voice` + enum `asterisk` + `time_zone` + keys i18n.
+
+## 17. Extensibilidad y multi-cliente (DevEx — dónde cambiar qué)
+
+> Objetivo: que modificar la lógica de asignación (o cualquier regla) sea fácil y localizado, y que el sistema escale a otros clientes sin reescribir.
+
+### 17.1 Mapa de puntos de extensión ("para cambiar X, edita Y")
+| Cambiar… | Archivo único | Tipo |
+|---|---|---|
+| **Quién recibe una llamada** (asignación completa) | `Sip::RoutingDecisionService` (pipeline, §17.2) | Código aislado |
+| Una regla puntual (horario, ocupado, ausencia, cola…) | `Sip::Routing::Rules::<Regla>` (un objeto) | Código local |
+| Algoritmo de rotación | `AutoAssignment::InboxRoundRobinService` (reuso core) | Reuso |
+| El PBX (Asterisk → otro) | `Voice::Provider::Asterisk::Adapter` (mismo contrato que Twilio) | Adapter |
+| Presencia/disponibilidad | `Sip::PresenceService` | Aislado |
+| Ciclo de vida de llamada | `InboundCallBuilder` + `CallStatus::Manager` (compartido voz) | Reuso |
+| Pools, IVR, conmutadores, cola, horarios, **umbral ausencia, callback on/off** | **Config del `Channel::Voice`** (admin, sin código) | Parametrizado |
+
+### 17.2 RoutingDecisionService = pipeline de reglas nombradas (DEX-1)
+`Sip::RoutingDecisionService` corre reglas **en orden**; cada una es un objeto con `call(context) → :handled | :continue`:
+```
+Sip::Routing::Rules::
+  WorkingHoursRule      → fuera de horario: buzón + notifica asignado (R4-1)
+  SharedNumberRule      → conmutador: salta match de contacto → IVR (R3-1)
+  AssignedAgentRule     → asignado presente/ocupado/ausente A/B/C (R4-3/R3-3)
+  TeamRoundRobinRule    → RR del Team (sip_active_contacts>0 ∩ online − Call.active)
+  QueueLimitRule        → cola > max_queue_size: rechazo + conversación (R4-2)
+  VoicemailFallbackRule → buzón + crea conversación
+```
+Cambiar/desactivar/reordenar una regla = tocar un archivo chico sin romper las demás. Variar por cliente = otra lista de reglas o tunear su config.
+
+### 17.3 Multi-cliente (DEX-2)
+- **Ya escala (nativo de Chatwoot):** Teams, inboxes, canales, working_hours son **por cuenta**. Cada cliente = una cuenta Chatwoot + su `Channel::Voice` + sus Teams + su trunk + su rango de extensiones.
+- **Resuelto ahora:** `sip_identities` UNIQUE **por `(account_id, sip_extension)`** → dos clientes pueden usar '1001' sin chocar (§16.3).
+- **Pendiente por cliente (config/infra, no código):** namespace de extensiones en Asterisk (un Asterisk por cliente, o rangos separados); `ASTERISK_ROUTING_SECRET` por instancia; el endpoint `/sip/routing` resuelve el `account_id` desde el inbox/extensión.
+- **Tunable por cliente sin deploy (DEX-3):** `absence_threshold_days`, `enable_callback`, `max_queue_size`, pools, IVR, horarios — todo en config del inbox.
+
+### 17.4 Qué sigue en código vs config
+- **Config (admin, por cliente, sin deploy):** pools/Teams, IVR, conmutadores, cola, horarios, festivos, umbral de ausencia, callback on/off, staging.
+- **Código (un dev, raro):** el **orden** del pipeline de reglas, agregar una regla nueva, cambiar el PBX (adapter), el motor de RR.
 
 ## GSTACK REVIEW REPORT
 
@@ -399,6 +442,7 @@ Flujo backend (común): Stasis detecta entrante → Rails busca `sip_fcm_token`/
 | **4 Revisores** | asesor/admin/abogado/auditor | Endurecimiento exhaustivo | 1 | resolved | Ausencia escalonada, ocupado→callback, horarios, número compartido, sweeper, timezone (ver §14) |
 | Multi-device + móvil | arquitectura fase 2 | Planificación no-vaga | 1 | resolved | sip_active_contacts (contador), max_contacts=5, push FCM/PushKit-CallKit, backend compartido (§15) |
 | Cierre de negocio | 4 decisiones + schema | Cierre Lane A | 1 | resolved | cola=10, retención 2a+archivo, habeas data (destroy), staging 9xxx; schema CERRADO (§16) |
+| DevEx/Extensib. | dónde-cambiar-qué + multi-cliente | Escalabilidad | 1 | resolved | pipeline de reglas (DEX-1), UNIQUE por cuenta (DEX-2), params tunables (DEX-3) — §17 |
 
 - **UNRESOLVED:** 0 — schema de Lane A cerrado (§16.3), 4 decisiones de negocio resueltas (§16.1).
 - **ACCIONES ABIERTAS (no bloquean Lane A):** verificaciones Claro/Asterisk (Lane D) + config (cert/coturn/timezone en Asterisk-FreePBX).
