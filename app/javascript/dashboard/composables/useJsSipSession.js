@@ -1,6 +1,12 @@
 import { readonly, ref } from 'vue';
 import JsSIP from 'jssip';
 import axios from 'axios';
+import { useCallsStore } from 'dashboard/stores/calls';
+import {
+  VOICE_CALL_DIRECTION,
+  VOICE_CALL_STATUS,
+} from 'dashboard/components-next/message/constants';
+import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
 
 // Hermano de useWhatsappCallSession: el provider-session para Asterisk (SIP/WebRTC
 // vía JsSIP). NO es un sistema paralelo — useCallSession delega aquí cuando el
@@ -121,6 +127,19 @@ const handleNewRTCSession = ({ originator, session }) => {
   currentSession = session;
   attachSessionHandlers(session);
   showIncomingNotification(session);
+
+  // Surface the inbound call in the shared store so FloatingCallWidget / CallCard
+  // render the accept/reject UI. JsSIP INVITEs arrive over WSS (no cable event),
+  // so the composable is the only place that knows about an incoming call.
+  useCallsStore().addCall({
+    callSid: session.id,
+    phoneNumber: session.remote_identity?.uri?.user || '',
+    conversationId: null,
+    inboxId: null,
+    callDirection: VOICE_CALL_DIRECTION.INBOUND,
+    provider: VOICE_CALL_PROVIDERS.ASTERISK,
+    status: VOICE_CALL_STATUS.RINGING,
+  });
 };
 
 const attachUaHandlers = instance => {
