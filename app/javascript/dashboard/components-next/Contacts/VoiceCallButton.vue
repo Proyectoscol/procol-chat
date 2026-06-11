@@ -16,6 +16,7 @@ import { useAlert } from 'dashboard/composables';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import { useCallsStore } from 'dashboard/stores/calls';
 import { useWhatsappCallSession } from 'dashboard/composables/useWhatsappCallSession';
+import { useJsSipSession } from 'dashboard/composables/useJsSipSession';
 import ContactAPI from 'dashboard/api/contacts';
 
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -82,6 +83,7 @@ const navigateToConversation = conversationId => {
 };
 
 const whatsappCallSession = useWhatsappCallSession();
+const sipSession = useJsSipSession();
 
 // Find the most recent open conversation for this contact in the picked inbox.
 // WhatsApp /initiate is conversation-scoped (unlike Twilio's contact-scoped path).
@@ -145,6 +147,25 @@ const startWhatsappCall = async (inboxId, conversationIdHint) => {
   navigateToConversation(conversationId);
 };
 
+// Asterisk outbound: JsSIP envía el INVITE directo a la extensión/número (no hay
+// dispatch al backend; el navegador es el UA). El Linkedid real llega luego por el
+// cable de Stasis y reconcilia la entrada; aquí usamos session.id como sid temporal.
+const startAsteriskCall = async inboxId => {
+  const session = await sipSession.startCall(props.phone);
+  if (!session) {
+    useAlert(t('CONTACT_PANEL.CALL_FAILED'));
+    return;
+  }
+  callsStore.addCall({
+    callSid: session.id,
+    conversationId: null,
+    inboxId,
+    callDirection: VOICE_CALL_DIRECTION.OUTBOUND,
+    provider: VOICE_CALL_PROVIDERS.ASTERISK,
+  });
+  useAlert(t('CONTACT_PANEL.CALL_INITIATED'));
+};
+
 const startCall = async (inboxId, conversationIdHint = null) => {
   if (isCallButtonDisabled.value) return;
 
@@ -152,6 +173,15 @@ const startCall = async (inboxId, conversationIdHint = null) => {
   if (getVoiceCallProvider(inbox) === VOICE_CALL_PROVIDERS.WHATSAPP) {
     try {
       await startWhatsappCall(inboxId, conversationIdHint);
+    } catch (error) {
+      useAlert(error?.message || t('CONTACT_PANEL.CALL_FAILED'));
+    }
+    return;
+  }
+
+  if (getVoiceCallProvider(inbox) === VOICE_CALL_PROVIDERS.ASTERISK) {
+    try {
+      await startAsteriskCall(inboxId);
     } catch (error) {
       useAlert(error?.message || t('CONTACT_PANEL.CALL_FAILED'));
     }
