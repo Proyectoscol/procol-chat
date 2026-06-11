@@ -23,6 +23,34 @@
       "IVR_MAPPING_LABEL": "IVR digit → Team mapping",
       "SAVE": "Save",
       "CREATED": "Voice channel created"
+    },
+    "PANEL": {
+      "STATUS": {
+        "AVAILABLE": "Available",
+        "DISCONNECTED": "Disconnected",
+        "RECONNECTING": "Reconnecting"
+      },
+      "TABS": {
+        "DIAL": "Dial",
+        "DIRECTORY": "Directory",
+        "RECENTS": "Recents"
+      },
+      "DIAL": {
+        "PLACEHOLDER": "Enter a number",
+        "CALL": "Call"
+      },
+      "DIRECTORY": {
+        "EMPTY": "No assigned contacts"
+      },
+      "RECENTS": {
+        "EMPTY": "No recent calls",
+        "CALL_BACK": "Call back"
+      },
+      "ACTIVE_CALL": {
+        "MUTE": "Mute",
+        "UNMUTE": "Unmute",
+        "HANG_UP": "Hang up"
+      }
     }
   }
 }
