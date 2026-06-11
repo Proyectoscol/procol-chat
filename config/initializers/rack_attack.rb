@@ -164,6 +164,11 @@ class Rack::Attack
     req.ip if req.path_without_extentions == '/api/v1/accounts' && req.post?
   end
 
+  ## VoIP Asterisk internal endpoints (server-to-server desde la app Stasis) — ENG-3 ###
+  throttle('sip/internal/ip', limit: 60, period: 1.minute) do |req|
+    req.ip if req.path_without_extentions.start_with?('/api/v1/internal/sip')
+  end
+
   ##-----------------------------------------------##
 
   ###-----------------------------------------------###

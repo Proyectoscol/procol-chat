@@ -644,6 +644,14 @@ Rails.application.routes.draw do
     end
   end
 
+  # VoIP Asterisk — endpoints internos server-to-server desde la app Stasis (VPS-2).
+  if ChatwootApp.enterprise?
+    scope path: 'api/v1/internal/sip', controller: 'sip/internal' do
+      get 'routing', action: :routing, as: :sip_internal_routing
+      post 'events', action: :events, as: :sip_internal_events
+    end
+  end
+
   get 'microsoft/callback', to: 'microsoft/callbacks#show'
   get 'google/callback', to: 'google/callbacks#show'
   get 'instagram/callback', to: 'instagram/callbacks#show'
