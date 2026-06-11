@@ -41,6 +41,7 @@ import contentTemplates from './contentTemplates.json';
 import mfa from './mfa.json';
 import onboarding from './onboarding.json';
 import yearInReview from './yearInReview.json';
+import voiceTelephony from './voiceTelephony.json';
 
 export default {
   ...advancedFilters,
@@ -86,4 +87,5 @@ export default {
   ...mfa,
   ...onboarding,
   ...yearInReview,
+  ...voiceTelephony,
 };

@@ -1,0 +1,24 @@
+{
+  "VOICE_TELEPHONY": {
+    "PROVIDER_LABEL": "Asterisk Call",
+    "CALL_CONTROLS": {
+      "HOLD": "Hold",
+      "RESUME": "Resume",
+      "TRANSFER": "Transfer"
+    },
+    "TRANSFER": {
+      "TITLE": "Transfer call",
+      "SEARCH_PLACEHOLDER": "Search available agents",
+      "EMPTY": "No available agents",
+      "SUCCESS": "Call transferred",
+      "ERROR": "Could not transfer the call"
+    },
+    "CONFIG": {
+      "TITLE": "Voice (Asterisk)",
+      "PHONE_NUMBER_LABEL": "Phone number (DID)",
+      "IVR_MAPPING_LABEL": "IVR digit → Team mapping",
+      "SAVE": "Save",
+      "CREATED": "Voice channel created"
+    }
+  }
+}

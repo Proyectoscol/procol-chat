@@ -39,6 +39,9 @@ module Chatwoot
     config.load_defaults 7.0
     config.rails_i18n.enabled_modules = [:pluralization]
 
+    # Voz/telefonía (Asterisk + FreePBX) consistentes con Colombia (R4-4).
+    config.time_zone = 'America/Bogota'
+
     config.eager_load_paths << Rails.root.join('lib')
     config.eager_load_paths << Rails.root.join('enterprise/lib')
     config.eager_load_paths << Rails.root.join('enterprise/listeners')
