@@ -10,8 +10,9 @@ module Sip
       #
       # Selección ATÓMICA (UPDATE ... RETURNING sobre FOR UPDATE SKIP LOCKED): dos
       # llamadas simultáneas del mismo Team nunca eligen al mismo asesor (§6). El
-      # ORDER BY updated_at + el bump de updated_at en la fila elegida implementan
-      # la rotación (el recién sonado pasa al final de la cola).
+      # ORDER BY last_rung_at + el bump de last_rung_at en la fila elegida implementan
+      # la rotación (el recién sonado pasa al final de la cola). NULLS FIRST: un asesor
+      # que nunca ha sonado tiene prioridad.
       class TeamRoundRobinRule
         def call(ctx)
           return :continue unless ctx.team && ctx.inbox
@@ -42,13 +43,13 @@ module Sip
         def claim_next_identity(account_id, user_ids)
           sql = <<~SQL.squish
             UPDATE sip_identities
-            SET updated_at = NOW()
+            SET last_rung_at = NOW()
             WHERE id = (
               SELECT id FROM sip_identities
               WHERE account_id = #{account_id.to_i}
                 AND user_id IN (#{user_ids.map(&:to_i).join(',')})
                 AND sip_active_contacts > 0
-              ORDER BY updated_at ASC
+              ORDER BY last_rung_at ASC NULLS FIRST
               FOR UPDATE SKIP LOCKED
               LIMIT 1
             )

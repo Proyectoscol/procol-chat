@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_10_120002) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_11_120003) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1199,6 +1199,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_10_120002) do
     t.datetime "sip_push_token_updated_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "last_rung_at"
     t.index ["account_id", "sip_extension"], name: "index_sip_identities_on_account_id_and_sip_extension", unique: true
     t.index ["account_id", "user_id"], name: "index_sip_identities_on_account_id_and_user_id", unique: true
     t.index ["account_id"], name: "index_sip_identities_on_account_id"
