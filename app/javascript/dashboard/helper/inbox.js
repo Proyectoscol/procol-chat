@@ -11,12 +11,14 @@ export const INBOX_TYPES = {
   SMS: 'Channel::Sms',
   INSTAGRAM: 'Channel::Instagram',
   TIKTOK: 'Channel::Tiktok',
+  VOICE: 'Channel::Voice',
 };
 
 // Add providers here as they gain voice capability (e.g., WhatsApp Cloud, Twilio WhatsApp)
 export const VOICE_CALL_PROVIDERS = {
   TWILIO: 'twilio',
   WHATSAPP: 'whatsapp',
+  ASTERISK: 'asterisk',
 };
 
 export const getVoiceCallProvider = inbox => {
@@ -24,8 +26,12 @@ export const getVoiceCallProvider = inbox => {
 
   // Callers pass either snake_case (raw API) or camelCase (after camelcaseKeys) shapes.
   const channelType = inbox.channel_type || inbox.channelType;
-  const voiceEnabled = inbox.voice_enabled || inbox.voiceEnabled;
 
+  // A dedicated Voice channel is voice by definition — it has no voice_enabled
+  // flag (unlike Twilio/WhatsApp where voice is an opt-in on a messaging channel).
+  if (channelType === INBOX_TYPES.VOICE) return VOICE_CALL_PROVIDERS.ASTERISK;
+
+  const voiceEnabled = inbox.voice_enabled || inbox.voiceEnabled;
   if (!voiceEnabled) return null;
 
   if (channelType === INBOX_TYPES.TWILIO) return VOICE_CALL_PROVIDERS.TWILIO;
@@ -36,6 +42,11 @@ export const getVoiceCallProvider = inbox => {
 };
 
 export const isVoiceCallEnabled = inbox => getVoiceCallProvider(inbox) !== null;
+
+// Provider-of-a-call guard: a call object carries `provider`. Mirror of the
+// isWhatsappCall guard, used by useCallSession to branch the Asterisk path.
+export const isAsteriskCall = call =>
+  call?.provider === VOICE_CALL_PROVIDERS.ASTERISK;
 
 export const TWILIO_CHANNEL_MEDIUM = {
   WHATSAPP: 'whatsapp',
