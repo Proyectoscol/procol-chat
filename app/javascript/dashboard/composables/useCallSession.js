@@ -11,7 +11,11 @@ import {
   cleanupWhatsappSession,
 } from 'dashboard/composables/useWhatsappCallSession';
 import { handleVoiceCallCreated } from 'dashboard/helper/voice';
-import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
+import { VOICE_CALL_PROVIDERS, isAsteriskCall } from 'dashboard/helper/inbox';
+import {
+  useJsSipSession,
+  cleanupSipSession,
+} from 'dashboard/composables/useJsSipSession';
 import {
   CONTENT_TYPES,
   VOICE_CALL_DIRECTION,
@@ -84,7 +88,7 @@ const detachGlobalsOnLastUnmount = () => {
 // Build the action surface used by both the root session composable and the
 // lighter useCallActions consumer. All state is module-scoped — the actions
 // don't depend on per-instance refs, so they're cheap to call from anywhere.
-const buildCallActions = ({ callsStore, whatsappSession, t }) => {
+const buildCallActions = ({ callsStore, whatsappSession, sipSession, t }) => {
   const findCall = callSid => callsStore.calls.find(c => c.callSid === callSid);
 
   const endCall = async ({ conversationId, inboxId, callSid }) => {
@@ -93,6 +97,15 @@ const buildCallActions = ({ callsStore, whatsappSession, t }) => {
       // Pass call.callId so a wiped module state (e.g. a prior accept attempt
       // tore down the WebRTC session) doesn't stop us hitting /terminate.
       await whatsappSession.endActiveCall(call?.callId);
+      globalDurationTimer?.stop();
+      callsStore.clearActiveCall();
+      return;
+    }
+
+    if (isAsteriskCall(call)) {
+      // endCall() envía el BYE SIP y libera el mic (FIX teardown). clearActiveCall
+      // dispara además teardownByProvider → cleanupSipSession (defensa en profundidad).
+      sipSession.endCall();
       globalDurationTimer?.stop();
       callsStore.clearActiveCall();
       return;
@@ -138,6 +151,25 @@ const buildCallActions = ({ callsStore, whatsappSession, t }) => {
         callsStore.setCallActive(callSid);
         globalDurationTimer?.start();
         return { callId: call.callId };
+      }
+
+      if (isAsteriskCall(call)) {
+        // Inner try/catch so an Asterisk accept failure cleans up the SIP session
+        // and doesn't fall through to the Twilio-oriented shared catch below.
+        try {
+          await sipSession.acceptCall();
+          callsStore.setCallActive(callSid);
+          globalDurationTimer?.start();
+          return { callSid };
+        } catch (error) {
+          useAlert(
+            error?.response?.data?.error || t('CONTACT_PANEL.CALL_FAILED')
+          );
+          cleanupSipSession();
+          // eslint-disable-next-line no-console
+          console.error('Failed to accept Asterisk call:', error);
+          return null;
+        }
       }
 
       const device = await TwilioVoiceClient.initializeDevice(inboxId);
@@ -195,6 +227,9 @@ const buildCallActions = ({ callsStore, whatsappSession, t }) => {
         } else {
           await whatsappSession.rejectIncomingCall(call.callId);
         }
+      } else if (isAsteriskCall(call)) {
+        // SIP reject (486 Busy) + release the mic, before dismissing locally.
+        sipSession.rejectCall();
       } else if (call?.inboxId && call?.conversationId) {
         // Twilio incoming reject: agent hasn't joined the Device yet, so
         // endClientCall is a no-op. End the conference server-side instead
@@ -248,6 +283,7 @@ export function useCallSession() {
   const store = useStore();
   const callsStore = useCallsStore();
   const whatsappSession = useWhatsappCallSession();
+  const sipSession = useJsSipSession();
   const { t } = useI18n();
 
   const reactive = buildReactiveSurface(callsStore);
@@ -299,7 +335,12 @@ export function useCallSession() {
 
   onUnmounted(() => detachGlobalsOnLastUnmount());
 
-  const actions = buildCallActions({ callsStore, whatsappSession, t });
+  const actions = buildCallActions({
+    callsStore,
+    whatsappSession,
+    sipSession,
+    t,
+  });
 
   return { ...reactive, ...actions };
 }
@@ -311,10 +352,16 @@ export function useCallSession() {
 export function useCallActions() {
   const callsStore = useCallsStore();
   const whatsappSession = useWhatsappCallSession();
+  const sipSession = useJsSipSession();
   const { t } = useI18n();
 
   const reactive = buildReactiveSurface(callsStore);
-  const actions = buildCallActions({ callsStore, whatsappSession, t });
+  const actions = buildCallActions({
+    callsStore,
+    whatsappSession,
+    sipSession,
+    t,
+  });
 
   return { ...reactive, ...actions };
 }
