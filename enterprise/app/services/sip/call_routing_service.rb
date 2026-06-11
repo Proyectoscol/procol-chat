@@ -18,6 +18,20 @@ class Sip::CallRoutingService
     new(inbox: inbox, from_number: from_number).call
   end
 
+  # Punto único de normalización E164 para el routing de voz (FIX-8): conserva
+  # dígitos y un único '+' inicial; si llega sin indicativo asume Colombia (+57).
+  # Reusado por las reglas de routing (p. ej. SharedNumberRule). La normalización
+  # específica de WhatsApp (wa_id BR/AR) vive en Whatsapp::PhoneNumberNormalizationService.
+  def self.normalize_e164(raw)
+    digits = raw.to_s.gsub(/[^\d+]/, '')
+    return '' if digits.blank?
+
+    return digits if digits.start_with?('+')
+    return "+#{digits}" if digits.start_with?('57')
+
+    "+57#{digits}"
+  end
+
   def initialize(inbox:, from_number:)
     @inbox = inbox
     @from_number = from_number
@@ -50,7 +64,7 @@ class Sip::CallRoutingService
   # Lookup indexado por (account_id, phone_number). El número se normaliza a E164
   # para coincidir con cómo Chatwoot almacena los contactos (+57...).
   def find_contact
-    e164 = normalize_e164(from_number)
+    e164 = self.class.normalize_e164(from_number)
     return nil if e164.blank?
 
     account.contacts.find_by(phone_number: e164)
@@ -70,18 +84,5 @@ class Sip::CallRoutingService
   # UNIQUE (account_id, user_id): a lo sumo una identidad SIP por asesor y cuenta.
   def sip_identity_for(agent)
     SipIdentity.find_by(account_id: account.id, user_id: agent.id)
-  end
-
-  # Normalización E164 acotada al lookup de contactos (FIX-8): conserva dígitos y un
-  # único '+' inicial. Si llega sin indicativo, asume Colombia (+57). La normalización
-  # específica de WhatsApp (wa_id BR/AR) vive en Whatsapp::PhoneNumberNormalizationService.
-  def normalize_e164(raw)
-    digits = raw.to_s.gsub(/[^\d+]/, '')
-    return '' if digits.blank?
-
-    return digits if digits.start_with?('+')
-    return "+#{digits}" if digits.start_with?('57')
-
-    "+57#{digits}"
   end
 end

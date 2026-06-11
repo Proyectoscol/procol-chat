@@ -8,11 +8,10 @@
 # responsabilidad del consumidor (controller `/sip/*` / InboundCallBuilder).
 #
 # Para cambiar/desactivar/reordenar una regla: editar la lista RULES (DEX-1).
-# NOTA: el plan §17.2 ubica `SharedNumberRule` (R3-1) tras WorkingHoursRule; no
-# está incluida aquí todavía (pendiente de confirmación).
 class Sip::RoutingDecisionService
   RULES = [
     Sip::Routing::Rules::WorkingHoursRule,
+    Sip::Routing::Rules::SharedNumberRule,
     Sip::Routing::Rules::AssignedAgentRule,
     Sip::Routing::Rules::TeamRoundRobinRule,
     Sip::Routing::Rules::QueueLimitRule,

@@ -7,7 +7,7 @@ module Sip
     # aplica y el pipeline cae limpio hasta VoicemailFallbackRule (fallback seguro).
     class Context
       attr_reader :inbox, :from_number, :to_number
-      attr_accessor :contact, :assigned_agent, :extension, :team, :outcome
+      attr_accessor :contact, :assigned_agent, :extension, :team, :shared_number, :outcome
 
       def initialize(inbox: nil, from_number: nil, to_number: nil, contact: nil,
                      assigned_agent: nil, team: nil)
@@ -17,6 +17,7 @@ module Sip
         @contact = contact
         @assigned_agent = assigned_agent
         @team = team
+        @shared_number = false
         @outcome = nil
       end
 

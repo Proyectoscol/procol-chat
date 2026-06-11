@@ -13,6 +13,8 @@ module Sip
       class AssignedAgentRule
         def call(ctx)
           return :continue unless ctx.inbox && ctx.from_number
+          # Número compartido/conmutador (R3-1): sin dueño único → cede al IVR/Team.
+          return :continue if ctx.shared_number
 
           routing = Sip::CallRoutingService.call(inbox: ctx.inbox, from_number: ctx.from_number)
           return :continue if routing[:ivr]
