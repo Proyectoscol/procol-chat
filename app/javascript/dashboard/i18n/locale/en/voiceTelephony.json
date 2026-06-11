@@ -1,6 +1,10 @@
 {
   "VOICE_TELEPHONY": {
     "PROVIDER_LABEL": "Asterisk Call",
+    "INCOMING_CALL": {
+      "TITLE": "Incoming call",
+      "BODY": "{caller} is calling"
+    },
     "CALL_CONTROLS": {
       "HOLD": "Hold",
       "RESUME": "Resume",
