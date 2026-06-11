@@ -266,6 +266,16 @@ en:
       delivery_status:
         error_code: 'Error code: %{error_code}'
     activity:
+      voice_call:
+        mirror: '%{direction} voice call · %{duration} · %{status}'
+        direction:
+          incoming: 'Incoming'
+          outgoing: 'Outgoing'
+        status:
+          answered: 'answered'
+          missed: 'missed'
+          busy: 'busy'
+          failed: 'failed'
       captain:
         resolved: 'Conversation was marked resolved by %{user_name} due to inactivity'
         resolved_with_reason: 'Conversation was marked resolved by %{user_name} (%{reason})'
