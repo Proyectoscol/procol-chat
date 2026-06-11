@@ -6,6 +6,7 @@ import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
+import Popover from 'dashboard/components-next/popover/Popover.vue';
 
 const props = defineProps({
   call: {
@@ -33,13 +34,21 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // Available SIP agents of the current agent's Team (sip_active_contacts > 0),
+  // populated by the parent for the Asterisk blind-transfer popover.
+  availableAgents: {
+    type: Array,
+    default: () => [],
+  },
 });
 
-defineEmits([
+const emit = defineEmits([
   'accept',
   'reject',
   'end',
   'toggleMute',
+  'toggleHold',
+  'transfer',
   'goToConversation',
   'dismiss',
 ]);
@@ -71,6 +80,18 @@ const channelIcon = computed(() => {
     return 'i-ri-whatsapp-fill';
   return 'i-ph-phone-bold';
 });
+
+// Hold + Transfer are Asterisk-only (mirror of the WhatsApp-only showMute gate).
+const isAsterisk = computed(
+  () => props.call?.provider === VOICE_CALL_PROVIDERS.ASTERISK
+);
+
+// Blind transfer: emit the chosen extension and close the popover. The parent
+// wires this to the store action (blindTransfer → Asterisk::Adapter REFER).
+const onTransfer = (agent, hide) => {
+  emit('transfer', agent.sipExtension);
+  hide();
+};
 </script>
 
 <template>
@@ -179,6 +200,59 @@ const channelIcon = computed(() => {
             class="!rounded-full"
             @click="$emit('toggleMute')"
           />
+
+          <!-- Hold / Resume (Asterisk ongoing only) -->
+          <NextButton
+            v-if="isOngoing && isAsterisk"
+            v-tooltip.top="
+              isMuted
+                ? $t('VOICE_TELEPHONY.CALL_CONTROLS.RESUME')
+                : $t('VOICE_TELEPHONY.CALL_CONTROLS.HOLD')
+            "
+            :icon="isMuted ? 'i-ph-play-bold' : 'i-ph-pause-bold'"
+            :variant="isMuted ? 'solid' : 'faded'"
+            :color="isMuted ? 'amber' : 'teal'"
+            class="!rounded-full"
+            @click="$emit('toggleHold')"
+          />
+
+          <!-- Transfer (Asterisk ongoing only): popover with same-Team agents -->
+          <Popover v-if="isOngoing && isAsterisk" align="end">
+            <NextButton
+              v-tooltip.top="$t('VOICE_TELEPHONY.CALL_CONTROLS.TRANSFER')"
+              icon="i-ph-arrows-left-right-bold"
+              variant="faded"
+              color="teal"
+              class="!rounded-full"
+            />
+            <template #content="{ hide }">
+              <div class="flex flex-col gap-1 p-2 w-56">
+                <p class="px-2 py-1 text-xs font-medium text-n-slate-11">
+                  {{ $t('VOICE_TELEPHONY.TRANSFER.TITLE') }}
+                </p>
+                <button
+                  v-for="agent in availableAgents"
+                  :key="agent.id"
+                  type="button"
+                  class="flex items-center justify-between w-full px-2 py-1.5 text-left rounded-lg hover:bg-n-alpha-2"
+                  @click="onTransfer(agent, hide)"
+                >
+                  <span class="text-sm text-n-slate-12 truncate">
+                    {{ agent.name }}
+                  </span>
+                  <span class="text-xs text-n-slate-10 tabular-nums">
+                    {{ agent.sipExtension }}
+                  </span>
+                </button>
+                <p
+                  v-if="!availableAgents.length"
+                  class="px-2 py-1.5 text-sm text-n-slate-10"
+                >
+                  {{ $t('VOICE_TELEPHONY.TRANSFER.EMPTY') }}
+                </p>
+              </div>
+            </template>
+          </Popover>
 
           <!-- Accept call (incoming only) -->
           <NextButton
