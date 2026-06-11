@@ -17,6 +17,15 @@ json.role resource.active_account_user&.role
 json.ui_settings resource.ui_settings
 json.uid resource.uid
 json.type resource.type
+# Fork VoIP: extensión SIP del asesor en su cuenta activa (nil si no es asesor de Voz).
+# Gateado a enterprise (SipIdentity es overlay enterprise del fork).
+if ChatwootApp.enterprise?
+  sip_identity = SipIdentity.find_by(
+    account_id: resource.active_account_user&.account_id,
+    user_id: resource.id
+  )
+  json.sip_extension sip_identity&.sip_extension
+end
 json.accounts do
   json.array! resource.account_users do |account_user|
     json.id account_user.account_id
