@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_25_093000) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_10_120002) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -571,6 +571,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_093000) do
     t.datetime "updated_at", null: false
     t.boolean "tweets_enabled", default: true
     t.index ["account_id", "profile_id"], name: "index_channel_twitter_profiles_on_account_id_and_profile_id", unique: true
+  end
+
+  create_table "channel_voice", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "phone_number", null: false
+    t.jsonb "provider_config", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "phone_number"], name: "index_channel_voice_on_account_id_and_phone_number", unique: true
+    t.index ["account_id"], name: "index_channel_voice_on_account_id"
   end
 
   create_table "channel_web_widgets", id: :serial, force: :cascade do |t|
@@ -1173,6 +1183,26 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_093000) do
     t.index ["account_id", "date", "dimension_type", "dimension_id", "metric"], name: "index_rollup_unique_key", unique: true
     t.index ["account_id", "dimension_type", "date"], name: "index_rollup_summary"
     t.index ["account_id", "metric", "date"], name: "index_rollup_timeseries"
+  end
+
+  create_table "sip_identities", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.string "sip_extension", null: false
+    t.string "sip_password"
+    t.integer "sip_active_contacts", default: 0, null: false
+    t.datetime "sip_last_registered_at"
+    t.datetime "sip_absence_alerted_at"
+    t.boolean "sip_absence_mode", default: false, null: false
+    t.string "sip_fcm_token"
+    t.string "sip_apns_voip_token"
+    t.datetime "sip_push_token_updated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "sip_extension"], name: "index_sip_identities_on_account_id_and_sip_extension", unique: true
+    t.index ["account_id", "user_id"], name: "index_sip_identities_on_account_id_and_user_id", unique: true
+    t.index ["account_id"], name: "index_sip_identities_on_account_id"
+    t.index ["user_id"], name: "index_sip_identities_on_user_id"
   end
 
   create_table "sla_events", force: :cascade do |t|
