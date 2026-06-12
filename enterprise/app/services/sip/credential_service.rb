@@ -8,8 +8,6 @@
 #
 # Multi-cliente: la SipIdentity es por (account_id, user_id); se scopea a la cuenta.
 class Sip::CredentialService
-  WSS_DEFAULT_PORT = '8089'
-
   attr_reader :user, :account
 
   def self.call(user:, account:)
@@ -23,6 +21,10 @@ class Sip::CredentialService
 
   # @return [Hash, nil] credenciales del REGISTER de JsSIP, o nil si el usuario no
   #   tiene SipIdentity en la cuenta.
+  #
+  # sip_extension/sip_password salen de la SipIdentity (por asesor). wss_url y
+  # sip_domain son CONFIG GLOBAL del servidor (ENV SIP_WSS_HOST/PORT), NO columnas
+  # de sip_identities — se construyen dinámicamente, sin tocar la BD.
   def call
     identity = SipIdentity.find_by(account_id: account.id, user_id: user.id)
     return nil unless identity
@@ -31,21 +33,19 @@ class Sip::CredentialService
       sip_extension: identity.sip_extension,
       sip_password: identity.sip_password,
       wss_url: wss_url,
-      sip_domain: sip_host,
+      sip_domain: ENV.fetch('SIP_WSS_HOST', nil),
       ice_servers: Call.default_ice_servers
     }
   end
 
   private
 
+  # nil si SIP_WSS_HOST no está configurado → register() falla silenciosamente
+  # (comportamiento correcto en dev sin FreePBX).
   def wss_url
-    return nil if sip_host.blank?
+    host = ENV.fetch('SIP_WSS_HOST', nil)
+    return nil if host.blank?
 
-    "wss://#{sip_host}:#{ENV.fetch('SIP_WSS_PORT', WSS_DEFAULT_PORT)}/ws"
-  end
-
-  # Host del Asterisk/FreePBX (registrar SIP y servidor WSS). §9: SIP_WSS_HOST/PORT.
-  def sip_host
-    ENV.fetch('SIP_WSS_HOST', nil)
+    "wss://#{host}:#{ENV.fetch('SIP_WSS_PORT', '8089')}/ws"
   end
 end
