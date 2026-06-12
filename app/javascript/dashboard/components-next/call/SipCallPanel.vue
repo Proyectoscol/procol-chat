@@ -16,7 +16,8 @@ import Popover from 'dashboard/components-next/popover/Popover.vue';
 
 const { t } = useI18n();
 
-const { isRegistered, isReconnecting, startCall, endCall } = useJsSipSession();
+const { isRegistered, isReconnecting, callFailureReason, startCall, endCall } =
+  useJsSipSession();
 const callsStore = useCallsStore();
 // Lighter consumer: reads active-call state + actions without mounting the
 // global window/Timer listeners that FloatingCallWidget already owns.
@@ -43,6 +44,20 @@ const sipStatus = computed(() => {
     icon: 'i-ph-phone-slash-bold',
     color: 'text-n-ruby-9',
   };
+});
+
+// Bug 3: mapear causa JsSIP → texto legible (se muestra 5 s y se auto-limpia).
+const FAILURE_CAUSE_MAP = {
+  Rejected: 'VOICE_TELEPHONY.CALL_FAILURE.REJECTED',
+  Busy: 'VOICE_TELEPHONY.CALL_FAILURE.BUSY',
+  Unavailable: 'VOICE_TELEPHONY.CALL_FAILURE.UNAVAILABLE',
+  'No Answer': 'VOICE_TELEPHONY.CALL_FAILURE.NO_ANSWER',
+  Canceled: 'VOICE_TELEPHONY.CALL_FAILURE.CANCELED',
+};
+const callFailureLabel = computed(() => {
+  if (!callFailureReason.value) return '';
+  const key = FAILURE_CAUSE_MAP[callFailureReason.value];
+  return key ? t(key) : t('VOICE_TELEPHONY.CALL_FAILURE.UNKNOWN');
 });
 
 // --- Section 2: active call ---------------------------------------------------
@@ -164,6 +179,26 @@ const formatRelative = ts => (ts ? new Date(ts).toLocaleString() : '');
         {{ sipStatus.label }}
       </span>
     </div>
+    <!-- Bug 3: failure reason badge — visible 5 s, luego desaparece solo -->
+    <Transition
+      enter-active-class="transition-opacity duration-200"
+      leave-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="callFailureLabel"
+        class="flex items-center gap-1.5 px-4 py-2 bg-n-ruby-2 border-b border-n-ruby-4"
+      >
+        <Icon
+          icon="i-ph-phone-x-bold"
+          class="size-3.5 text-n-ruby-9 shrink-0"
+        />
+        <span class="text-xs text-n-ruby-9 font-medium">{{
+          callFailureLabel
+        }}</span>
+      </div>
+    </Transition>
 
     <!-- Section 2: active call -->
     <div

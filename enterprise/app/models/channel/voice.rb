@@ -1,6 +1,22 @@
 # Canal de Voz (Asterisk) del fork. Sigue el patrón de Channel::TwilioSms /
 # Channel::Whatsapp (include Channelable + table propia + provider_config jsonb).
 # Overlay enterprise, aislado del rebase sobre upstream.
+# == Schema Information
+#
+# Table name: channel_voice
+#
+#  id              :bigint           not null, primary key
+#  phone_number    :string           not null
+#  provider_config :jsonb            not null
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#  account_id      :bigint           not null
+#
+# Indexes
+#
+#  index_channel_voice_on_account_id                   (account_id)
+#  index_channel_voice_on_account_id_and_phone_number  (account_id,phone_number) UNIQUE
+#
 class Channel::Voice < ApplicationRecord
   include Channelable
 

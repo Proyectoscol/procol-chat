@@ -1,5 +1,5 @@
 <script>
-import { defineAsyncComponent, ref, computed, onMounted } from 'vue';
+import { defineAsyncComponent, ref, computed, onMounted, nextTick } from 'vue';
 
 import NextSidebar from 'next/sidebar/Sidebar.vue';
 import WootKeyShortcutModal from 'dashboard/components/widgets/modal/WootKeyShortcutModal.vue';
@@ -57,7 +57,9 @@ export default {
     // no-op) para asesores sin SipIdentity, así que es seguro llamarlo siempre.
     const currentUser = useMapGetter('getCurrentUser');
     const { register: registerSipSession } = useJsSipSession();
-    onMounted(() => registerSipSession());
+    onMounted(() => {
+      nextTick(() => registerSipSession());
+    });
 
     return {
       uiSettings,

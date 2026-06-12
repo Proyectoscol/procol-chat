@@ -29,12 +29,20 @@ let translate = null;
 
 const isRegistered = ref(false);
 const isReconnecting = ref(false);
+const callFailureReason = ref('');
 const isRegisteredReadonly = readonly(isRegistered);
 const isReconnectingReadonly = readonly(isReconnecting);
+const callFailureReasonReadonly = readonly(callFailureReason);
 
 // Sin TURN/STUN del backend el navegador solo emite host candidates y el media
 // browser↔Asterisk cae en cualquier NAT no trivial. Fallback igual que WhatsApp.
-const DEFAULT_ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
+// Dos servidores STUN en paralelo: el browser usa el primero que responda.
+// Reduce la latencia de ICE gathering de ~300 ms a ~50-100 ms en la mayoría
+// de redes. Si ambos fallan, el timeout de 400 ms envía el INVITE con candidatos host.
+const DEFAULT_ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+];
 
 // JsSIP reintenta el WebSocket solo; estos límites acotan el backoff (R1-4).
 const WS_RECOVERY_MIN_INTERVAL = 2;
@@ -58,6 +66,66 @@ const playRemoteStream = stream => {
     // eslint-disable-next-line no-console
     console.warn('[SIP Call] remote audio play() failed:', err);
   });
+};
+
+// Feedback sonoro al colgar.
+const HANGUP_SOUND_URL = '/audio/dashboard/ping.mp3';
+const playHangupSound = () => {
+  try {
+    new Audio(HANGUP_SOUND_URL).play().catch(() => {});
+  } catch (_) {
+    /* noop */
+  }
+};
+
+// Ringback: tono que el llamante escucha mientras espera respuesta.
+// Genera 440 Hz + 480 Hz (tono PSTN estándar) con Web Audio API — sin archivo.
+// Patrón: 2 s tono · 4 s silencio · repite.
+let ringbackCtx = null;
+let ringbackTimer = null;
+
+const startRingback = () => {
+  if (ringbackCtx) return;
+  try {
+    // eslint-disable-next-line no-undef
+    ringbackCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (_) {
+    return;
+  }
+  const playBurst = () => {
+    if (!ringbackCtx || ringbackCtx.state === 'closed') return;
+    // Chrome crea el AudioContext en 'suspended' cuando no hay gesto de usuario
+    // activo en el stack. resume() lo activa antes de crear los osciladores.
+    ringbackCtx
+      .resume()
+      .then(() => {
+        if (!ringbackCtx || ringbackCtx.state === 'closed') return;
+        [440, 480].forEach(freq => {
+          const osc = ringbackCtx.createOscillator();
+          const gain = ringbackCtx.createGain();
+          osc.frequency.value = freq;
+          gain.gain.value = 0.15;
+          osc.connect(gain);
+          gain.connect(ringbackCtx.destination);
+          osc.start();
+          osc.stop(ringbackCtx.currentTime + 2);
+        });
+      })
+      .catch(() => {});
+    ringbackTimer = setTimeout(playBurst, 6000);
+  };
+  playBurst();
+};
+
+const stopRingback = () => {
+  clearTimeout(ringbackTimer);
+  ringbackTimer = null;
+  try {
+    ringbackCtx?.close();
+  } catch (_) {
+    /* noop */
+  }
+  ringbackCtx = null;
 };
 
 const dismissIncomingNotification = () => {
@@ -92,9 +160,11 @@ const showIncomingNotification = session => {
   }
 };
 
-// Teardown por-llamada. Clave del FIX: detener los tracks de getUserMedia — JsSIP
-// no siempre libera el micrófono al colgar, dejando el indicador de mic encendido.
-// NO toca el UA: la registración persiste entre llamadas.
+// Teardown WebRTC por-llamada: libera mic, limpia audio remoto, descarta
+// notificación nativa. NO toca el store — el llamador es responsable de invocar
+// callsStore.clearActiveCall() para evitar la recursión:
+//   clearActiveCall → teardownByProvider → cleanupSipSession → cleanup
+//                                                               → clearActiveCall → ∞
 const cleanup = () => {
   if (localStream) localStream.getTracks().forEach(track => track.stop());
   if (remoteAudioEl) remoteAudioEl.srcObject = null;
@@ -103,16 +173,98 @@ const cleanup = () => {
   localStream = null;
 };
 
-// Audio remoto + ciclo de vida de la sesión. 'ended'/'failed' → cleanup (que
-// libera el mic). No re-termina aquí: terminate() lo dispara endCall/rejectCall.
+// Máximo tiempo de espera para que el browser recoja candidatos ICE antes de
+// enviar el INVITE. Sin límite el browser puede tardar hasta 60 s si el servidor
+// STUN no responde. 400 ms es suficiente: candidatos host se recogen en <50 ms y
+// STUN reflexivo suele llegar en 20-150 ms. Si no llega, se envía con host only.
+const ICE_GATHERING_TIMEOUT_MS = 400;
+
 const attachSessionHandlers = session => {
   session.on('peerconnection', ({ peerconnection }) => {
     peerconnection.addEventListener('track', event => {
       if (event.streams && event.streams[0]) playRemoteStream(event.streams[0]);
     });
+
+    // ICE gathering timeout: JsSIP 3.13 espera el evento 'icecandidate' con
+    // candidate=null (vía addEventListener, no la propiedad onicecandidate).
+    // dispatchEvent con RTCPeerConnectionIceEvent alcanza ese listener y llama
+    // ready() internamente, enviando el INVITE sin esperar los ~30 s del browser.
+    let iceComplete = false;
+    const iceTimer = setTimeout(() => {
+      if (iceComplete) return;
+      iceComplete = true;
+      try {
+        peerconnection.dispatchEvent(
+          new RTCPeerConnectionIceEvent('icecandidate', { candidate: null })
+        );
+      } catch (_) {
+        /* noop — el gathering completará naturalmente */
+      }
+    }, ICE_GATHERING_TIMEOUT_MS);
+
+    peerconnection.addEventListener('icegatheringstatechange', () => {
+      if (iceComplete) return;
+      if (peerconnection.iceGatheringState === 'complete') {
+        iceComplete = true;
+        clearTimeout(iceTimer);
+      }
+    });
   });
-  session.on('ended', cleanup);
-  session.on('failed', cleanup);
+
+  // 180 Ringing recibido del remoto → arrancar ringback en el llamante.
+  // Solo para sesiones salientes; las entrantes ya tienen su propia tonalidad.
+  session.on('progress', e => {
+    if (e?.originator === 'remote' && session.direction === 'outgoing') {
+      startRingback();
+    }
+  });
+
+  // Llamada contestada: apagar ringback y marcar activa en el store.
+  // setCallActive es idempotente — seguro llamarlo desde aquí y desde joinCall().
+  session.on('confirmed', () => {
+    stopRingback();
+    useCallsStore().setCallActive(session.id);
+  });
+
+  session.on('ended', e => {
+    // eslint-disable-next-line no-console
+    console.log(
+      '[SIP] Sesión terminada:',
+      e?.cause,
+      'originator:',
+      e?.originator
+    );
+    stopRingback();
+    cleanup();
+    if (e?.originator === 'remote') playHangupSound();
+    const store = useCallsStore();
+    // Llamadas salientes no contestadas nunca son isActive → clearActiveCall no
+    // las elimina. Hay que dismissarlas explícitamente para limpiar el store.
+    const stale = store.calls.find(
+      c => c.callSid === session.id && !c.isActive
+    );
+    if (stale) store.dismissCall(session.id);
+    store.clearActiveCall();
+  });
+
+  // Llamada rechazada, ocupada, sin respuesta, etc.
+  session.on('failed', e => {
+    // eslint-disable-next-line no-console
+    console.log('[SIP] Llamada fallida:', e?.cause);
+    stopRingback();
+    callFailureReason.value = e?.cause || '';
+    setTimeout(() => {
+      callFailureReason.value = '';
+    }, 5000);
+    playHangupSound();
+    cleanup();
+    const store = useCallsStore();
+    const stale = store.calls.find(
+      c => c.callSid === session.id && !c.isActive
+    );
+    if (stale) store.dismissCall(session.id);
+    store.clearActiveCall();
+  });
 };
 
 const handleNewRTCSession = ({ originator, session }) => {
@@ -175,6 +327,9 @@ const buildUa = creds => {
     register: true,
     connection_recovery_min_interval: WS_RECOVERY_MIN_INTERVAL,
     connection_recovery_max_interval: WS_RECOVERY_MAX_INTERVAL,
+    // Desactiva los session timers SIP (RE-INVITE periódicos de keepalive) que
+    // añaden latencia y pueden causar reinvites inesperados con FreePBX.
+    session_timers: false,
   });
   attachUaHandlers(instance);
   return instance;
@@ -220,6 +375,16 @@ export function useJsSipSession() {
   // Pide la credencial y arranca el UA (REGISTER). Se llama al login si el usuario
   // es inbox-member de Voz. Idempotente: si ya hay UA, no crea otro.
   const register = async () => {
+    // UA muerto: existía pero no está registrado ni reconectando (p.ej. se instanció
+    // con wss_url null). Destruirlo para que buildUa cree uno limpio.
+    if (ua && !isRegistered.value && !isReconnecting.value) {
+      try {
+        ua.stop();
+      } catch (_) {
+        /* noop */
+      }
+      ua = null;
+    }
     if (ua) return isRegistered.value;
 
     credentials = await fetchCredentials();
@@ -252,7 +417,17 @@ export function useJsSipSession() {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const session = ua.call(`sip:${target}@${credentials.sip_domain}`, {
       mediaStream: localStream,
-      pcConfig: { iceServers: credentials.ice_servers || DEFAULT_ICE_SERVERS },
+      pcConfig: {
+        iceServers: credentials.ice_servers || DEFAULT_ICE_SERVERS,
+        // max-bundle reduce los candidatos ICE a recolectar (un solo puerto para
+        // todos los medios en vez de uno por stream), acelerando el ICE gathering.
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require',
+      },
+      rtcOfferConstraints: {
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: false,
+      },
     });
     currentSession = session;
     attachSessionHandlers(session);
@@ -262,23 +437,43 @@ export function useJsSipSession() {
   // Entrante: el asesor contesta. Su clic = pickup.
   const acceptCall = async () => {
     if (!currentSession) return;
+    // Bug 1: answer() lanza NOT_SUPPORTED_ERROR en sesiones salientes. Para ellas
+    // la conexión ya está en curso por ua.call(); no hay nada que "aceptar".
+    if (currentSession.direction === 'outgoing') {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[SIP] acceptCall() ignorado: sesión saliente ya conectando'
+      );
+      return;
+    }
 
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     currentSession.answer({
       mediaStream: localStream,
-      pcConfig: { iceServers: credentials?.ice_servers || DEFAULT_ICE_SERVERS },
+      pcConfig: {
+        iceServers: credentials?.ice_servers || DEFAULT_ICE_SERVERS,
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require',
+      },
     });
     dismissIncomingNotification();
   };
 
-  // Rechaza la entrante (486 Busy Here) y libera el mic.
+  // Cancela/rechaza la sesión actual:
+  // - Saliente no contestada → CANCEL (JsSIP lo hace automáticamente con terminate()).
+  // - Entrante              → 486 Busy Here.
   const rejectCall = () => {
+    stopRingback();
     if (currentSession) {
       try {
-        currentSession.terminate({
-          status_code: 486,
-          reason_phrase: 'Busy Here',
-        });
+        if (currentSession.direction === 'outgoing') {
+          currentSession.terminate();
+        } else {
+          currentSession.terminate({
+            status_code: 486,
+            reason_phrase: 'Busy Here',
+          });
+        }
       } catch (_) {
         /* noop */
       }
@@ -286,9 +481,12 @@ export function useJsSipSession() {
     cleanup();
   };
 
-  // Cuelga la llamada activa. terminate() dispara 'ended' → cleanup; el cleanup
-  // explícito garantiza la liberación del mic aunque el evento no llegue.
+  // Cuelga la llamada activa. Suena feedback inmediato (no esperar el BYE ack).
+  // terminate() dispara 'ended' asíncronamente → clearActiveCall limpia el store.
+  // cleanup() explícito aquí garantiza que el mic se libera aunque el evento no llegue.
   const endCall = () => {
+    stopRingback();
+    playHangupSound();
     if (currentSession) {
       try {
         currentSession.terminate();
@@ -302,6 +500,7 @@ export function useJsSipSession() {
   return {
     isRegistered: isRegisteredReadonly,
     isReconnecting: isReconnectingReadonly,
+    callFailureReason: callFailureReasonReadonly,
     setTranslator,
     register,
     unregister,

@@ -142,7 +142,9 @@ const handleEndCall = async () => {
   if (!call) return;
 
   const inboxId = call.inboxId || getCallInfo(call).conversation?.inbox_id;
-  if (!inboxId) return;
+  // Twilio necesita inboxId para VoiceAPI.leaveConference.
+  // Asterisk usa JsSIP directo — endCallSession ignora inboxId para esa provider.
+  if (!inboxId && call.provider !== VOICE_CALL_PROVIDERS.ASTERISK) return;
 
   await endCallSession({
     conversationId: call.conversationId,
@@ -184,6 +186,7 @@ watch(
     if (
       call?.callDirection === VOICE_CALL_DIRECTION.OUTBOUND &&
       call?.provider !== VOICE_CALL_PROVIDERS.WHATSAPP &&
+      call?.provider !== VOICE_CALL_PROVIDERS.ASTERISK &&
       !hasActiveCall.value &&
       WindowVisibilityHelper.isWindowVisible()
     ) {

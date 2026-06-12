@@ -1,0 +1,39 @@
+# Override mínimo para verificar migraciones y specs SIN frontend.
+# Levanta solo: postgres + redis + rails (contenedor vivo, sin servidor web).
+# No arranca vite/sidekiq/mailhog (no se necesitan para db:migrate ni rspec).
+#
+# Uso (recomendado exportar COMPOSE_FILE para no repetir -f):
+#   export COMPOSE_FILE=docker-compose.yaml:docker-compose.dev.yml
+#   docker compose build rails        # una sola vez (lento: imagen oficial)
+#   docker compose up -d rails        # arranca postgres+redis+rails
+#   docker compose exec rails bundle exec rails db:prepare
+#   docker compose exec rails bundle exec rails db:migrate
+#   docker compose down
+
+services:
+  postgres:
+    environment:
+      - POSTGRES_DB=chatwoot_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=2333038581ef953c362d # = POSTGRES_PASSWORD del .env
+    volumes:
+      - postgres_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  rails:
+    # Solo postgres + redis: sin vite, sidekiq ni mailhog.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    # Contenedor vivo; los comandos se corren con `docker compose exec rails ...`.
+    command: ['tail', '-f', '/dev/null']
+    ports: [] # sin servidor web; no exponemos 3000
+
+volumes:
+  postgres_dev:

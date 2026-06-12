@@ -140,6 +140,16 @@ const buildCallActions = ({ callsStore, whatsappSession, sipSession, t }) => {
       return null;
     }
 
+    // Bug 5: llamadas salientes de Asterisk no tienen paso de join. startCall() ya
+    // envió el INVITE vía ua.call(). Pasar por acceptCall() → session.answer()
+    // sobre una sesión saliente dispara NOT_SUPPORTED_ERROR en JsSIP.
+    if (
+      call?.callDirection === VOICE_CALL_DIRECTION.OUTBOUND &&
+      isAsteriskCall(call)
+    ) {
+      return null;
+    }
+
     globalIsJoining.value = true;
     try {
       if (isWhatsappCall(call)) {

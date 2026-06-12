@@ -51,6 +51,14 @@
         "UNMUTE": "Unmute",
         "HANG_UP": "Hang up"
       }
+    },
+    "CALL_FAILURE": {
+      "REJECTED": "Call rejected",
+      "BUSY": "Line busy",
+      "UNAVAILABLE": "Unavailable",
+      "NO_ANSWER": "No answer",
+      "CANCELED": "Call canceled",
+      "UNKNOWN": "Call ended"
     }
   }
 }
