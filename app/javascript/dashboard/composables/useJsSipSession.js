@@ -1,6 +1,9 @@
+/* global axios */
+// Usa el axios GLOBAL de Chatwoot (instancia wootApi configurada en APIHelper.js):
+// lleva los headers de devise-token-auth (access-token/token-type/client/uid) en
+// defaults.headers.common. El `import axios from 'axios'` crudo NO los tiene → 401.
 import { readonly, ref } from 'vue';
 import JsSIP from 'jssip';
-import axios from 'axios';
 import { useCallsStore } from 'dashboard/stores/calls';
 import {
   VOICE_CALL_DIRECTION,
