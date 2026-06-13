@@ -104,6 +104,7 @@ Rails.application.routes.draw do
           if ChatwootApp.enterprise?
             namespace :sip do
               get :credential, to: 'credential#show'
+              get :recent_calls, to: 'recent_calls#index'
             end
           end
           resources :callbacks, only: [] do

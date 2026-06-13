@@ -1,80 +1,121 @@
-# Visualización opción B (§1/§3): al estado terminal de una llamada Asterisk,
-# espeja un activity INMUTABLE en la conversación ABIERTA del contacto en OTRO
-# inbox (WhatsApp u otro canal), enlazando la llamada al timeline unificado.
+# Crea un activity message de llamada en la conversación activa del contacto.
+# Recibe el payload crudo de Stasis (vía InternalController#handle_call_ended /
+# handle_call_no_answer) para no depender del modelo Call.
 #
-# message_type: :activity = mensaje de sistema: no editable ni borrable por el
-# asesor (esa es la inmutabilidad que pide el plan). Reusa el patrón canónico de
-# Chatwoot (conversation.messages.create! con activity params).
-#
-# Degrada limpio: si el contacto no tiene conversación abierta fuera de Voz, no-op
-# (devuelve nil sin error). Sin sincronización en el tiempo: se escribe una sola vez.
+# Orden de preferencia para la conversación donde se espeja:
+#   1. WhatsApp abierta del contacto (canal más rico)
+#   2. Cualquier conversación abierta fuera del inbox de Voz
+#   3. Fallback: conversación en el inbox de Voz (crea si no existe)
 class Voice::TimelineMirrorService
-  def self.perform(call)
-    new(call).perform
+  def self.perform(payload)
+    new(payload).perform
   end
 
-  def initialize(call)
-    @call = call
+  def initialize(payload)
+    @payload = payload.with_indifferent_access
   end
 
-  # @return [Message, nil] el activity creado, o nil si no hay dónde espejarlo.
   def perform
-    conversation = mirror_conversation
+    inbox = resolve_inbox
+    return nil unless inbox
+
+    contact = find_or_create_contact(inbox)
+    return nil unless contact
+
+    conversation = find_or_create_conversation(inbox, contact)
     return nil unless conversation
 
-    conversation.messages.create!(activity_params(conversation))
+    conversation.messages.create!(
+      account_id:   conversation.account_id,
+      inbox_id:     conversation.inbox_id,
+      message_type: :activity,
+      content:      activity_content
+    )
   end
 
   private
 
-  attr_reader :call
+  attr_reader :payload
 
-  # Conversación ABIERTA del contacto en un inbox distinto al de Voz (la llamada).
-  def mirror_conversation
-    return nil unless call.contact
+  def event_type    = payload[:event_type].to_s
+  def from_number   = payload[:from_number].to_s
+  def to_number     = payload[:to].to_s
+  def duration_sec  = payload[:duration_seconds].to_i
 
-    call.contact.conversations
-        .where(account_id: call.account_id, status: :open)
-        .where.not(inbox_id: call.inbox_id)
-        .order(last_activity_at: :desc)
-        .first
+  def resolve_inbox
+    did = Sip::CallRoutingService.normalize_e164(to_number)
+    return nil if did.blank?
+
+    Channel::Voice.find_by(phone_number: did)&.inbox
   end
 
-  def activity_params(conversation)
-    {
-      account_id: conversation.account_id,
-      inbox_id: conversation.inbox_id,
-      message_type: :activity,
-      content: content
-    }
+  def find_or_create_contact(inbox)
+    phone = Sip::CallRoutingService.normalize_e164(from_number)
+    return nil if phone.blank?
+
+    inbox.account.contacts.find_or_create_by!(phone_number: phone) do |c|
+      c.name = phone
+    end
+  rescue ActiveRecord::RecordInvalid
+    inbox.account.contacts.find_by(phone_number: phone)
   end
 
-  def content
-    I18n.t(
-      'conversations.activity.voice_call.mirror',
-      direction: direction_label,
-      duration: duration_label,
-      status: status_label
+  def find_or_create_conversation(inbox, contact)
+    # 1) WhatsApp abierta
+    wa_conv = contact.conversations
+                     .joins(:inbox)
+                     .where(account_id: inbox.account_id, status: :open)
+                     .where(inboxes: { channel_type: 'Channel::Whatsapp' })
+                     .order(last_activity_at: :desc)
+                     .first
+    return wa_conv if wa_conv
+
+    # 2) Cualquier conversación abierta fuera del inbox de Voz
+    other_conv = contact.conversations
+                        .where(account_id: inbox.account_id, status: :open)
+                        .where.not(inbox_id: inbox.id)
+                        .order(last_activity_at: :desc)
+                        .first
+    return other_conv if other_conv
+
+    # 3) Usar/crear conversación en el inbox de Voz
+    voice_conv = contact.conversations
+                        .where(account_id: inbox.account_id, inbox_id: inbox.id)
+                        .where.not(status: :resolved)
+                        .last
+    return voice_conv if voice_conv
+
+    contact_inbox = inbox.contact_inboxes.find_or_create_by!(contact: contact) do |ci|
+      ci.source_id = "sip-#{SecureRandom.hex(6)}"
+    end
+    inbox.account.conversations.create!(
+      contact_inbox_id: contact_inbox.id,
+      inbox_id:         inbox.id,
+      contact_id:       contact.id,
+      status:           :open
     )
+  rescue ActiveRecord::RecordNotUnique
+    contact.conversations
+           .where(account_id: inbox.account_id, inbox_id: inbox.id, status: :open)
+           .last
   end
 
-  def direction_label
-    I18n.t("conversations.activity.voice_call.direction.#{call.direction}")
+  def activity_content
+    dir_label = direction == 'outbound' ? 'Llamada saliente' : 'Llamada entrante'
+    "[#{dir_label}] Duración: #{format_duration(duration_sec)} | Estado: #{status_label} | Número: #{from_number}"
   end
 
-  def duration_label
-    seconds = call.duration_seconds.to_i
-    format('%<min>dm %<sec>02ds', min: seconds / 60, sec: seconds % 60)
+  def format_duration(secs)
+    return '0:00' if secs <= 0
+
+    format('%d:%02d', secs / 60, secs % 60)
   end
 
-  # completed → contestada; no_answer por ocupado → ocupado; no_answer → perdida;
-  # resto → fallida. (Call no tiene estado 'busy'; se distingue por end_reason.)
   def status_label
-    key = case call.status
-          when 'completed' then 'answered'
-          when 'no_answer' then call.end_reason.to_s.casecmp?('busy') ? 'busy' : 'missed'
-          else 'failed'
-          end
-    I18n.t("conversations.activity.voice_call.status.#{key}")
+    case event_type
+    when 'ended'    then duration_sec.positive? ? 'Contestada' : 'Sin respuesta'
+    when 'no_answer' then 'Sin respuesta'
+    else 'Fallida'
+    end
   end
 end

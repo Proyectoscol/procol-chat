@@ -57,8 +57,10 @@ class Sip::InternalController < ApplicationController
       presence_service.sync(params[:registered])
     when 'answered'
       handle_call_answered
-    when 'ended', 'no_answer'
+    when 'ended'
       handle_call_ended
+    when 'no_answer'
+      handle_call_no_answer
     when 'call_status'
       handle_call_status_event
     else
@@ -133,7 +135,30 @@ class Sip::InternalController < ApplicationController
 
   def handle_call_ended
     inbox = resolve_voice_inbox
-    Sip::QueueService.decrement(inbox.id) if inbox
+    return unless inbox
+
+    Sip::QueueService.decrement(inbox.id)
+
+    stasis_payload = params.permit(:event_type, :from_number, :to, :linkedid,
+                                   :duration_seconds, :call_direction, :cause).to_h
+    return if stasis_payload[:from_number].blank? || stasis_payload[:linkedid].blank?
+
+    Sip::AsteriskCallLogger.call(inbox: inbox, payload: stasis_payload)
+    Voice::TimelineMirrorService.perform(stasis_payload)
+  end
+
+  def handle_call_no_answer
+    inbox = resolve_voice_inbox
+    return unless inbox
+
+    Sip::QueueService.decrement(inbox.id)
+
+    stasis_payload = params.permit(:event_type, :from_number, :to, :linkedid,
+                                   :call_direction).to_h
+    return if stasis_payload[:from_number].blank? || stasis_payload[:linkedid].blank?
+
+    Sip::AsteriskCallLogger.call(inbox: inbox, payload: stasis_payload)
+    Voice::TimelineMirrorService.perform(stasis_payload)
   end
 
   def handle_call_status_event

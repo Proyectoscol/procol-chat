@@ -1,5 +1,6 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+/* global axios */
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { VOICE_CALL_DIRECTION } from 'dashboard/components-next/message/constants';
@@ -200,9 +201,25 @@ const onDial = async () => {
   await placeOutboundCall(num);
 };
 
-// --- Directory and Recents (backend pending, placeholders) ------------
+// --- Directory and Recents --------------------------------------------
 const assignedContacts = ref([]);
 const callHistory = ref([]);
+
+const fetchRecentCalls = async () => {
+  const accountId = window.location.pathname.split('/')[3];
+  if (!accountId) return;
+  try {
+    const { data } = await axios.get(
+      `/api/v1/accounts/${accountId}/sip/recent_calls`
+    );
+    callHistory.value = data;
+  } catch {
+    // best-effort: si falla, el panel queda vacío
+  }
+};
+
+onMounted(fetchRecentCalls);
+
 const historyMeta = {
   incoming: { icon: 'i-ph-phone-incoming-bold', color: 'text-n-teal-9' },
   outgoing: { icon: 'i-ph-phone-outgoing-bold', color: 'text-n-slate-10' },

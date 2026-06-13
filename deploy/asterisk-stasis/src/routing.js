@@ -19,6 +19,7 @@ export async function handleInbound(client, channel) {
     if (answeredAt) {
       reportEnded({
         linkedid,
+        phone,
         to,
         durationSeconds: Math.round((Date.now() - answeredAt) / 1000),
       });
@@ -35,7 +36,7 @@ export async function handleInbound(client, channel) {
   if (decision.action === 'dial') {
     const ok = await dialExtension(client, channel, decision.extension, linkedid, () => {
       answeredAt = Date.now();
-    }, to);
+    }, to, phone);
     if (!ok) {
       await reportNoAnswer({ linkedid, phone, to });
       return sendToFallback(channel);
@@ -52,7 +53,7 @@ export async function handleInbound(client, channel) {
     while (pick.action === 'dial') {
       const ok = await dialExtension(client, channel, pick.extension, linkedid, () => {
         answeredAt = Date.now();
-      }, to);
+      }, to, phone);
       if (ok) return;
       pick = await getRouting({ to, teamDigit: digit, linkedid });
     }
@@ -66,7 +67,7 @@ export async function handleInbound(client, channel) {
 
 // Origina hacia PJSIP/<extension> y crea un bridge mixing si contesta.
 // Devuelve true si la llamada fue contestada.
-async function dialExtension(client, channel, extension, linkedid, onAnswered, to) {
+async function dialExtension(client, channel, extension, linkedid, onAnswered, to, phone) {
   const dialed = client.Channel();
   try {
     await dialed.originate({
@@ -97,7 +98,7 @@ async function dialExtension(client, channel, extension, linkedid, onAnswered, t
       if (evt.channel?.state === 'Up' && !answered) {
         answered = true;
         onAnswered?.();
-        reportAnswered({ linkedid, to, extension });
+        reportAnswered({ linkedid, to, phone, extension });
       }
     });
 
@@ -109,7 +110,7 @@ async function dialExtension(client, channel, extension, linkedid, onAnswered, t
       if (!answered) {
         answered = true;
         onAnswered?.();
-        reportAnswered({ linkedid, to, extension });
+        reportAnswered({ linkedid, to, phone, extension });
       }
       try {
         const bridge = client.Bridge();
