@@ -444,7 +444,7 @@ export function useJsSipSession() {
 
   // Saliente: INVITE de JsSIP a la extensión/destino. Pasamos NUESTRO mediaStream
   // para controlar la liberación del mic en cleanup (FIX).
-  const startCall = async target => {
+  const startCall = async (target, options = {}) => {
     if (!ua || !isRegistered.value || currentSession) return null;
 
     // Prevent SIP URI injection: only allow phone number characters.
@@ -463,6 +463,7 @@ export function useJsSipSession() {
     localStream = stream;
     const session = ua.call(`sip:${target}@${credentials.sip_domain}`, {
       mediaStream: localStream,
+      ...(options.displayName ? { fromDisplayName: options.displayName } : {}),
       pcConfig: {
         iceServers: credentials.ice_servers || DEFAULT_ICE_SERVERS,
         // max-bundle reduce los candidatos ICE a recolectar (un solo puerto para

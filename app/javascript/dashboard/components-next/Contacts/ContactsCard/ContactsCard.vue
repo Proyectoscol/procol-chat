@@ -10,6 +10,8 @@ import Flag from 'dashboard/components-next/flag/Flag.vue';
 import ContactDeleteSection from 'dashboard/components-next/Contacts/ContactsCard/ContactDeleteSection.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import countries from 'shared/constants/countries';
+import { useMapGetter } from 'dashboard/composables/store';
+import { useJsSipSession } from 'dashboard/composables/useJsSipSession';
 
 const props = defineProps({
   id: { type: Number, required: true },
@@ -34,6 +36,9 @@ const emit = defineEmits([
 ]);
 
 const { t } = useI18n();
+
+const currentUser = useMapGetter('getCurrentUser');
+const { startCall } = useJsSipSession();
 
 const contactsFormRef = ref(null);
 
@@ -104,6 +109,10 @@ const toggleSelect = checked => {
 const handleAvatarHover = isHovered => {
   emit('avatarHover', isHovered);
 };
+
+const callContact = () => {
+  startCall(props.phoneNumber, { displayName: props.name });
+};
 </script>
 
 <template>
@@ -173,6 +182,14 @@ const handleAvatarHover = isHovered => {
             <span v-if="phoneNumber" class="text-sm truncate text-n-slate-11">
               {{ phoneNumber }}
             </span>
+            <button
+              v-if="phoneNumber && currentUser?.sip_extension"
+              :title="t('VOICE_TELEPHONY.CALL_CONTACT')"
+              class="inline-flex items-center justify-center size-5 rounded text-n-slate-10 hover:text-n-brand hover:bg-n-slate-3 transition-colors"
+              @click.stop="callContact"
+            >
+              <span class="i-ph-phone size-3.5" aria-hidden="true" />
+            </button>
             <div v-if="phoneNumber" class="w-px h-3 truncate bg-n-slate-6" />
             <span
               v-if="countryDetails"

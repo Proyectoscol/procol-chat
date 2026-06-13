@@ -54,6 +54,7 @@
       },
       "RECONNECT": "Reconectar SIP"
     },
+    "CALL_CONTACT": "Llamar al contacto",
     "CALL_FAILURE": {
       "REJECTED": "Llamada rechazada",
       "BUSY": "Línea ocupada",
