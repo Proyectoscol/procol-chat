@@ -227,6 +227,36 @@ const attachSessionHandlers = session => {
     useCallsStore().setCallActive(session.id);
   });
 
+  // Limpia el store al terminar o fallar la sesión.
+  //
+  // Por qué no basta con c.callSid === session.id:
+  // Para llamadas entrantes, el store puede tener DOS entradas para la misma
+  // llamada: una de ActionCable (callSid = provider_call_id) y otra de JsSIP
+  // (callSid = session.id). Si el agente aceptó usando la entrada de ActionCable
+  // (porque llegó primero y es primaryIncomingCall), esa es la entrada activa.
+  // El guard callSid === session.id nunca la encuentra → clearActiveCall no se
+  // llama → FloatingCallWidget sigue mostrando la llamada activa.
+  const clearSipCallFromStore = store => {
+    // 1. Dismiss la entrada JsSIP si quedó inactiva (llamada saliente no contestada
+    //    o entrante cuya entrada de ActionCable fue la que se activó).
+    const stale = store.calls.find(
+      c => c.callSid === session.id && !c.isActive
+    );
+    if (stale) store.dismissCall(session.id);
+    // 2. Clear cualquier llamada Asterisk activa. buildCallActions.endCall() ya
+    //    llama clearActiveCall() síncronamente (ruta FloatingCallWidget), así que
+    //    store.activeCall será null en ese caso — guard natural.
+    if (store.activeCall?.provider === VOICE_CALL_PROVIDERS.ASTERISK) {
+      store.clearActiveCall();
+    }
+    // 3. Dismiss la entrada residual inactiva (la contraparte de ActionCable cuando
+    //    fue la entrada JsSIP la que quedó activa, o viceversa).
+    const residual = store.calls.find(
+      c => !c.isActive && c.provider === VOICE_CALL_PROVIDERS.ASTERISK
+    );
+    if (residual) store.dismissCall(residual.callSid);
+  };
+
   session.on('ended', e => {
     // eslint-disable-next-line no-console
     console.log(
@@ -238,19 +268,7 @@ const attachSessionHandlers = session => {
     stopRingback();
     cleanup();
     if (e?.originator === 'remote') playHangupSound();
-    const store = useCallsStore();
-    // Llamadas salientes no contestadas nunca son isActive → clearActiveCall no
-    // las elimina. Hay que dismissarlas explícitamente para limpiar el store.
-    const stale = store.calls.find(
-      c => c.callSid === session.id && !c.isActive
-    );
-    if (stale) store.dismissCall(session.id);
-    // Solo limpiar si la sesión sigue activa en el store — buildCallActions.endCall()
-    // ya llama clearActiveCall() síncronamente al colgar localmente; sin esta guarda
-    // el handler asíncrono lo llama de nuevo con active=undefined.
-    if (store.calls.find(c => c.callSid === session.id && c.isActive)) {
-      store.clearActiveCall();
-    }
+    clearSipCallFromStore(useCallsStore());
   });
 
   // Llamada rechazada, ocupada, sin respuesta, etc.
@@ -264,14 +282,7 @@ const attachSessionHandlers = session => {
     }, 5000);
     playHangupSound();
     cleanup();
-    const store = useCallsStore();
-    const stale = store.calls.find(
-      c => c.callSid === session.id && !c.isActive
-    );
-    if (stale) store.dismissCall(session.id);
-    if (store.calls.find(c => c.callSid === session.id && c.isActive)) {
-      store.clearActiveCall();
-    }
+    clearSipCallFromStore(useCallsStore());
   });
 };
 
