@@ -51,7 +51,8 @@
         "MUTE": "Silenciar",
         "UNMUTE": "Activar micrófono",
         "HANG_UP": "Colgar"
-      }
+      },
+      "RECONNECT": "Reconectar SIP"
     },
     "CALL_FAILURE": {
       "REJECTED": "Llamada rechazada",

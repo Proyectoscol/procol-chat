@@ -51,7 +51,8 @@
         "MUTE": "Mute",
         "UNMUTE": "Unmute",
         "HANG_UP": "Hang up"
-      }
+      },
+      "RECONNECT": "Reconnect SIP"
     },
     "CALL_FAILURE": {
       "REJECTED": "Call rejected",

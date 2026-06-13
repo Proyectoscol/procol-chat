@@ -23,6 +23,8 @@ const {
   callFailureReason,
   startCall,
   rejectCall,
+  register,
+  unregister,
 } = useJsSipSession();
 const callsStore = useCallsStore();
 const { activeCall, formattedCallDuration, endCall } = useCallActions();
@@ -98,6 +100,23 @@ watch(
 const hasAsteriskCall = computed(
   () => activeCall.value?.provider === VOICE_CALL_PROVIDERS.ASTERISK
 );
+
+// --- Manual SIP reconnect (fixes stale WebSocket contact in Asterisk) ---
+// unregister→register cycle opens a fresh WebSocket and forces Asterisk to
+// update the contact binding, fixing Q.850:34 on incoming calls.
+const isReconnectingManual = ref(false);
+const reconnect = async () => {
+  if (isReconnectingManual.value || hasAsteriskCall.value || isDialingOut.value)
+    return;
+  isReconnectingManual.value = true;
+  unregister();
+  await new Promise(resolve => {
+    setTimeout(resolve, 800);
+  });
+  await register();
+  isReconnectingManual.value = false;
+};
+
 const isMuted = ref(false);
 const isHeld = ref(false);
 
@@ -219,6 +238,20 @@ const formatRelative = ts => (ts ? new Date(ts).toLocaleString() : '');
           {{ sipStatus.label }}
         </span>
       </div>
+      <!-- Reconnect button — fixes stale WebSocket contact in Asterisk -->
+      <button
+        v-tooltip.bottom="$t('VOICE_TELEPHONY.PANEL.RECONNECT')"
+        type="button"
+        :disabled="isReconnectingManual || hasAsteriskCall || isDialingOut"
+        class="flex items-center justify-center size-7 rounded-lg text-n-slate-11 hover:bg-n-alpha-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        @click="reconnect"
+      >
+        <Icon
+          icon="i-ph-arrows-clockwise-bold"
+          class="size-4"
+          :class="isReconnectingManual ? 'animate-spin' : ''"
+        />
+      </button>
     </header>
 
     <!-- 3-column body: [dial controls] [directory] [recents] -->
