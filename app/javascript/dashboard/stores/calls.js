@@ -6,9 +6,10 @@ import { TERMINAL_STATUSES } from 'dashboard/helper/voice';
 import { defineStore } from 'pinia';
 
 const teardownByProvider = call => {
-  if (call?.provider === VOICE_CALL_PROVIDERS.WHATSAPP) {
+  if (!call) return;
+  if (call.provider === VOICE_CALL_PROVIDERS.WHATSAPP) {
     cleanupWhatsappSession();
-  } else if (call?.provider === VOICE_CALL_PROVIDERS.ASTERISK) {
+  } else if (call.provider === VOICE_CALL_PROVIDERS.ASTERISK) {
     // FIX crítico del plan: sin esta rama el micrófono queda abierto al colgar en
     // Asterisk. cleanupSipSession() detiene los tracks de getUserMedia de JsSIP.
     cleanupSipSession();

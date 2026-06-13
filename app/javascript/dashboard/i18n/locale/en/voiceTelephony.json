@@ -58,7 +58,9 @@
       "UNAVAILABLE": "Unavailable",
       "NO_ANSWER": "No answer",
       "CANCELED": "Call canceled",
-      "UNKNOWN": "Call ended"
+      "UNKNOWN": "Call ended",
+      "INVALID_NUMBER": "Invalid number",
+      "MIC_DENIED": "Microphone access denied"
     }
   }
 }

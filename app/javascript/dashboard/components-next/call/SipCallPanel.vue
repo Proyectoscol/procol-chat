@@ -53,6 +53,8 @@ const FAILURE_CAUSE_MAP = {
   Unavailable: 'VOICE_TELEPHONY.CALL_FAILURE.UNAVAILABLE',
   'No Answer': 'VOICE_TELEPHONY.CALL_FAILURE.NO_ANSWER',
   Canceled: 'VOICE_TELEPHONY.CALL_FAILURE.CANCELED',
+  'Invalid Number': 'VOICE_TELEPHONY.CALL_FAILURE.INVALID_NUMBER',
+  'Mic Denied': 'VOICE_TELEPHONY.CALL_FAILURE.MIC_DENIED',
 };
 const callFailureLabel = computed(() => {
   if (!callFailureReason.value) return '';
@@ -107,6 +109,7 @@ const placeOutboundCall = async number => {
   if (!session) return;
   callsStore.addCall({
     callSid: session.id,
+    phoneNumber: number,
     conversationId: null,
     inboxId: null,
     callDirection: VOICE_CALL_DIRECTION.OUTBOUND,

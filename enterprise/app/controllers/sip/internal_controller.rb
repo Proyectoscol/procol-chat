@@ -80,10 +80,14 @@ class Sip::InternalController < ApplicationController
     ActiveSupport::SecurityUtils.secure_compare(provided, expected)
   end
 
-  # Allowlist del VPS-2. Vacía (no seteada) → se permite (dev). En prod se setea
-  # SIP_ALLOWED_IPS con la(s) IP(s) pública(s) del VPS-2.
+  # Allowlist del VPS-2. Vacía = allow-all (dev/staging). En PRODUCCIÓN setear
+  # SIP_ALLOWED_IPS con la(s) IP(s) pública(s) del VPS-2 separadas por coma.
+  # IMPORTANTE: sin esta variable cualquier IP puede intentar este endpoint.
   def allowed_ip?
     allowed = ENV.fetch('SIP_ALLOWED_IPS', '').split(',').map(&:strip).reject(&:blank?)
+    if allowed.empty? && Rails.env.production?
+      Rails.logger.warn '[SIP] SIP_ALLOWED_IPS not set in production — IP allowlist disabled'
+    end
     return true if allowed.empty?
 
     allowed.include?(request.remote_ip)

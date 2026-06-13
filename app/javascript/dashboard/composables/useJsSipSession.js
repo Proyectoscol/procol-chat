@@ -3,6 +3,7 @@
 // lleva los headers de devise-token-auth (access-token/token-type/client/uid) en
 // defaults.headers.common. El `import axios from 'axios'` crudo NO los tiene → 401.
 import { readonly, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import JsSIP from 'jssip';
 import { useCallsStore } from 'dashboard/stores/calls';
 import {
@@ -244,7 +245,12 @@ const attachSessionHandlers = session => {
       c => c.callSid === session.id && !c.isActive
     );
     if (stale) store.dismissCall(session.id);
-    store.clearActiveCall();
+    // Solo limpiar si la sesión sigue activa en el store — buildCallActions.endCall()
+    // ya llama clearActiveCall() síncronamente al colgar localmente; sin esta guarda
+    // el handler asíncrono lo llama de nuevo con active=undefined.
+    if (store.calls.find(c => c.callSid === session.id && c.isActive)) {
+      store.clearActiveCall();
+    }
   });
 
   // Llamada rechazada, ocupada, sin respuesta, etc.
@@ -263,7 +269,9 @@ const attachSessionHandlers = session => {
       c => c.callSid === session.id && !c.isActive
     );
     if (stale) store.dismissCall(session.id);
-    store.clearActiveCall();
+    if (store.calls.find(c => c.callSid === session.id && c.isActive)) {
+      store.clearActiveCall();
+    }
   });
 };
 
@@ -367,10 +375,8 @@ export const setSipCallMuted = muted => {
 };
 
 export function useJsSipSession() {
-  // Inyecta el traductor del composable a los handlers de módulo (notificación).
-  const setTranslator = t => {
-    translate = t;
-  };
+  const { t } = useI18n();
+  translate = t;
 
   // Pide la credencial y arranca el UA (REGISTER). Se llama al login si el usuario
   // es inbox-member de Voz. Idempotente: si ya hay UA, no crea otro.
@@ -409,12 +415,32 @@ export function useJsSipSession() {
     isReconnecting.value = false;
   };
 
+  const setCallFailure = reason => {
+    callFailureReason.value = reason;
+    setTimeout(() => {
+      callFailureReason.value = '';
+    }, 5000);
+  };
+
   // Saliente: INVITE de JsSIP a la extensión/destino. Pasamos NUESTRO mediaStream
   // para controlar la liberación del mic en cleanup (FIX).
   const startCall = async target => {
     if (!ua || !isRegistered.value || currentSession) return null;
 
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Prevent SIP URI injection: only allow phone number characters.
+    if (!/^[0-9+*#]{1,30}$/.test(target)) {
+      setCallFailure('Invalid Number');
+      return null;
+    }
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (_) {
+      setCallFailure('Mic Denied');
+      return null;
+    }
+    localStream = stream;
     const session = ua.call(`sip:${target}@${credentials.sip_domain}`, {
       mediaStream: localStream,
       pcConfig: {
@@ -447,7 +473,15 @@ export function useJsSipSession() {
       return;
     }
 
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (_) {
+      setCallFailure('Mic Denied');
+      cleanup();
+      throw new Error('Mic Denied');
+    }
+    localStream = stream;
     currentSession.answer({
       mediaStream: localStream,
       pcConfig: {
@@ -501,7 +535,6 @@ export function useJsSipSession() {
     isRegistered: isRegisteredReadonly,
     isReconnecting: isReconnectingReadonly,
     callFailureReason: callFailureReasonReadonly,
-    setTranslator,
     register,
     unregister,
     startCall,
