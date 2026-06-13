@@ -1,0 +1,66 @@
+{
+  "VOICE_TELEPHONY": {
+    "PROVIDER_LABEL": "Llamada Asterisk",
+    "INCOMING_CALL": {
+      "TITLE": "Llamada entrante",
+      "BODY": "{caller} está llamando"
+    },
+    "CALL_CONTROLS": {
+      "HOLD": "En espera",
+      "RESUME": "Reanudar",
+      "TRANSFER": "Transferir"
+    },
+    "TRANSFER": {
+      "TITLE": "Transferir llamada",
+      "SEARCH_PLACEHOLDER": "Buscar asesores disponibles",
+      "EMPTY": "No hay asesores disponibles",
+      "SUCCESS": "Llamada transferida",
+      "ERROR": "No se pudo transferir la llamada"
+    },
+    "CONFIG": {
+      "TITLE": "Voz (Asterisk)",
+      "PHONE_NUMBER_LABEL": "Número de teléfono (DID)",
+      "IVR_MAPPING_LABEL": "Dígito IVR → mapeo de equipo",
+      "SAVE": "Guardar",
+      "CREATED": "Canal de voz creado"
+    },
+    "PANEL": {
+      "STATUS": {
+        "AVAILABLE": "Disponible",
+        "DISCONNECTED": "Desconectado",
+        "RECONNECTING": "Reconectando"
+      },
+      "TABS": {
+        "DIAL": "Marcar",
+        "DIRECTORY": "Directorio",
+        "RECENTS": "Recientes"
+      },
+      "DIAL": {
+        "PLACEHOLDER": "Ingresa un número",
+        "CALL": "Llamar"
+      },
+      "DIRECTORY": {
+        "EMPTY": "Sin contactos asignados"
+      },
+      "RECENTS": {
+        "EMPTY": "Sin llamadas recientes",
+        "CALL_BACK": "Devolver llamada"
+      },
+      "ACTIVE_CALL": {
+        "MUTE": "Silenciar",
+        "UNMUTE": "Activar micrófono",
+        "HANG_UP": "Colgar"
+      }
+    },
+    "CALL_FAILURE": {
+      "REJECTED": "Llamada rechazada",
+      "BUSY": "Línea ocupada",
+      "UNAVAILABLE": "No disponible",
+      "NO_ANSWER": "Sin respuesta",
+      "CANCELED": "Llamada cancelada",
+      "UNKNOWN": "Llamada finalizada",
+      "INVALID_NUMBER": "Número inválido",
+      "MIC_DENIED": "Acceso al micrófono denegado"
+    }
+  }
+}
