@@ -1,33 +1,65 @@
 # Endpoints internos server-to-server consumidos por la app Stasis (VPS-2) — ENG-3.
-#   GET  /api/v1/internal/sip/routing  → Sip::CallRoutingService (dígito de routing)
-#   POST /api/v1/internal/sip/events   → según `type`: presencia o estado de llamada
+#   GET  /api/v1/internal/sip/routing  → pipeline completo de routing
+#   POST /api/v1/internal/sip/events   → presencia SIP y ciclo de vida de llamadas
 #
-# Seguridad (el POST crea/muta datos → el token da integridad):
-#   1. Token en header X-Sip-Token comparado con secure_compare (tiempo constante).
-#   2. CSRF exento (ApplicationController ya lo hace; explícito por claridad).
-#   3. IP allowlist del VPS-2 (SIP_ALLOWED_IPS); opcional en dev si no está seteado.
+# Seguridad:
+#   1. Token en header X-Sip-Token (secure_compare, tiempo constante).
+#   2. CSRF exento (ApplicationController ya lo hace).
+#   3. IP allowlist del VPS-2 (SIP_ALLOWED_IPS); fail-closed en producción.
 #   4. Throttle 60 req/min por IP en config/initializers/rack_attack.rb.
 # Token inválido/ausente → 401 sin revelar el motivo.
 class Sip::InternalController < ApplicationController
   skip_before_action :verify_authenticity_token, raise: false
   before_action :authenticate_sip_request!
 
+  # GET /api/v1/internal/sip/routing
+  # Params (Stasis app):
+  #   phone      — número llamante en E164 (+57...)
+  #   to         — DID llamado en E164 (channel.dialplan.exten normalizado)
+  #   ivr_digit  — dígito DTMF elegido en IVR (segunda llamada del ciclo)
+  #   linkedid   — ID estable de la llamada (para trazabilidad)
+  #
+  # Respuesta al formato que Stasis espera:
+  #   { action: 'dial',      extension: '1001' }
+  #   { action: 'ivr',       prompt: 'ivr-ciudades' }
+  #   { action: 'voicemail' }
+  #   { action: 'busy',      reason: 'queue_full' | nil }
   def routing
     inbox = resolve_voice_inbox
     return head(:not_found) unless inbox
 
-    render json: Sip::CallRoutingService.call(inbox: inbox, from_number: params[:from])
+    # Pre-check rápido vía Redis antes del pipeline completo (~1 ms vs ~50 ms).
+    if Sip::QueueService.full?(inbox.id, max: queue_max(inbox))
+      return render json: { action: 'busy', reason: 'queue_full' }
+    end
+
+    result = params[:ivr_digit].present? ? route_ivr(inbox) : route_call(inbox)
+
+    # Incrementar cola solo cuando vamos a hacer sonar un teléfono.
+    Sip::QueueService.increment(inbox.id) if result[:action] == 'dial'
+
+    render json: result
   end
 
+  # POST /api/v1/internal/sip/events
+  # Acepta tanto event_type (Stasis app) como type (legado).
   def events
-    case params[:type].to_s
-    when 'register', 'unregister', 'sync'
-      return head(:not_found) unless current_account
+    event_type = (params[:event_type].presence || params[:type]).to_s
+    return render json: { error: 'unknown event type' }, status: :unprocessable_content if event_type.blank?
+    return head(:not_found) unless current_account
 
-      handle_presence_event
+    case event_type
+    when 'sip_register', 'register'
+      presence_service.register(params[:extension])
+    when 'sip_unregister', 'unregister'
+      presence_service.unregister(params[:extension])
+    when 'sync'
+      presence_service.sync(params[:registered])
+    when 'answered'
+      handle_call_answered
+    when 'ended', 'no_answer'
+      handle_call_ended
     when 'call_status'
-      return head(:not_found) unless current_account
-
       handle_call_status_event
     else
       return render json: { error: 'unknown event type' }, status: :unprocessable_content
@@ -38,13 +70,70 @@ class Sip::InternalController < ApplicationController
 
   private
 
-  def handle_presence_event
-    service = Sip::PresenceService.new(account: current_account)
-    case params[:type].to_s
-    when 'register'   then service.register(params[:extension])
-    when 'unregister' then service.unregister(params[:extension])
-    when 'sync'       then service.sync(params[:registered])
+  # --- routing helpers ---
+
+  def route_call(inbox)
+    ctx = Sip::Routing::Context.new(
+      inbox: inbox,
+      from_number: params[:phone],
+      to_number: params[:to]
+    )
+    Sip::RoutingDecisionService.call(ctx)
+    outcome_to_stasis(ctx.outcome, inbox)
+  end
+
+  def route_ivr(inbox)
+    team = Sip::IvrRoutingService.call(inbox: inbox, digit: params[:ivr_digit])
+    return { action: 'voicemail' } unless team
+
+    ctx = Sip::Routing::Context.new(inbox: inbox, team: team)
+    Sip::Routing::Rules::TeamRoundRobinRule.new.call(ctx)
+    outcome_to_stasis(ctx.outcome, inbox)
+  end
+
+  # Traduce el outcome interno del pipeline de reglas al formato que la Stasis
+  # app de Node espera. Solo los actions que Stasis conoce salen aquí.
+  def outcome_to_stasis(outcome, inbox)
+    return { action: 'ivr', prompt: ivr_prompt(inbox) } unless outcome
+
+    case outcome[:action]
+    when :ring_agent, :team_ring
+      { action: 'dial', extension: outcome[:extension].to_s }
+    when :busy_callback
+      { action: 'busy' }
+    when :absent_callback
+      { action: 'ivr', prompt: ivr_prompt(inbox) }
+    when :after_hours, :voicemail
+      { action: 'voicemail' }
+    when :queue_rejected
+      { action: 'busy', reason: 'queue_full' }
+    else
+      { action: 'ivr', prompt: ivr_prompt(inbox) }
     end
+  end
+
+  def ivr_prompt(inbox)
+    channel = inbox.channel
+    cfg = channel.respond_to?(:provider_config) ? channel.provider_config || {} : {}
+    cfg.with_indifferent_access[:ivr_prompt].presence || 'ivr-ciudades'
+  end
+
+  def queue_max(inbox)
+    channel = inbox.channel
+    cfg = channel.respond_to?(:provider_config) ? channel.provider_config || {} : {}
+    (cfg.with_indifferent_access[:max_queue_size] || Sip::QueueService::DEFAULT_MAX).to_i
+  end
+
+  # --- events helpers ---
+
+  def handle_call_answered
+    inbox = resolve_voice_inbox
+    Sip::QueueService.decrement(inbox.id) if inbox
+  end
+
+  def handle_call_ended
+    inbox = resolve_voice_inbox
+    Sip::QueueService.decrement(inbox.id) if inbox
   end
 
   def handle_call_status_event
@@ -56,7 +145,13 @@ class Sip::InternalController < ApplicationController
     ).perform
   end
 
-  # DID (to) → Channel::Voice de la cuenta → inbox de Voz. Reusa la normalización E164.
+  def presence_service
+    @presence_service ||= Sip::PresenceService.new(account: current_account)
+  end
+
+  # --- inbox / auth ---
+
+  # DID (to) → Channel::Voice → inbox de Voz. Normaliza E164 igual que el caller.
   def resolve_voice_inbox
     did = Sip::CallRoutingService.normalize_e164(params[:to])
     return nil if did.blank?

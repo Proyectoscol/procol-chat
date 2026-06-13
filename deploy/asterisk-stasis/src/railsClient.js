@@ -11,9 +11,10 @@ const headers = () => ({
 });
 
 // GET /sip/routing → {action:'dial'|'ivr'|'voicemail'|'busy', extension?, prompt?}
-export async function getRouting({ phone, teamDigit, linkedid }) {
+export async function getRouting({ phone, to, teamDigit, linkedid }) {
   const qs = new URLSearchParams({ linkedid });
   if (phone) qs.set('phone', phone);
+  if (to) qs.set('to', to);       // DID: Rails lo usa para resolver el inbox
   if (teamDigit) qs.set('ivr_digit', teamDigit);
   try {
     const res = await request(`${BASE}/sip/routing?${qs}`, { headers: headers() });
@@ -27,6 +28,8 @@ export async function getRouting({ phone, teamDigit, linkedid }) {
 
 // POST /sip/events → ciclo de vida + presencia.
 // event_type: answered | ended | no_answer | sip_register | sip_unregister
+// `to` se incluye en los payloads de ciclo de vida para que Rails pueda
+// resolver el inbox y decrementar el contador de cola.
 export async function postEvent(payload) {
   try {
     await request(`${BASE}/sip/events`, {

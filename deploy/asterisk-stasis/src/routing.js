@@ -9,6 +9,9 @@ const FALLBACK_CONTEXT = process.env.FALLBACK_CONTEXT || 'from-voicemail';
 export async function handleInbound(client, channel) {
   const linkedid = channel.linkedid || channel.id;
   const phone = normalizeE164(channel.caller?.number);
+  // DID que fue marcado (extensión del dialplan = número de la troncal SIP).
+  // Rails lo usa para resolver el Channel::Voice correcto (resolve_voice_inbox).
+  const to = normalizeE164(channel.dialplan?.exten);
   let answeredAt = null;
 
   // StasisEnd del canal entrante → reportar duración si hubo bridge.
@@ -16,12 +19,13 @@ export async function handleInbound(client, channel) {
     if (answeredAt) {
       reportEnded({
         linkedid,
+        to,
         durationSeconds: Math.round((Date.now() - answeredAt) / 1000),
       });
     }
   });
 
-  const decision = await getRouting({ phone, linkedid });
+  const decision = await getRouting({ phone, to, linkedid });
 
   if (decision.action === 'busy') {
     await channel.hangup().catch(() => {});
@@ -31,9 +35,9 @@ export async function handleInbound(client, channel) {
   if (decision.action === 'dial') {
     const ok = await dialExtension(client, channel, decision.extension, linkedid, () => {
       answeredAt = Date.now();
-    });
+    }, to);
     if (!ok) {
-      await reportNoAnswer({ linkedid, phone });
+      await reportNoAnswer({ linkedid, phone, to });
       return sendToFallback(channel);
     }
     return; // bridge activo; StasisEnd reportará 'ended'
@@ -44,15 +48,15 @@ export async function handleInbound(client, channel) {
     if (!digit) return sendToFallback(channel);
 
     // Round-robin: Rails devuelve el siguiente asesor disponible cada vez.
-    let pick = await getRouting({ teamDigit: digit, linkedid });
+    let pick = await getRouting({ to, teamDigit: digit, linkedid });
     while (pick.action === 'dial') {
       const ok = await dialExtension(client, channel, pick.extension, linkedid, () => {
         answeredAt = Date.now();
-      });
+      }, to);
       if (ok) return;
-      pick = await getRouting({ teamDigit: digit, linkedid });
+      pick = await getRouting({ to, teamDigit: digit, linkedid });
     }
-    await reportNoAnswer({ linkedid, phone });
+    await reportNoAnswer({ linkedid, phone, to });
     return sendToFallback(channel);
   }
 
@@ -62,7 +66,7 @@ export async function handleInbound(client, channel) {
 
 // Origina hacia PJSIP/<extension> y crea un bridge mixing si contesta.
 // Devuelve true si la llamada fue contestada.
-async function dialExtension(client, channel, extension, linkedid, onAnswered) {
+async function dialExtension(client, channel, extension, linkedid, onAnswered, to) {
   const dialed = client.Channel();
   try {
     await dialed.originate({
@@ -93,7 +97,7 @@ async function dialExtension(client, channel, extension, linkedid, onAnswered) {
       if (evt.channel?.state === 'Up' && !answered) {
         answered = true;
         onAnswered?.();
-        reportAnswered({ linkedid, extension });
+        reportAnswered({ linkedid, to, extension });
       }
     });
 
@@ -105,7 +109,7 @@ async function dialExtension(client, channel, extension, linkedid, onAnswered) {
       if (!answered) {
         answered = true;
         onAnswered?.();
-        reportAnswered({ linkedid, extension });
+        reportAnswered({ linkedid, to, extension });
       }
       try {
         const bridge = client.Bridge();
