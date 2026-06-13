@@ -50,6 +50,7 @@ const { width: windowWidth } = useWindowSize();
 const isMobile = computed(() => windowWidth.value < 768);
 
 const accountId = useMapGetter('getCurrentAccountId');
+const currentUser = useMapGetter('getCurrentUser');
 const isFeatureEnabledonAccount = useMapGetter(
   'accounts/isFeatureEnabledonAccount'
 );
@@ -539,6 +540,14 @@ const menuItems = computed(() => {
       icon: 'i-lucide-kanban',
       to: accountScopedRoute('kanban_view'),
       activeOn: ['kanban_view'],
+    },
+    {
+      name: 'Calls',
+      label: t('SIDEBAR.CALLS'),
+      icon: 'i-lucide-phone',
+      to: accountScopedRoute('calls_view'),
+      activeOn: ['calls_view'],
+      hidden: !currentUser.value?.sip_extension,
     },
     {
       name: 'Reports',

@@ -37,7 +37,8 @@
       },
       "DIAL": {
         "PLACEHOLDER": "Ingresa un número",
-        "CALL": "Llamar"
+        "CALL": "Llamar",
+        "CALLING": "Llamando..."
       },
       "DIRECTORY": {
         "EMPTY": "Sin contactos asignados"
@@ -60,7 +61,8 @@
       "CANCELED": "Llamada cancelada",
       "UNKNOWN": "Llamada finalizada",
       "INVALID_NUMBER": "Número inválido",
-      "MIC_DENIED": "Acceso al micrófono denegado"
+      "MIC_DENIED": "Acceso al micrófono denegado",
+      "SIP_ERROR": "Error de conexión SIP"
     }
   }
 }

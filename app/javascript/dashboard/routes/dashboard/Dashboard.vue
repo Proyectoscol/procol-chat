@@ -20,16 +20,11 @@ const FloatingCallWidget = defineAsyncComponent(
   () => import('dashboard/components-next/call/FloatingCallWidget.vue')
 );
 
-const SipCallPanel = defineAsyncComponent(
-  () => import('dashboard/components-next/call/SipCallPanel.vue')
-);
-
 import CopilotLauncher from 'dashboard/components-next/copilot/CopilotLauncher.vue';
 import CopilotContainer from 'dashboard/components/copilot/CopilotContainer.vue';
 
 import MobileSidebarLauncher from 'dashboard/components-next/sidebar/MobileSidebarLauncher.vue';
 import { useCallsStore } from 'dashboard/stores/calls';
-import { useMapGetter } from 'dashboard/composables/store';
 import { useJsSipSession } from 'dashboard/composables/useJsSipSession';
 
 export default {
@@ -43,7 +38,6 @@ export default {
     CopilotContainer,
     FloatingCallWidget,
     MobileSidebarLauncher,
-    SipCallPanel,
   },
   setup() {
     const upgradePageRef = ref(null);
@@ -52,10 +46,6 @@ export default {
     const { width: windowWidth } = useWindowSize();
     const callsStore = useCallsStore();
 
-    // Softphone Asterisk: el panel solo se monta para asesores con extensión SIP
-    // (aislamiento de fallos). register() es idempotente y degrada limpio (404 →
-    // no-op) para asesores sin SipIdentity, así que es seguro llamarlo siempre.
-    const currentUser = useMapGetter('getCurrentUser');
     const { register: registerSipSession } = useJsSipSession();
     onMounted(() => {
       nextTick(() => registerSipSession());
@@ -69,7 +59,6 @@ export default {
       windowWidth,
       hasActiveCall: computed(() => callsStore.hasActiveCall),
       hasIncomingCall: computed(() => callsStore.hasIncomingCall),
-      hasSipExtension: computed(() => !!currentUser.value?.sip_extension),
     };
   },
   data() {
@@ -180,12 +169,6 @@ export default {
         />
         <CopilotContainer />
         <FloatingCallWidget v-if="hasActiveCall || hasIncomingCall" />
-        <aside
-          v-if="hasSipExtension"
-          class="w-80 shrink-0 h-full overflow-hidden"
-        >
-          <SipCallPanel />
-        </aside>
       </template>
       <AddAccountModal
         :show="showCreateAccountModal"

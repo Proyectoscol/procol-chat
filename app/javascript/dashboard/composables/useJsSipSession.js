@@ -274,7 +274,16 @@ const attachSessionHandlers = session => {
   // Llamada rechazada, ocupada, sin respuesta, etc.
   session.on('failed', e => {
     // eslint-disable-next-line no-console
-    console.log('[SIP] Llamada fallida:', e?.cause);
+    console.log(
+      '[SIP] Llamada fallida:',
+      e?.cause,
+      '| SIP status:',
+      e?.message?.status_code,
+      '| reason:',
+      e?.message?.reason_phrase,
+      '| originator:',
+      e?.originator
+    );
     stopRingback();
     callFailureReason.value = e?.cause || '';
     setTimeout(() => {
