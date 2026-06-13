@@ -1,0 +1,24 @@
+[Unit]
+Description=Procol Asterisk Stasis Routing App
+Documentation=https://github.com/Proyectoscol/procol-chat
+After=asterisk.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=asterisk
+Group=asterisk
+WorkingDirectory=/opt/procol-stasis
+EnvironmentFile=/opt/procol-stasis/.env
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=procol-stasis
+
+# Reiniciar incluso en exit 0 (por si Asterisk aún no está listo)
+RestartForceExitStatus=0
+
+[Install]
+WantedBy=multi-user.target

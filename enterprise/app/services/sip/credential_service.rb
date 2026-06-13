@@ -34,11 +34,26 @@ class Sip::CredentialService
       sip_password: identity.sip_password,
       wss_url: wss_url,
       sip_domain: ENV.fetch('SIP_WSS_HOST', nil),
-      ice_servers: Call.default_ice_servers
+      ice_servers: ice_servers
     }
   end
 
   private
+
+  def ice_servers
+    servers = Call.default_ice_servers.dup
+    turn_user = ENV.fetch('TURN_USERNAME', nil)
+    turn_cred = ENV.fetch('TURN_CREDENTIAL', nil)
+    turn_host = ENV.fetch('SIP_WSS_HOST', nil)
+    if turn_host.present? && turn_user.present? && turn_cred.present?
+      servers << {
+        urls: ["turn:#{turn_host}:3478"],
+        username: turn_user,
+        credential: turn_cred
+      }
+    end
+    servers
+  end
 
   # nil si SIP_WSS_HOST no está configurado → register() falla silenciosamente
   # (comportamiento correcto en dev sin FreePBX).

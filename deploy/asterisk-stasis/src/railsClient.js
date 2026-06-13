@@ -2,34 +2,31 @@
 // Stateless: una petición por decisión. Token compartido (constant-time en Rails).
 import { request } from 'undici';
 
-const BASE = process.env.RAILS_BASE_URL;
-const SECRET = process.env.RAILS_SIP_SECRET;
+const BASE = process.env.RAILS_INTERNAL_URL; // e.g. https://chat.example.com/api/v1/internal
+const TOKEN = process.env.SIP_INTERNAL_TOKEN;
 
 const headers = () => ({
   'Content-Type': 'application/json',
-  'X-Asterisk-Token': SECRET,
+  'X-Asterisk-Token': TOKEN,
 });
 
-// GET /sip/routing → decisión de enrutamiento.
-// Devuelve { extension, agent_id } | { ivr: true } | { voicemail: true }
+// GET /sip/routing → {action:'dial'|'ivr'|'voicemail'|'busy', extension?, prompt?}
 export async function getRouting({ phone, teamDigit, linkedid }) {
   const qs = new URLSearchParams({ linkedid });
   if (phone) qs.set('phone', phone);
-  if (teamDigit) qs.set('team_digit', teamDigit);
+  if (teamDigit) qs.set('ivr_digit', teamDigit);
   try {
-    const res = await request(`${BASE}/sip/routing?${qs}`, {
-      headers: headers(),
-    });
-    if (res.statusCode !== 200) return { fallback: true };
+    const res = await request(`${BASE}/sip/routing?${qs}`, { headers: headers() });
+    if (res.statusCode !== 200) return { action: 'voicemail' };
     return await res.body.json();
   } catch {
-    // FIX-3/aislamiento: si Rails no responde, fallback local (el caller manda a IVR/cola).
-    return { fallback: true };
+    // Aislamiento: si Rails no responde, fallback local.
+    return { action: 'voicemail' };
   }
 }
 
 // POST /sip/events → ciclo de vida + presencia.
-// type: ringing | answered | ended | missed | sip_register | sip_unregister
+// event_type: answered | ended | no_answer | sip_register | sip_unregister
 export async function postEvent(payload) {
   try {
     await request(`${BASE}/sip/events`, {
@@ -38,6 +35,6 @@ export async function postEvent(payload) {
       body: JSON.stringify(payload),
     });
   } catch {
-    // No-op: los eventos son best-effort; el estado de la llamada no debe romper la voz.
+    // No-op: los eventos son best-effort; la voz nunca rompe por esto.
   }
 }
