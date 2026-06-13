@@ -17,7 +17,7 @@ module Sip
           return :continue if ctx.shared_number
 
           routing = Sip::CallRoutingService.call(inbox: ctx.inbox, from_number: ctx.from_number)
-          return :continue if routing[:ivr]
+          return :continue if routing[:action] == 'ivr'
 
           agent = routing[:agent]
           ctx.assigned_agent = agent
