@@ -169,6 +169,11 @@ class Rack::Attack
     req.ip if req.path_without_extentions.start_with?('/api/v1/internal/sip')
   end
 
+  ## SIP credential endpoint — limita solicitudes por usuario autenticado ###
+  throttle('sip/credential', limit: 20, period: 60) do |req|
+    req.env['warden']&.user&.id if req.path.include?('/sip/credential')
+  end
+
   ##-----------------------------------------------##
 
   ###-----------------------------------------------###

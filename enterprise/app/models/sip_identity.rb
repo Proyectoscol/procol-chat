@@ -44,4 +44,8 @@ class SipIdentity < ApplicationRecord
   def online?
     sip_active_contacts.to_i.positive?
   end
+
+  def inspect
+    "#<SipIdentity id=#{id} sip_extension=#{sip_extension} [FILTERED]>"
+  end
 end
