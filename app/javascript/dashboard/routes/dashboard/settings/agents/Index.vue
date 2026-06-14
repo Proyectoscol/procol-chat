@@ -1,6 +1,6 @@
 <script setup>
 import { useAlert } from 'dashboard/composables';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import Avatar from 'next/avatar/Avatar.vue';
 import { useI18n } from 'vue-i18n';
 import { picoSearch } from '@scmmishra/pico-search';
@@ -12,6 +12,7 @@ import {
 
 import AddAgent from './AddAgent.vue';
 import EditAgent from './EditAgent.vue';
+import SipExtensionModal from './SipExtensionModal.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -24,9 +25,11 @@ const loading = ref({});
 const showAddPopup = ref(false);
 const showDeletePopup = ref(false);
 const showEditPopup = ref(false);
+const showSipPopup = ref(false);
 const agentAPI = ref({ message: '' });
 const currentAgent = ref({});
 const searchQuery = ref('');
+const sipData = ref({});
 
 const deleteConfirmText = computed(
   () => `${t('AGENT_MGMT.DELETE.CONFIRM.YES')} ${currentAgent.value.name}`
@@ -39,6 +42,21 @@ const deleteMessage = computed(() => {
 });
 
 const agentList = computed(() => getters['agents/getAgents'].value);
+
+watch(
+  agentList,
+  agents => {
+    agents.forEach(agent => {
+      if (agent.sip_extension !== undefined && !sipData.value[agent.id]) {
+        sipData.value[agent.id] = {
+          sip_extension: agent.sip_extension,
+          sip_active: agent.sip_active,
+        };
+      }
+    });
+  },
+  { immediate: true }
+);
 
 const filteredAgentList = computed(() => {
   const query = searchQuery.value.trim();
@@ -119,6 +137,17 @@ const openEditPopup = agent => {
 };
 const hideEditPopup = () => {
   showEditPopup.value = false;
+};
+
+const openSipPopup = agent => {
+  showSipPopup.value = true;
+  currentAgent.value = agent;
+};
+const hideSipPopup = () => {
+  showSipPopup.value = false;
+};
+const onSipSaved = ({ agentId, sip_extension, sip_active }) => {
+  sipData.value[agentId] = { sip_extension, sip_active };
 };
 
 const openDeletePopup = agent => {
@@ -251,9 +280,34 @@ const confirmDeletion = () => {
                   {{ $t('AGENT_MGMT.LIST.VERIFICATION_PENDING') }}
                 </span>
               </div>
+              <div class="flex items-center gap-2">
+                <span class="i-ph-phone size-3.5 text-n-slate-10" />
+                <span class="text-sm text-n-slate-11">
+                  {{
+                    sipData[agent.id]?.sip_extension ||
+                    $t('VOICE_TELEPHONY.SIP_NO_EXTENSION')
+                  }}
+                </span>
+                <span
+                  class="inline-block size-2 rounded-full"
+                  :class="
+                    sipData[agent.id]?.sip_extension &&
+                    sipData[agent.id]?.sip_active !== false
+                      ? 'bg-n-teal-9'
+                      : 'bg-n-slate-6'
+                  "
+                />
+              </div>
             </div>
           </div>
           <div class="flex justify-end gap-3">
+            <Button
+              v-tooltip.top="$t('VOICE_TELEPHONY.EDIT_SIP_EXTENSION')"
+              icon="i-ph-phone"
+              slate
+              sm
+              @click="openSipPopup(agent)"
+            />
             <Button
               v-if="showEditAction(agent)"
               v-tooltip.top="$t('AGENT_MGMT.EDIT.BUTTON_TEXT')"
@@ -279,6 +333,18 @@ const confirmDeletion = () => {
 
     <woot-modal v-model:show="showAddPopup" :on-close="hideAddPopup">
       <AddAgent @close="hideAddPopup" />
+    </woot-modal>
+
+    <woot-modal v-model:show="showSipPopup" :on-close="hideSipPopup">
+      <SipExtensionModal
+        v-if="showSipPopup"
+        :agent-id="currentAgent.id"
+        :agent-name="currentAgent.name"
+        :sip-extension="sipData[currentAgent.id]?.sip_extension"
+        :sip-active="sipData[currentAgent.id]?.sip_active"
+        @close="hideSipPopup"
+        @saved="onSipSaved"
+      />
     </woot-modal>
 
     <woot-modal v-model:show="showEditPopup" :on-close="hideEditPopup">

@@ -105,6 +105,7 @@ Rails.application.routes.draw do
             namespace :sip do
               get :credential, to: 'credential#show'
               get :recent_calls, to: 'recent_calls#index'
+              patch 'identities/:agent_id', to: 'identities#update', as: :sip_identity
             end
           end
           resources :callbacks, only: [] do

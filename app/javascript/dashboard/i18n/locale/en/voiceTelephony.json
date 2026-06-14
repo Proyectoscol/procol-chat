@@ -55,6 +55,15 @@
       "RECONNECT": "Reconnect SIP"
     },
     "CALL_CONTACT": "Call contact",
+    "SIP_EXTENSION": "SIP Extension",
+    "SIP_EXTENSION_PLACEHOLDER": "e.g. 9001",
+    "SIP_PASSWORD": "SIP Password",
+    "SIP_PASSWORD_PLACEHOLDER": "Leave blank to keep unchanged",
+    "SIP_ACTIVE": "Active",
+    "SIP_NO_EXTENSION": "No extension",
+    "EDIT_SIP_EXTENSION": "Edit SIP Extension",
+    "SIP_SETTINGS_SAVED": "SIP settings saved",
+    "SIP_SAVE_ERROR": "Could not save SIP settings",
     "CALL_FAILURE": {
       "REJECTED": "Call rejected",
       "BUSY": "Line busy",

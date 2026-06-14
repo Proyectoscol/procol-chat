@@ -11,6 +11,10 @@ module Enterprise::Api::V1::Accounts::AgentsController
 
   private
 
+  def agents
+    super.includes(:sip_identities)
+  end
+
   def associate_agent_with_custom_role
     @agent.current_account_user.update!(custom_role_id: params[:custom_role_id])
   end

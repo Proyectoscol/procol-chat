@@ -12,3 +12,8 @@ json.name resource.name
 json.role resource.role
 json.thumbnail resource.avatar_url
 json.custom_role_id resource.current_account_user&.custom_role_id if ChatwootApp.enterprise?
+if ChatwootApp.enterprise?
+  sip = resource.sip_identities.find { |s| s.account_id == Current.account.id }
+  json.sip_extension sip&.sip_extension
+  json.sip_active sip ? !sip.sip_absence_mode : nil
+end
