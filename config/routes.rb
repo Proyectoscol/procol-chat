@@ -101,12 +101,11 @@ Rails.application.routes.draw do
           end
           resources :assignable_agents, only: [:index]
           resource :audit_logs, only: [:show]
-          if ChatwootApp.enterprise?
-            namespace :sip do
-              get :credential, to: 'credential#show'
-              get :recent_calls, to: 'recent_calls#index'
-              patch 'identities/:agent_id', to: 'identities#update', as: :sip_identity
-            end
+          # VoIP ProCall — rutas propias, fuera del guard enterprise.
+          namespace :sip do
+            get :credential, to: 'credential#show'
+            get :recent_calls, to: 'recent_calls#index'
+            patch 'identities/:agent_id', to: 'identities#update', as: :sip_identity
           end
           resources :callbacks, only: [] do
             collection do
@@ -651,12 +650,11 @@ Rails.application.routes.draw do
     end
   end
 
-  # VoIP Asterisk — endpoints internos server-to-server desde la app Stasis (VPS-2).
-  if ChatwootApp.enterprise?
-    scope path: 'api/v1/internal/sip', controller: 'sip/internal' do
-      get 'routing', action: :routing, as: :sip_internal_routing
-      post 'events', action: :events, as: :sip_internal_events
-    end
+  # VoIP Asterisk — endpoints internos server-to-server desde Stasis app (VPS-2).
+  # Fuera del guard enterprise: estas rutas son propias de ProCall, no de Chatwoot.
+  scope path: 'api/v1/internal/sip', controller: 'sip/internal' do
+    get 'routing', action: :routing, as: :sip_internal_routing
+    post 'events', action: :events, as: :sip_internal_events
   end
 
   get 'microsoft/callback', to: 'microsoft/callbacks#show'
