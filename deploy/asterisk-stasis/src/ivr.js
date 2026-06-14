@@ -9,6 +9,7 @@ export async function playPromptAndGetDigit(
   return new Promise((resolve) => {
     let playback = null;
     let settled = false;
+    let hungUp = false;
 
     const settle = (digit) => {
       if (settled) return;
@@ -16,16 +17,24 @@ export async function playPromptAndGetDigit(
       clearTimeout(timer);
       channel.removeListener('ChannelDtmfReceived', onDigit);
       channel.removeListener('ChannelHangupRequest', onHangup);
+      channel.removeListener('StasisEnd', onHangup);
       playback?.stop().catch(() => {});
-      resolve(digit);
+      resolve({ digit, hungUp });
     };
 
-    const onDigit = (evt) => settle(evt.digit);
-    const onHangup = () => settle(null);
+    const onDigit = (evt) => {
+      if (hungUp) return;
+      settle(evt.digit);
+    };
+    const onHangup = () => {
+      hungUp = true;
+      settle(null);
+    };
     const timer = setTimeout(() => settle(null), DIGIT_TIMEOUT_MS);
 
     channel.on('ChannelDtmfReceived', onDigit);
     channel.once('ChannelHangupRequest', onHangup);
+    channel.once('StasisEnd', onHangup);
 
     channel
       .play({ media: `sound:${prompt}` })

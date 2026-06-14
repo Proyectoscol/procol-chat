@@ -45,7 +45,8 @@ export async function handleInbound(client, channel) {
   }
 
   if (decision.action === 'ivr') {
-    const digit = await playPromptAndGetDigit(client, channel, decision.prompt);
+    const { digit, hungUp } = await playPromptAndGetDigit(client, channel, decision.prompt);
+    if (hungUp) return;
     if (!digit) return sendToFallback(channel);
 
     // Round-robin: Rails devuelve el siguiente asesor disponible cada vez.
@@ -89,6 +90,8 @@ async function dialExtension(client, channel, extension, linkedid, onAnswered, t
     const timer = setTimeout(() => {
       if (!bridged) {
         dialed.hangup().catch(() => {});
+        channel.hangup().catch(() => {});
+        reportNoAnswer({ linkedid, phone, to });
         resolve(false);
       }
     }, DIAL_TIMEOUT * 1000 + 2000); // +2s de margen

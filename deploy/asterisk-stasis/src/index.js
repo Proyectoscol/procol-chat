@@ -1,7 +1,13 @@
 // Punto de entrada: conecta a ARI y registra los handlers de routing + presencia.
 import ari from 'ari-client';
+import http from 'http';
 import { handleInbound, blindTransfer } from './routing.js';
 import { reportPresence } from './events.js';
+
+http.createServer((req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify({ status: 'ok', uptime: Math.round(process.uptime()) }));
+}).listen(3001, '127.0.0.1');
 
 const { ARI_URL, ARI_USERNAME, ARI_PASSWORD, ARI_APP, FALLBACK_CONTEXT } = process.env;
 
