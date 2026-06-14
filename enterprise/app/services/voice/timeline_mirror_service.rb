@@ -41,6 +41,7 @@ class Voice::TimelineMirrorService
   def from_number   = payload[:from_number].to_s
   def to_number     = payload[:to].to_s
   def duration_sec  = payload[:duration_seconds].to_i
+  def direction     = payload[:call_direction].to_s
 
   def resolve_inbox
     did = Sip::CallRoutingService.normalize_e164(to_number)
