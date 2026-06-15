@@ -4,6 +4,7 @@
 #
 # Si el contacto no tiene conversaciones abiertas/pendientes, crea una en el inbox de Voz.
 # Idempotente: un mismo linkedid no genera duplicados en la misma conversación.
+# Si la llamada fue contestada (duration > 0), asigna la conversación al asesor que atendió.
 class Voice::TimelineMirrorService
   def self.perform(payload)
     new(payload).perform
@@ -20,7 +21,7 @@ class Voice::TimelineMirrorService
     contact = find_or_create_contact(inbox)
     return nil unless contact
 
-    agent_info = find_agent_info(inbox.account_id)
+    agent         = sip_agent(inbox.account_id)
     conversations = target_conversations(contact, inbox)
 
     conversations.each do |conversation|
@@ -30,9 +31,11 @@ class Voice::TimelineMirrorService
         account_id:            conversation.account_id,
         inbox_id:              conversation.inbox_id,
         message_type:          :activity,
-        content:               activity_content(agent_info),
+        content:               activity_content(agent),
         additional_attributes: { linkedid: linkedid }.compact
       )
+
+      assign_agent_if_answered(conversation, agent)
     end
   end
 
@@ -108,20 +111,33 @@ class Voice::TimelineMirrorService
                 .exists?
   end
 
-  # Busca el asesor por extensión SIP dentro de la cuenta.
-  def find_agent_info(account_id)
+  # Resuelve el User a partir de la extensión SIP del payload.
+  def sip_agent(account_id)
     ext = payload[:to_extension].to_s.gsub(/\D/, '')
     return nil if ext.blank?
 
-    identity = SipIdentity.find_by(account_id: account_id, sip_extension: ext)
-    return nil unless identity
-
-    "#{identity.user.name} (ext. #{ext})"
+    SipIdentity.find_by(account_id: account_id, sip_extension: ext)&.user
   end
 
-  def activity_content(agent_info)
+  # Asigna la conversación al asesor solo si la llamada fue contestada y la
+  # conversación aún no tiene asignado. Usa el service oficial de Chatwoot
+  # para que dispare el evento ASSIGNEE_CHANGED y actualice el ActionCable.
+  def assign_agent_if_answered(conversation, agent)
+    return unless duration_sec.positive?
+    return unless agent
+    return unless conversation.assignee_id.nil?
+
+    Conversations::AssignmentService.new(
+      conversation: conversation,
+      assignee_id:  agent.id
+    ).perform
+  rescue StandardError => e
+    Rails.logger.warn "[VoIP] assign_agent_if_answered failed conv=#{conversation.id}: #{e.message}"
+  end
+
+  def activity_content(agent)
     dir_label  = direction == 'outbound' ? 'Llamada saliente' : 'Llamada entrante'
-    agent_text = agent_info ? " | Asesor: #{agent_info}" : ''
+    agent_text = agent ? " | Asesor: #{agent.name} (ext. #{payload[:to_extension]})" : ''
     "[#{dir_label}] Duración: #{format_duration(duration_sec)} | Estado: #{status_label} | Número: #{from_number}#{agent_text}"
   end
 
