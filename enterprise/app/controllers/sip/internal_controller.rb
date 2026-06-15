@@ -140,7 +140,7 @@ class Sip::InternalController < ApplicationController
     Sip::QueueService.decrement(inbox.id)
 
     stasis_payload = params.permit(:event_type, :from_number, :to, :linkedid,
-                                   :duration_seconds, :call_direction, :cause).to_h
+                                   :duration_seconds, :call_direction, :cause, :to_extension).to_h
     return if stasis_payload[:from_number].blank? || stasis_payload[:linkedid].blank?
 
     Sip::AsteriskCallLogger.call(inbox: inbox, payload: stasis_payload)

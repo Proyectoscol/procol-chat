@@ -1,11 +1,9 @@
-# Crea un activity message de llamada en la conversación activa del contacto.
+# Crea un activity message de llamada en TODAS las conversaciones activas del contacto.
 # Recibe el payload crudo de Stasis (vía InternalController#handle_call_ended /
 # handle_call_no_answer) para no depender del modelo Call.
 #
-# Orden de preferencia para la conversación donde se espeja:
-#   1. WhatsApp abierta del contacto (canal más rico)
-#   2. Cualquier conversación abierta fuera del inbox de Voz
-#   3. Fallback: conversación en el inbox de Voz (crea si no existe)
+# Si el contacto no tiene conversaciones abiertas/pendientes, crea una en el inbox de Voz.
+# Idempotente: un mismo linkedid no genera duplicados en la misma conversación.
 class Voice::TimelineMirrorService
   def self.perform(payload)
     new(payload).perform
@@ -22,26 +20,32 @@ class Voice::TimelineMirrorService
     contact = find_or_create_contact(inbox)
     return nil unless contact
 
-    conversation = find_or_create_conversation(inbox, contact)
-    return nil unless conversation
+    agent_info = find_agent_info(inbox.account_id)
+    conversations = target_conversations(contact, inbox)
 
-    conversation.messages.create!(
-      account_id:   conversation.account_id,
-      inbox_id:     conversation.inbox_id,
-      message_type: :activity,
-      content:      activity_content
-    )
+    conversations.each do |conversation|
+      next if already_recorded?(conversation, linkedid)
+
+      conversation.messages.create!(
+        account_id:            conversation.account_id,
+        inbox_id:              conversation.inbox_id,
+        message_type:          :activity,
+        content:               activity_content(agent_info),
+        additional_attributes: { linkedid: linkedid }.compact
+      )
+    end
   end
 
   private
 
   attr_reader :payload
 
-  def event_type    = payload[:event_type].to_s
-  def from_number   = payload[:from_number].to_s
-  def to_number     = payload[:to].to_s
-  def duration_sec  = payload[:duration_seconds].to_i
-  def direction     = payload[:call_direction].to_s
+  def event_type   = payload[:event_type].to_s
+  def from_number  = payload[:from_number].to_s
+  def to_number    = payload[:to].to_s
+  def duration_sec = payload[:duration_seconds].to_i
+  def direction    = payload[:call_direction].to_s
+  def linkedid     = payload[:linkedid].to_s
 
   def resolve_inbox
     did = Sip::CallRoutingService.normalize_e164(to_number)
@@ -61,25 +65,18 @@ class Voice::TimelineMirrorService
     inbox.account.contacts.find_by(phone_number: phone)
   end
 
-  def find_or_create_conversation(inbox, contact)
-    # 1) WhatsApp abierta
-    wa_conv = contact.conversations
-                     .joins(:inbox)
-                     .where(account_id: inbox.account_id, status: :open)
-                     .where(inboxes: { channel_type: 'Channel::Whatsapp' })
-                     .order(last_activity_at: :desc)
-                     .first
-    return wa_conv if wa_conv
+  # Retorna TODAS las conversaciones abiertas/pendientes del contacto en esta cuenta.
+  # Si no hay ninguna, crea (o reutiliza) una en el inbox de Voz como fallback.
+  def target_conversations(contact, voice_inbox)
+    open_convs = contact.conversations
+                        .where(account_id: voice_inbox.account_id, status: [:open, :pending])
+                        .to_a
+    return open_convs if open_convs.any?
 
-    # 2) Cualquier conversación abierta fuera del inbox de Voz
-    other_conv = contact.conversations
-                        .where(account_id: inbox.account_id, status: :open)
-                        .where.not(inbox_id: inbox.id)
-                        .order(last_activity_at: :desc)
-                        .first
-    return other_conv if other_conv
+    [find_or_create_voice_conversation(contact, voice_inbox)]
+  end
 
-    # 3) Usar/crear conversación en el inbox de Voz
+  def find_or_create_voice_conversation(contact, inbox)
     voice_conv = contact.conversations
                         .where(account_id: inbox.account_id, inbox_id: inbox.id)
                         .where.not(status: :resolved)
@@ -101,9 +98,31 @@ class Voice::TimelineMirrorService
            .last
   end
 
-  def activity_content
-    dir_label = direction == 'outbound' ? 'Llamada saliente' : 'Llamada entrante'
-    "[#{dir_label}] Duración: #{format_duration(duration_sec)} | Estado: #{status_label} | Número: #{from_number}"
+  # Evita duplicados si el mismo evento llega dos veces (retry de Stasis / red).
+  def already_recorded?(conversation, lid)
+    return false if lid.blank?
+
+    conversation.messages
+                .where(message_type: :activity)
+                .where("additional_attributes->>'linkedid' = ?", lid)
+                .exists?
+  end
+
+  # Busca el asesor por extensión SIP dentro de la cuenta.
+  def find_agent_info(account_id)
+    ext = payload[:to_extension].to_s.gsub(/\D/, '')
+    return nil if ext.blank?
+
+    identity = SipIdentity.find_by(account_id: account_id, sip_extension: ext)
+    return nil unless identity
+
+    "#{identity.user.name} (ext. #{ext})"
+  end
+
+  def activity_content(agent_info)
+    dir_label  = direction == 'outbound' ? 'Llamada saliente' : 'Llamada entrante'
+    agent_text = agent_info ? " | Asesor: #{agent_info}" : ''
+    "[#{dir_label}] Duración: #{format_duration(duration_sec)} | Estado: #{status_label} | Número: #{from_number}#{agent_text}"
   end
 
   def format_duration(secs)
@@ -114,7 +133,7 @@ class Voice::TimelineMirrorService
 
   def status_label
     case event_type
-    when 'ended'    then duration_sec.positive? ? 'Contestada' : 'Sin respuesta'
+    when 'ended'     then duration_sec.positive? ? 'Contestada' : 'Sin respuesta'
     when 'no_answer' then 'Sin respuesta'
     else 'Fallida'
     end

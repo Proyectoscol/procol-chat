@@ -5,8 +5,8 @@ import { postEvent } from './railsClient.js';
 export const reportAnswered = ({ linkedid, extension, phone, to }) =>
   postEvent({ event_type: 'answered', linkedid, extension, from_number: phone, to, call_direction: 'inbound' });
 
-export const reportEnded = ({ linkedid, durationSeconds, cause, phone, to }) =>
-  postEvent({ event_type: 'ended', linkedid, duration_seconds: durationSeconds, cause, from_number: phone, to, call_direction: 'inbound' });
+export const reportEnded = ({ linkedid, durationSeconds, cause, phone, to, extension }) =>
+  postEvent({ event_type: 'ended', linkedid, duration_seconds: durationSeconds, cause, from_number: phone, to, to_extension: extension, call_direction: 'inbound' });
 
 export const reportNoAnswer = ({ linkedid, phone, to }) =>
   postEvent({ event_type: 'no_answer', linkedid, from_number: phone, to, call_direction: 'inbound' });

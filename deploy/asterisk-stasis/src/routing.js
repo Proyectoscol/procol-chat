@@ -13,6 +13,7 @@ export async function handleInbound(client, channel) {
   // Rails lo usa para resolver el Channel::Voice correcto (resolve_voice_inbox).
   const to = normalizeE164(channel.dialplan?.exten);
   let answeredAt = null;
+  let answeredByExtension = null;
 
   // StasisEnd del canal entrante → reportar duración si hubo bridge.
   channel.once('StasisEnd', () => {
@@ -21,6 +22,7 @@ export async function handleInbound(client, channel) {
         linkedid,
         phone,
         to,
+        extension: answeredByExtension,
         durationSeconds: Math.round((Date.now() - answeredAt) / 1000),
       });
     }
@@ -36,6 +38,7 @@ export async function handleInbound(client, channel) {
   if (decision.action === 'dial') {
     const ok = await dialExtension(client, channel, decision.extension, linkedid, () => {
       answeredAt = Date.now();
+      answeredByExtension = decision.extension;
     }, to, phone);
     if (!ok) {
       await reportNoAnswer({ linkedid, phone, to });
@@ -54,6 +57,7 @@ export async function handleInbound(client, channel) {
     while (pick.action === 'dial') {
       const ok = await dialExtension(client, channel, pick.extension, linkedid, () => {
         answeredAt = Date.now();
+        answeredByExtension = pick.extension;
       }, to, phone);
       if (ok) return;
       pick = await getRouting({ to, teamDigit: digit, linkedid });
