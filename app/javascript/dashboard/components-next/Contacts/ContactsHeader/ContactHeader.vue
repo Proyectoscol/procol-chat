@@ -28,6 +28,7 @@ const emit = defineEmits([
   'export',
   'createSegment',
   'deleteSegment',
+  'createContact',
 ]);
 </script>
 
@@ -113,6 +114,14 @@ const emit = defineEmits([
             />
           </div>
           <div class="w-px h-4 bg-n-strong" />
+          <!-- PROCOL CUSTOM: "Crear contacto" button — opens the advisor-aware contact creation modal -->
+          <Button
+            :label="$t('CONTACTS_LAYOUT.CREATE_WITH_ADVISOR.BUTTON_LABEL')"
+            size="sm"
+            color="slate"
+            variant="outline"
+            @click="emit('createContact')"
+          />
           <ComposeConversation>
             <template #trigger>
               <Button :label="buttonLabel" size="sm" />

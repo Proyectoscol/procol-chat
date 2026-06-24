@@ -20,6 +20,7 @@ import {
 
 import ContactsHeader from 'dashboard/components-next/Contacts/ContactsHeader/ContactHeader.vue';
 import CreateNewContactDialog from 'dashboard/components-next/Contacts/ContactsForm/CreateNewContactDialog.vue';
+import CreateContactWithAdvisorDialog from 'dashboard/components-next/Contacts/ContactsForm/CreateContactWithAdvisorDialog.vue';
 import ContactExportDialog from 'dashboard/components-next/Contacts/ContactsForm/ContactExportDialog.vue';
 import ContactImportDialog from 'dashboard/components-next/Contacts/ContactsForm/ContactImportDialog.vue';
 import CreateSegmentDialog from 'dashboard/components-next/Contacts/ContactsForm/CreateSegmentDialog.vue';
@@ -51,6 +52,7 @@ const store = useStore();
 const router = useRouter();
 
 const createNewContactDialogRef = ref(null);
+const createContactWithAdvisorDialogRef = ref(null);
 const contactExportDialogRef = ref(null);
 const contactImportDialogRef = ref(null);
 const createSegmentDialogRef = ref(null);
@@ -70,6 +72,9 @@ const activeSegmentName = computed(() => props.activeSegment?.name);
 
 const openCreateNewContactDialog = () => {
   createNewContactDialogRef.value?.dialogRef.open();
+};
+const openCreateContactWithAdvisorDialog = () => {
+  createContactWithAdvisorDialogRef.value?.dialogRef.open();
 };
 const openContactImportDialog = () =>
   contactImportDialogRef.value?.dialogRef.open();
@@ -285,6 +290,7 @@ defineExpose({
     @search="emit('search', $event)"
     @update:sort="emit('update:sort', $event)"
     @add="openCreateNewContactDialog"
+    @create-contact="openCreateContactWithAdvisorDialog"
     @import="openContactImportDialog"
     @export="openContactExportDialog"
     @filter="onToggleFilters"
@@ -310,6 +316,11 @@ defineExpose({
   </ContactsHeader>
 
   <CreateNewContactDialog ref="createNewContactDialogRef" @create="onCreate" />
+  <!-- PROCOL CUSTOM: advisor-aware contact creation dialog -->
+  <CreateContactWithAdvisorDialog
+    ref="createContactWithAdvisorDialogRef"
+    @create="onCreate"
+  />
   <ContactExportDialog ref="contactExportDialogRef" @export="onExport" />
   <ContactImportDialog ref="contactImportDialogRef" @import="onImport" />
   <CreateSegmentDialog ref="createSegmentDialogRef" @create="onCreateSegment" />

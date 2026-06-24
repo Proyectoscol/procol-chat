@@ -656,6 +656,12 @@
         "DISCARD": "Descartar",
         "SEND": "Enviar ({keyCode})"
       }
+    },
+    "CREATE_WITH_ADVISOR": {
+      "BUTTON_LABEL": "Nuevo contacto",
+      "ADVISOR_SECTION_TITLE": "Asesor asignado",
+      "ADVISOR_PLACEHOLDER": "Seleccionar asesor",
+      "ADVISOR_REQUIRED": "Por favor selecciona un asesor"
     }
   }
 }

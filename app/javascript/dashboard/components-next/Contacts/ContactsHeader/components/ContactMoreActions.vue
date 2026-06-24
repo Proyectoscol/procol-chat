@@ -10,12 +10,9 @@ const emit = defineEmits(['add', 'import', 'export']);
 const { t } = useI18n();
 
 const contactMenuItems = [
-  {
-    label: t('CONTACTS_LAYOUT.HEADER.ACTIONS.CONTACT_CREATION.ADD_CONTACT'),
-    action: 'add',
-    value: 'add',
-    icon: 'i-lucide-plus',
-  },
+  // PROCOL CUSTOM: "Add contact" hidden — replaced by the "Crear contacto" button next to "Message".
+  // To restore: remove the `/* hidden */` wrapper and the v-if on DropdownMenu, or delete this comment and uncomment:
+  // { label: t('CONTACTS_LAYOUT.HEADER.ACTIONS.CONTACT_CREATION.ADD_CONTACT'), action: 'add', value: 'add', icon: 'i-lucide-plus' },
   {
     label: t('CONTACTS_LAYOUT.HEADER.ACTIONS.CONTACT_CREATION.EXPORT_CONTACT'),
     action: 'export',

@@ -663,6 +663,12 @@
         "DISCARD": "Discard",
         "SEND": "Send ({keyCode})"
       }
+    },
+    "CREATE_WITH_ADVISOR": {
+      "BUTTON_LABEL": "New contact",
+      "ADVISOR_SECTION_TITLE": "Assigned advisor",
+      "ADVISOR_PLACEHOLDER": "Select advisor",
+      "ADVISOR_REQUIRED": "Please select an advisor"
     }
   }
 }
