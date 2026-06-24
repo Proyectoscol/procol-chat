@@ -579,7 +579,13 @@
       "LIST_EMPTY_STATE_TITLE": "No hay contactos disponibles en esta vista 📋",
       "ACTIVE_EMPTY_STATE_TITLE": "No hay contactos activos por el momento 🌙"
     },
-    "LOAD_MORE": "Cargar más"
+    "LOAD_MORE": "Cargar más",
+    "CREATE_WITH_ADVISOR": {
+      "BUTTON_LABEL": "Nuevo contacto",
+      "ADVISOR_SECTION_TITLE": "Asesor asignado",
+      "ADVISOR_PLACEHOLDER": "Seleccionar asesor",
+      "ADVISOR_REQUIRED": "Por favor selecciona un asesor"
+    }
   },
   "CONTACTS_BULK_ACTIONS": {
     "ASSIGN_LABELS": "Asignar etiquetas",
@@ -656,12 +662,6 @@
         "DISCARD": "Descartar",
         "SEND": "Enviar ({keyCode})"
       }
-    },
-    "CREATE_WITH_ADVISOR": {
-      "BUTTON_LABEL": "Nuevo contacto",
-      "ADVISOR_SECTION_TITLE": "Asesor asignado",
-      "ADVISOR_PLACEHOLDER": "Seleccionar asesor",
-      "ADVISOR_REQUIRED": "Por favor selecciona un asesor"
     }
   }
 }

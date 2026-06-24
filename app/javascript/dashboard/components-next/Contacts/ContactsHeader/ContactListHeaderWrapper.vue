@@ -89,6 +89,7 @@ const onCreate = async contact => {
   try {
     await store.dispatch('contacts/create', contact);
     createNewContactDialogRef.value?.onSuccess();
+    createContactWithAdvisorDialogRef.value?.onSuccess();
     useAlert(
       t('CONTACTS_LAYOUT.HEADER.ACTIONS.CONTACT_CREATION.SUCCESS_MESSAGE')
     );
