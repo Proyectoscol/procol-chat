@@ -16,6 +16,7 @@ import { useMapGetter } from 'dashboard/composables/store';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { useAlert } from 'dashboard/composables';
+import { useJsSipSession } from 'dashboard/composables/useJsSipSession';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 
 const props = defineProps({
@@ -33,7 +34,9 @@ const { t } = useI18n();
 const store = useStore();
 const callsStore = useCallsStore();
 const whatsappCallSession = useWhatsappCallSession();
+const sipSession = useJsSipSession();
 const contactsUiFlags = useMapGetter('contacts/getUIFlags');
+const currentUser = useMapGetter('getCurrentUser');
 const { isCloudFeatureEnabled } = useAccount();
 
 const voiceCallProvider = computed(() => getVoiceCallProvider(props.inbox));
@@ -126,9 +129,44 @@ const startCall = () => {
   if (isWhatsappVoiceInbox.value) return startWhatsappCall();
   return startTwilioCall();
 };
+
+const contactPhone = computed(
+  () => props.chat?.meta?.sender?.phone_number || ''
+);
+
+const showSipButton = computed(
+  () =>
+    !!currentUser.value?.sip_extension &&
+    sipSession.isRegistered.value &&
+    !!contactPhone.value &&
+    !callsStore.hasActiveCall &&
+    !callsStore.hasIncomingCall
+);
+
+const startSipCall = async () => {
+  const session = await sipSession.startCall(contactPhone.value);
+  if (!session) {
+    useAlert(t('CONTACT_PANEL.CALL_FAILED'));
+    return;
+  }
+  callsStore.addCall({
+    callSid: session.id,
+    conversationId: props.chat?.id || null,
+    inboxId: props.inbox?.id || null,
+    callDirection: VOICE_CALL_DIRECTION.OUTBOUND,
+    provider: VOICE_CALL_PROVIDERS.ASTERISK,
+  });
+};
 </script>
 
 <template>
+  <NextButton
+    v-if="showSipButton"
+    sm
+    icon="i-lucide-phone"
+    :label="$t('CONTACT_PANEL.CALL')"
+    @click="startSipCall"
+  />
   <NextButton
     v-if="isVoiceCallInbox"
     v-tooltip.bottom="callButtonTooltip"
