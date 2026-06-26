@@ -184,8 +184,10 @@ const callContact = () => {
             </span>
             <Button
               v-if="phoneNumber && currentUser?.sip_extension"
-              :label="t('CONTACT_PANEL.CALL')"
+              v-tooltip="t('CONTACT_PANEL.CALL')"
+              icon="i-lucide-phone"
               size="sm"
+              ghost
               @click.stop="callContact"
             />
             <div v-if="phoneNumber" class="w-px h-3 truncate bg-n-slate-6" />
