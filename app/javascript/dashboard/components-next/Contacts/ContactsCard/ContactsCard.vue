@@ -182,14 +182,12 @@ const callContact = () => {
             <span v-if="phoneNumber" class="text-sm truncate text-n-slate-11">
               {{ phoneNumber }}
             </span>
-            <button
+            <Button
               v-if="phoneNumber && currentUser?.sip_extension"
-              :title="t('VOICE_TELEPHONY.CALL_CONTACT')"
-              class="inline-flex items-center justify-center size-5 rounded text-n-slate-10 hover:text-n-brand hover:bg-n-slate-3 transition-colors"
+              :label="t('CONTACT_PANEL.CALL')"
+              size="sm"
               @click.stop="callContact"
-            >
-              <span class="i-ph-phone size-3.5" aria-hidden="true" />
-            </button>
+            />
             <div v-if="phoneNumber" class="w-px h-3 truncate bg-n-slate-6" />
             <span
               v-if="countryDetails"

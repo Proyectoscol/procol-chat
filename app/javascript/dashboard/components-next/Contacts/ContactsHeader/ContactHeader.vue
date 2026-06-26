@@ -118,8 +118,6 @@ const emit = defineEmits([
           <Button
             :label="$t('CONTACTS_LAYOUT.CREATE_WITH_ADVISOR.BUTTON_LABEL')"
             size="sm"
-            color="slate"
-            variant="outline"
             @click="emit('createContact')"
           />
           <ComposeConversation>
