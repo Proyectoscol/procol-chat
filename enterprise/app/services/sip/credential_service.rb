@@ -19,12 +19,13 @@ class Sip::CredentialService
     @account = account
   end
 
-  # @return [Hash, nil] credenciales del REGISTER de JsSIP, o nil si el usuario no
+  # @return [Hash, nil] credenciales del REGISTER de JsSIP/PJSIP, o nil si el usuario no
   #   tiene SipIdentity en la cuenta.
   #
   # sip_extension/sip_password salen de la SipIdentity (por asesor). wss_url y
   # sip_domain son CONFIG GLOBAL del servidor (ENV SIP_WSS_HOST/PORT), NO columnas
   # de sip_identities — se construyen dinámicamente, sin tocar la BD.
+  # sip_tls_host/sip_tls_port son para clientes móviles (PJSIP nativo) vía TLS.
   def call
     identity = SipIdentity.find_by(account_id: account.id, user_id: user.id)
     return nil unless identity
@@ -34,6 +35,8 @@ class Sip::CredentialService
       sip_password: identity.sip_password,
       wss_url: wss_url,
       sip_domain: ENV.fetch('SIP_WSS_HOST', nil),
+      sip_tls_host: ENV.fetch('SIP_TLS_HOST', ENV.fetch('SIP_WSS_HOST', nil)),
+      sip_tls_port: ENV.fetch('SIP_TLS_PORT', '5061').to_i,
       ice_servers: ice_servers
     }
   end
