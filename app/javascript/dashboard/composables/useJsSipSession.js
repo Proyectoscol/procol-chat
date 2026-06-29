@@ -60,14 +60,26 @@ const ensureRemoteAudioElement = () => {
   return remoteAudioEl;
 };
 
+/* eslint-disable no-console */
 const playRemoteStream = stream => {
+  console.log(
+    '[SIP Debug] playRemoteStream — tracks:',
+    stream.getTracks().map(t => `${t.kind}:${t.readyState}`)
+  );
   const el = ensureRemoteAudioElement();
   el.srcObject = stream;
-  el.play().catch(err => {
-    // eslint-disable-next-line no-console
-    console.warn('[SIP Call] remote audio play() failed:', err);
-  });
+  el.play()
+    .then(() =>
+      console.log(
+        '[SIP Debug] audio play() OK — muted:',
+        el.muted,
+        'volume:',
+        el.volume
+      )
+    )
+    .catch(err => console.warn('[SIP Call] remote audio play() failed:', err));
 };
+/* eslint-enable no-console */
 
 // Feedback sonoro al colgar.
 const HANGUP_SOUND_URL = '/audio/dashboard/ping.mp3';
@@ -182,7 +194,38 @@ const ICE_GATHERING_TIMEOUT_MS = 400;
 
 const attachSessionHandlers = session => {
   session.on('peerconnection', ({ peerconnection }) => {
+    // eslint-disable-next-line no-console
+    console.log(
+      '[SIP Debug] peerconnection created — signalingState:',
+      peerconnection.signalingState
+    );
+
+    peerconnection.addEventListener('iceconnectionstatechange', () => {
+      // eslint-disable-next-line no-console
+      console.log(
+        '[SIP Debug] iceConnectionState:',
+        peerconnection.iceConnectionState
+      );
+    });
+
+    peerconnection.addEventListener('connectionstatechange', () => {
+      // eslint-disable-next-line no-console
+      console.log(
+        '[SIP Debug] connectionState:',
+        peerconnection.connectionState
+      );
+    });
+
     peerconnection.addEventListener('track', event => {
+      // eslint-disable-next-line no-console
+      console.log(
+        '[SIP Debug] track event — kind:',
+        event.track?.kind,
+        'readyState:',
+        event.track?.readyState,
+        'streams:',
+        event.streams?.length
+      );
       // PJSIP/Android does not include a=msid in SDP, so event.streams is [].
       // Fall back to wrapping event.track in a new MediaStream.
       const stream =
