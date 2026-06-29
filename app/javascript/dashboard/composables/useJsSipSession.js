@@ -183,7 +183,11 @@ const ICE_GATHERING_TIMEOUT_MS = 400;
 const attachSessionHandlers = session => {
   session.on('peerconnection', ({ peerconnection }) => {
     peerconnection.addEventListener('track', event => {
-      if (event.streams && event.streams[0]) playRemoteStream(event.streams[0]);
+      // PJSIP/Android does not include a=msid in SDP, so event.streams is [].
+      // Fall back to wrapping event.track in a new MediaStream.
+      const stream =
+        (event.streams && event.streams[0]) || new MediaStream([event.track]);
+      playRemoteStream(stream);
     });
 
     // ICE gathering timeout: JsSIP 3.13 espera el evento 'icecandidate' con
