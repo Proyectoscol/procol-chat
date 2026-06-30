@@ -106,6 +106,7 @@ Rails.application.routes.draw do
             get :credential, to: 'credential#show'
             get :recent_calls, to: 'recent_calls#index'
             patch 'identities/:agent_id', to: 'identities#update', as: :sip_identity
+            post :fcm_token, to: 'fcm_token#create'
           end
           resources :callbacks, only: [] do
             collection do
