@@ -192,71 +192,73 @@ const cleanup = () => {
 // STUN reflexivo suele llegar en 20-150 ms. Si no llega, se envía con host only.
 const ICE_GATHERING_TIMEOUT_MS = 400;
 
+// Configura los listeners sobre el RTCPeerConnection: track (audio remoto),
+// diagnósticos ICE y el timeout de ICE gathering.
+// Se llama desde el handler 'peerconnection' (llamadas entrantes y salientes
+// normales) Y directamente desde startCall() porque para llamadas SALIENTES
+// JsSIP emite 'peerconnection' sincrónicamente dentro de ua.call(), antes de
+// que attachSessionHandlers pueda registrar su listener en la sesión.
+/* eslint-disable no-console */
+const attachPcHandlers = pc => {
+  console.log(
+    '[SIP Debug] attachPcHandlers — signalingState:',
+    pc.signalingState
+  );
+
+  pc.addEventListener('iceconnectionstatechange', () => {
+    console.log('[SIP Debug] iceConnectionState:', pc.iceConnectionState);
+  });
+
+  pc.addEventListener('connectionstatechange', () => {
+    console.log('[SIP Debug] connectionState:', pc.connectionState);
+  });
+
+  pc.addEventListener('track', event => {
+    console.log(
+      '[SIP Debug] track event — kind:',
+      event.track?.kind,
+      'readyState:',
+      event.track?.readyState,
+      'streams:',
+      event.streams?.length
+    );
+    // PJSIP/Android does not include a=msid in SDP, so event.streams is [].
+    // Fall back to wrapping event.track in a new MediaStream.
+    const stream =
+      (event.streams && event.streams[0]) || new MediaStream([event.track]);
+    playRemoteStream(stream);
+  });
+
+  // ICE gathering timeout: JsSIP 3.13 espera el evento 'icecandidate' con
+  // candidate=null (vía addEventListener, no la propiedad onicecandidate).
+  // dispatchEvent con RTCPeerConnectionIceEvent alcanza ese listener y llama
+  // ready() internamente, enviando el INVITE sin esperar los ~30 s del browser.
+  let iceComplete = false;
+  const iceTimer = setTimeout(() => {
+    if (iceComplete) return;
+    iceComplete = true;
+    try {
+      pc.dispatchEvent(
+        new RTCPeerConnectionIceEvent('icecandidate', { candidate: null })
+      );
+    } catch (_) {
+      /* noop — el gathering completará naturalmente */
+    }
+  }, ICE_GATHERING_TIMEOUT_MS);
+
+  pc.addEventListener('icegatheringstatechange', () => {
+    if (iceComplete) return;
+    if (pc.iceGatheringState === 'complete') {
+      iceComplete = true;
+      clearTimeout(iceTimer);
+    }
+  });
+};
+/* eslint-enable no-console */
+
 const attachSessionHandlers = session => {
   session.on('peerconnection', ({ peerconnection }) => {
-    // eslint-disable-next-line no-console
-    console.log(
-      '[SIP Debug] peerconnection created — signalingState:',
-      peerconnection.signalingState
-    );
-
-    peerconnection.addEventListener('iceconnectionstatechange', () => {
-      // eslint-disable-next-line no-console
-      console.log(
-        '[SIP Debug] iceConnectionState:',
-        peerconnection.iceConnectionState
-      );
-    });
-
-    peerconnection.addEventListener('connectionstatechange', () => {
-      // eslint-disable-next-line no-console
-      console.log(
-        '[SIP Debug] connectionState:',
-        peerconnection.connectionState
-      );
-    });
-
-    peerconnection.addEventListener('track', event => {
-      // eslint-disable-next-line no-console
-      console.log(
-        '[SIP Debug] track event — kind:',
-        event.track?.kind,
-        'readyState:',
-        event.track?.readyState,
-        'streams:',
-        event.streams?.length
-      );
-      // PJSIP/Android does not include a=msid in SDP, so event.streams is [].
-      // Fall back to wrapping event.track in a new MediaStream.
-      const stream =
-        (event.streams && event.streams[0]) || new MediaStream([event.track]);
-      playRemoteStream(stream);
-    });
-
-    // ICE gathering timeout: JsSIP 3.13 espera el evento 'icecandidate' con
-    // candidate=null (vía addEventListener, no la propiedad onicecandidate).
-    // dispatchEvent con RTCPeerConnectionIceEvent alcanza ese listener y llama
-    // ready() internamente, enviando el INVITE sin esperar los ~30 s del browser.
-    let iceComplete = false;
-    const iceTimer = setTimeout(() => {
-      if (iceComplete) return;
-      iceComplete = true;
-      try {
-        peerconnection.dispatchEvent(
-          new RTCPeerConnectionIceEvent('icecandidate', { candidate: null })
-        );
-      } catch (_) {
-        /* noop — el gathering completará naturalmente */
-      }
-    }, ICE_GATHERING_TIMEOUT_MS);
-
-    peerconnection.addEventListener('icegatheringstatechange', () => {
-      if (iceComplete) return;
-      if (peerconnection.iceGatheringState === 'complete') {
-        iceComplete = true;
-        clearTimeout(iceTimer);
-      }
-    });
+    attachPcHandlers(peerconnection);
   });
 
   // 180 Ringing recibido del remoto → arrancar ringback en el llamante.
@@ -525,6 +527,13 @@ export function useJsSipSession() {
     });
     currentSession = session;
     attachSessionHandlers(session);
+
+    // Para llamadas salientes, JsSIP emite 'peerconnection' sincrónicamente dentro
+    // de ua.call() — antes de que attachSessionHandlers registre su listener.
+    // session.connection es el RTCPeerConnection ya creado; aplicamos los handlers
+    // directamente para no perder el evento 'track' del audio remoto.
+    if (session.connection) attachPcHandlers(session.connection);
+
     return session;
   };
 
