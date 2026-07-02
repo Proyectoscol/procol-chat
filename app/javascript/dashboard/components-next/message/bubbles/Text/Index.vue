@@ -17,7 +17,7 @@ const {
 } = useMessageContext();
 
 const templateName = computed(
-  () => additionalAttributes.value?.template_params?.name ?? null
+  () => additionalAttributes.value?.templateParams?.name ?? null
 );
 
 const { hasTranslations, translationContent } =

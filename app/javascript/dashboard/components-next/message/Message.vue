@@ -398,7 +398,7 @@ const shouldRenderMessage = computed(() => {
     props.contentType === CONTENT_TYPES.INTEGRATIONS;
   const isFailedMessage = props.status === MESSAGE_STATUS.FAILED;
   const hasExternalError = !!props.contentAttributes?.externalError;
-  const hasTemplateParams = !!props.additionalAttributes?.template_params;
+  const hasTemplateParams = !!props.additionalAttributes?.templateParams;
 
   return (
     hasAttachments ||
