@@ -2,9 +2,10 @@ class Webhooks::TwilioEventsJob < ApplicationJob
   queue_as :low
 
   def perform(params = {})
+    Rails.logger.info "[TwilioJob] DEBUG MessageType=#{params['MessageType']} InteractiveData=#{params['InteractiveData']&.first(80)}"
     # Skip processing if Body parameter, MediaUrl0, or location data is not present
     # This is to skip processing delivery events being delivered to this endpoint
-    return if params[:Body].blank? && params[:MediaUrl0].blank? && !valid_location_message?(params) && !valid_interactive_message?(params)
+    return if params['Body'].blank? && params['MediaUrl0'].blank? && !valid_location_message?(params) && !valid_interactive_message?(params)
 
     ::Twilio::IncomingMessageService.new(params: params).perform
   end
@@ -12,10 +13,10 @@ class Webhooks::TwilioEventsJob < ApplicationJob
   private
 
   def valid_location_message?(params)
-    params[:MessageType] == 'location' && params[:Latitude].present? && params[:Longitude].present?
+    params['MessageType'] == 'location' && params['Latitude'].present? && params['Longitude'].present?
   end
 
   def valid_interactive_message?(params)
-    params[:MessageType] == 'interactive'
+    params['MessageType'] == 'interactive'
   end
 end
