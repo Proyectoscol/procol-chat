@@ -35,7 +35,9 @@ class Twilio::CallbackController < ApplicationController
       :ExternalUserId,
       :ParentExternalUserId,
       :ProfileUsername,
-      :Username
+      :Username,
+      :FlowData,
+      :InteractiveData
     )
   end
 end

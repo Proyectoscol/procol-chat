@@ -9,14 +9,18 @@ class Twilio::IncomingMessageService
 
     set_contact
     set_conversation
+    body = message_body
+    return if interactive_message? && body.blank?
+
     @message = @conversation.messages.build(
-      content: message_body,
+      content: body,
       account_id: @inbox.account_id,
       inbox_id: @inbox.id,
       message_type: :incoming,
       sender: @contact,
       source_id: params[:SmsSid]
     )
+    @message.content_attributes = interactive_content_attributes if interactive_message?
     attach_files
     attach_location if location_message?
     @message.save!
@@ -77,7 +81,56 @@ class Twilio::IncomingMessageService
   end
 
   def message_body
+    return interactive_message_body if interactive_message?
+
     params[:Body]&.delete("\u0000")
+  end
+
+  def interactive_message?
+    params[:MessageType] == 'interactive'
+  end
+
+  def interactive_message_body
+    interactive_data = parse_json_safely(params[:InteractiveData])
+    flow_data = parse_json_safely(params[:FlowData])
+
+    pages = interactive_data['pages'] || []
+    content_lines = pages.flat_map do |page|
+      (page['items'] || []).filter_map { |item| format_interactive_item(item) }
+    end
+
+    if content_lines.empty? && flow_data.any?
+      content_lines = flow_data.reject { |k, _| k == 'flow_token' }
+                               .map { |k, v| "#{k}: #{v}" }
+    end
+
+    content_lines.join("\n")
+  end
+
+  def format_interactive_item(item)
+    label = item['label']
+    value = item['value']
+    return nil if value.nil?
+
+    formatted_value = value.is_a?(Array) ? value.join(' / ') : value.to_s
+    return nil if formatted_value.blank?
+
+    "#{label}: #{formatted_value}"
+  end
+
+  def interactive_content_attributes
+    {
+      flow_data: parse_json_safely(params[:FlowData]),
+      interactive_data: parse_json_safely(params[:InteractiveData])
+    }
+  end
+
+  def parse_json_safely(json_str)
+    return {} if json_str.blank?
+
+    JSON.parse(json_str)
+  rescue JSON::ParserError
+    {}
   end
 
   def set_contact
