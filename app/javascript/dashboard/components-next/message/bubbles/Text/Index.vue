@@ -8,8 +8,17 @@ import { MESSAGE_TYPES } from '../../constants';
 import { useMessageContext } from '../../provider.js';
 import { useTranslations } from 'dashboard/composables/useTranslations';
 
-const { content, attachments, contentAttributes, messageType } =
-  useMessageContext();
+const {
+  content,
+  attachments,
+  contentAttributes,
+  additionalAttributes,
+  messageType,
+} = useMessageContext();
+
+const templateName = computed(
+  () => additionalAttributes.value?.template_params?.name ?? null
+);
 
 const { hasTranslations, translationContent } =
   useTranslations(contentAttributes);
@@ -44,9 +53,12 @@ const handleSeeOriginal = () => {
 <template>
   <BaseBubble class="px-4 py-3" data-bubble-name="text">
     <div class="gap-3 flex flex-col">
-      <span v-if="isEmpty" class="text-n-slate-11">
+      <span v-if="isEmpty && !templateName" class="text-n-slate-11">
         {{ $t('CONVERSATION.NO_CONTENT') }}
       </span>
+      <span v-if="isEmpty && templateName" class="text-n-slate-11 italic">{{
+        templateName
+      }}</span>
       <FormattedContent v-if="renderContent" :content="renderContent" />
       <TranslationToggle
         v-if="hasTranslations"
