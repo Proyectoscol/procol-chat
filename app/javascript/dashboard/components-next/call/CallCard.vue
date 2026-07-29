@@ -96,11 +96,11 @@ const onTransfer = (agent, hide) => {
 
 <template>
   <div
-    class="flex flex-col gap-2 pt-4 bg-n-solid-2/95 rounded-2xl shadow-xl outline outline-1 outline-n-strong backdrop-blur-md"
+    class="flex flex-col gap-1 pt-4 bg-n-call-widget rounded-2xl shadow-xl outline outline-1 outline-n-call-widget-border backdrop-blur-md"
     :class="call?.conversationId ? 'pb-2' : 'pb-4'"
   >
     <!-- Top section: status badge + location/inbox + duration -->
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-3 pb-3 border-b border-n-call-widget-border">
       <div class="flex items-center gap-2 px-4">
         <!-- Ongoing: status badge on left -->
         <div v-if="isOngoing" class="flex items-center gap-1.5 shrink-0">
@@ -121,10 +121,10 @@ const onTransfer = (agent, hide) => {
           <Icon
             v-else-if="!isOngoing"
             :icon="channelIcon"
-            class="size-3.5 text-n-slate-10 shrink-0"
+            class="size-3.5 text-n-call-widget-sub-text shrink-0"
           />
           <span
-            class="text-xs font-medium text-n-slate-11 tracking-tight truncate"
+            class="text-xs font-medium text-n-call-widget-sub-text tracking-tight truncate"
           >
             {{ callInfo.location }}
           </span>
@@ -133,7 +133,7 @@ const onTransfer = (agent, hide) => {
         <!-- Ongoing: duration on right -->
         <p
           v-if="isOngoing"
-          class="font-display text-base font-medium text-n-slate-11 shrink-0 mb-0 tabular-nums tracking-tight"
+          class="font-display text-base font-medium text-n-call-widget-sub-text shrink-0 mb-0 tabular-nums tracking-tight"
         >
           {{ duration }}
         </p>
@@ -153,7 +153,7 @@ const onTransfer = (agent, hide) => {
             slate
             ghost
             xs
-            class="!rounded-full -my-1"
+            class="!rounded-full -my-1 -me-1 !text-n-call-widget-sub-text"
             @click="$emit('dismiss')"
           />
         </div>
@@ -170,13 +170,13 @@ const onTransfer = (agent, hide) => {
         </div>
         <div class="flex-1 min-w-0">
           <p
-            class="font-display text-sm font-medium text-n-slate-12 truncate mb-0.5 tracking-tight leading-tight"
+            class="font-display text-sm font-medium text-n-call-widget-text truncate mb-0.5 tracking-tight leading-tight"
           >
             {{ callInfo.contactName }}
           </p>
           <p
             v-if="callInfo.phoneNumber"
-            class="text-sm text-n-slate-11 truncate mb-0 tracking-tight leading-tight"
+            class="text-sm text-n-call-widget-sub-text truncate mb-0 tracking-tight leading-tight"
           >
             {{ callInfo.phoneNumber }}
           </p>
@@ -271,9 +271,9 @@ const onTransfer = (agent, hide) => {
                 ? $t('CONVERSATION.VOICE_WIDGET.END_CALL')
                 : $t('CONVERSATION.VOICE_WIDGET.REJECT_CALL')
             "
-            icon="i-ph-phone-x-bold"
+            icon="i-ph-phone-bold"
             ruby
-            class="!rounded-full rotate-[134deg]"
+            class="!rounded-full rotate-[135deg]"
             @click="isOngoing ? $emit('end') : $emit('reject')"
           />
         </div>
@@ -291,23 +291,23 @@ const onTransfer = (agent, hide) => {
     >
       <template #icon>
         <span
-          class="flex items-center gap-1 text-n-slate-11 group-hover:text-n-slate-12"
+          class="flex items-center gap-1 text-n-call-widget-sub-text group-hover:text-n-call-widget-text"
         >
           <Icon
             icon="i-ph-chat-circle-text-bold"
-            class="size-3.5 text-n-slate-11 shrink-0"
+            class="size-3.5 text-n-call-widget-sub-text shrink-0"
           />
           <span class="text-sm tracking-tight tabular-nums">
             #{{ call.conversationId }}
           </span>
           <Icon
             icon="i-ph-caret-right-bold"
-            class="size-3 text-n-slate-11 shrink-0"
+            class="size-3 text-n-call-widget-sub-text shrink-0"
           />
         </span>
       </template>
       <span
-        class="text-sm text-n-slate-11 tracking-tight group-hover:text-n-slate-12"
+        class="text-sm text-n-call-widget-sub-text tracking-tight group-hover:text-n-call-widget-text"
       >
         {{ $t('CONVERSATION.VOICE_WIDGET.GO_TO_CONVERSATION') }}
       </span>

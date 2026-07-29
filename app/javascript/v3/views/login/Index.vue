@@ -9,6 +9,8 @@ import { useVuelidate } from '@vuelidate/core';
 import { SESSION_STORAGE_KEYS } from 'dashboard/constants/sessionStorage';
 import SessionStorage from 'shared/helpers/sessionStorage';
 import { useBranding } from 'shared/composables/useBranding';
+import AnalyticsHelper from 'dashboard/helper/AnalyticsHelper';
+import { SESSION_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
 
 // components
 import SimpleDivider from '../../components/Divider/SimpleDivider.vue';
@@ -18,6 +20,7 @@ import Spinner from 'shared/components/Spinner.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import MfaVerification from 'dashboard/components/auth/MfaVerification.vue';
+import SessionLimitOverlay from 'dashboard/components/auth/SessionLimitOverlay.vue';
 
 const ERROR_MESSAGES = {
   'no-account-found': 'LOGIN.OAUTH.NO_ACCOUNT_FOUND',
@@ -37,6 +40,7 @@ export default {
     NextButton,
     SimpleDivider,
     MfaVerification,
+    SessionLimitOverlay,
     Icon,
   },
   props: {
@@ -70,6 +74,8 @@ export default {
       error: '',
       mfaRequired: false,
       mfaToken: null,
+      sessionsLimitReached: false,
+      limitedSessions: [],
     };
   },
   validations() {
@@ -184,6 +190,15 @@ export default {
             return;
           }
 
+          // Check if sessions limit reached
+          if (result?.sessionsLimitReached) {
+            this.loginApi.showLoading = false;
+            this.sessionsLimitReached = true;
+            this.limitedSessions = result.sessions;
+            AnalyticsHelper.track(SESSION_EVENTS.LIMIT_HIT);
+            return;
+          }
+
           this.handleImpersonation();
           this.showAlertMessage(this.$t('LOGIN.API.SUCCESS_MESSAGE'));
         })
@@ -226,6 +241,51 @@ export default {
       this.mfaToken = null;
       this.credentials.password = '';
     },
+    retryLoginWithParams(extraParams) {
+      const credentials = {
+        email: this.email
+          ? decodeURIComponent(this.email)
+          : this.credentials.email,
+        password: this.credentials.password,
+        sso_auth_token: this.ssoAuthToken,
+        ssoAccountId: this.ssoAccountId,
+        ssoConversationId: this.ssoConversationId,
+        ...extraParams,
+      };
+
+      this.sessionsLimitReached = false;
+      this.limitedSessions = [];
+      this.loginApi.showLoading = true;
+      login(credentials)
+        .then(result => {
+          if (result?.sessionsLimitReached) {
+            this.loginApi.showLoading = false;
+            this.sessionsLimitReached = true;
+            this.limitedSessions = result.sessions;
+            AnalyticsHelper.track(SESSION_EVENTS.LIMIT_HIT);
+            return;
+          }
+          this.handleImpersonation();
+          this.showAlertMessage(this.$t('LOGIN.API.SUCCESS_MESSAGE'));
+        })
+        .catch(response => {
+          this.loginApi.hasErrored = true;
+          this.showAlertMessage(
+            response?.message || this.$t('LOGIN.API.UNAUTH')
+          );
+        });
+    },
+    handleSessionRevoke(sessionId) {
+      this.retryLoginWithParams({ revoke_session_id: sessionId });
+    },
+    handleSessionRevokeAll() {
+      this.retryLoginWithParams({ revoke_all_sessions: true });
+    },
+    handleSessionLimitCancel() {
+      this.sessionsLimitReached = false;
+      this.limitedSessions = [];
+      this.credentials.password = '';
+    },
   },
 };
 </script>
@@ -243,7 +303,7 @@ export default {
     <!-- Subtle dark scrim so the card is readable -->
     <div class="absolute inset-0 bg-black/30" />
 
-    <!-- Glass card — left-anchored on desktop, centred on mobile -->
+    <!-- Glass card - left-anchored on desktop, centred on mobile -->
     <div
       class="relative z-10 w-full max-w-md lg:max-w-none lg:w-[46%] xl:w-[42%] lg:min-h-screen flex items-center justify-center p-6 lg:p-16"
     >
@@ -269,9 +329,18 @@ export default {
           </h2>
         </div>
 
+        <!-- Session Limit -->
+        <SessionLimitOverlay
+          v-if="sessionsLimitReached"
+          :sessions="limitedSessions"
+          @revoke="handleSessionRevoke"
+          @revoke-all="handleSessionRevokeAll"
+          @cancel="handleSessionLimitCancel"
+        />
+
         <!-- MFA Verification -->
         <MfaVerification
-          v-if="mfaRequired"
+          v-else-if="mfaRequired"
           :mfa-token="mfaToken"
           @verified="handleMfaVerified"
           @cancel="handleMfaCancel"
