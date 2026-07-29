@@ -93,6 +93,10 @@ export const actions = {
       throw new Error(error);
     }
   },
+  deleteAgentAvatar: async ({ commit }, agentId) => {
+    await AgentAPI.deleteAvatar(agentId);
+    commit(types.default.UPDATE_AGENT_AVATAR, { id: agentId, thumbnail: '' });
+  },
 };
 
 export const mutations = {
@@ -122,6 +126,12 @@ export const mutations = {
       id,
       availabilityStatus,
     }),
+  [types.default.UPDATE_AGENT_AVATAR]($state, { id, thumbnail }) {
+    const agent = $state.records.find(record => record.id === id);
+    if (agent) {
+      agent.thumbnail = thumbnail;
+    }
+  },
 };
 
 export default {

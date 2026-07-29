@@ -6,6 +6,7 @@ import { useAlert } from 'dashboard/composables';
 import { useVuelidate } from '@vuelidate/core';
 import { required, email } from '@vuelidate/validators';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Avatar from 'next/avatar/Avatar.vue';
 
 const emit = defineEmits(['close']);
 
@@ -15,6 +16,8 @@ const { t } = useI18n();
 const agentName = ref('');
 const agentEmail = ref('');
 const selectedRoleId = ref('agent');
+const avatarFile = ref(null);
+const avatarUrl = ref('');
 
 const rules = {
   agentName: { required },
@@ -61,6 +64,16 @@ const selectedRole = computed(() =>
   )
 );
 
+const handleImageUpload = ({ file, url }) => {
+  avatarFile.value = file;
+  avatarUrl.value = url;
+};
+
+const handleAvatarDelete = () => {
+  avatarFile.value = null;
+  avatarUrl.value = '';
+};
+
 const addAgent = async () => {
   v$.value.$touch();
   if (v$.value.$invalid) return;
@@ -75,6 +88,10 @@ const addAgent = async () => {
       payload.custom_role_id = selectedRole.value.id;
     } else {
       payload.role = selectedRole.value.name;
+    }
+
+    if (avatarFile.value) {
+      payload.avatar = avatarFile.value;
     }
 
     await store.dispatch('agents/create', payload);
@@ -109,6 +126,20 @@ const addAgent = async () => {
       :header-content="$t('AGENT_MGMT.ADD.DESC')"
     />
     <form class="flex flex-col items-start w-full" @submit.prevent="addAgent">
+      <div class="w-full mb-4 flex flex-col gap-2">
+        <span class="text-sm font-medium text-n-slate-12">
+          {{ $t('AGENT_MGMT.AVATAR.LABEL') }}
+        </span>
+        <Avatar
+          :src="avatarUrl"
+          :name="agentName"
+          :size="56"
+          allow-upload
+          @upload="handleImageUpload"
+          @delete="handleAvatarDelete"
+        />
+      </div>
+
       <div class="w-full">
         <label :class="{ error: v$.agentName.$error }">
           {{ $t('AGENT_MGMT.ADD.FORM.NAME.LABEL') }}

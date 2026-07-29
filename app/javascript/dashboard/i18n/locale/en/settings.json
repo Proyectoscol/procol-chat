@@ -307,6 +307,7 @@
     "UNATTENDED_CONVERSATIONS": "Unattended",
     "REPORTS": "Reports",
     "KANBAN": "Kanban",
+    "AGENT_LOCK": "Advisor Lock",
     "CALLS": "Calls",
     "SETTINGS": "Settings",
     "CONTACTS": "Contacts",
@@ -964,5 +965,14 @@
     "ERRORS": {
       "UPDATE_FAILED": "Could not update contact. Please try again."
     }
+  },
+  "AGENT_LOCK": {
+    "TITLE": "Advisor Lock",
+    "SEARCH_PLACEHOLDER": "Search by name or email...",
+    "LOADING": "Fetching advisors...",
+    "NO_TEAMS": "No teams",
+    "EMPTY_STATE": "No advisors found.",
+    "NO_RESULTS": "No advisors found matching your search",
+    "STATUS_UPDATE_ERROR": "Could not update advisor status. Please try again."
   }
 }

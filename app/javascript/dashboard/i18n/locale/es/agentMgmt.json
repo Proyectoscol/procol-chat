@@ -10,6 +10,11 @@
       "AGENT": "Agente"
     },
     "COUNT": "{n} agent | {n} agents",
+    "AVATAR": {
+      "LABEL": "Foto de perfil",
+      "DELETE_SUCCESS": "Avatar eliminado correctamente",
+      "DELETE_ERROR": "Hubo un error al eliminar el avatar, inténtalo de nuevo"
+    },
     "LIST": {
       "404": "No hay agentes asociados a esta cuenta",
       "TITLE": "Administrar agentes en tu equipo",

@@ -11,6 +11,10 @@ class UserPolicy < ApplicationPolicy
     @account_user.administrator?
   end
 
+  def avatar?
+    @account_user.administrator?
+  end
+
   def destroy?
     @account_user.administrator?
   end

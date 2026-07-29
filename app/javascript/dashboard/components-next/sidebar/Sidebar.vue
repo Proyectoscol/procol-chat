@@ -542,6 +542,13 @@ const menuItems = computed(() => {
       activeOn: ['kanban_view'],
     },
     {
+      name: 'AgentLock',
+      label: t('SIDEBAR.AGENT_LOCK'),
+      icon: 'i-lucide-user-lock',
+      to: accountScopedRoute('agent_lock_view'),
+      activeOn: ['agent_lock_view'],
+    },
+    {
       name: 'Calls',
       label: t('SIDEBAR.CALLS'),
       icon: 'i-lucide-phone',

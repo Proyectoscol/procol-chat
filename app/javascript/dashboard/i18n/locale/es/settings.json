@@ -307,6 +307,7 @@
     "UNATTENDED_CONVERSATIONS": "Desatendido",
     "REPORTS": "Informes",
     "KANBAN": "Kanban",
+    "AGENT_LOCK": "Bloqueo de Asesores",
     "CALLS": "Llamadas",
     "SETTINGS": "Ajustes",
     "CONTACTS": "Contactos",
@@ -964,5 +965,14 @@
     "ERRORS": {
       "UPDATE_FAILED": "No se pudo actualizar el contacto. Inténtalo de nuevo."
     }
+  },
+  "AGENT_LOCK": {
+    "TITLE": "Bloqueo de Asesores",
+    "SEARCH_PLACEHOLDER": "Buscar por nombre o correo...",
+    "LOADING": "Cargando asesores...",
+    "NO_TEAMS": "Sin equipo",
+    "EMPTY_STATE": "No se encontraron asesores.",
+    "NO_RESULTS": "No se encontraron asesores con esa búsqueda",
+    "STATUS_UPDATE_ERROR": "No se pudo actualizar el estado del asesor. Inténtalo de nuevo."
   }
 }
