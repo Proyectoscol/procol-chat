@@ -37,7 +37,17 @@ class Twilio::CallbackController < ApplicationController
       :ProfileUsername,
       :Username,
       :FlowData,
-      :InteractiveData
+      :InteractiveData,
+      :ReferralBody,
+      :ReferralHeadline,
+      :ReferralSourceId,
+      :ReferralSourceType,
+      :ReferralSourceUrl,
+      :ReferralMediaId,
+      :ReferralMediaContentType,
+      :ReferralMediaUrl,
+      :ReferralNumMedia,
+      :ReferralCtwaClid
     )
   end
 end
