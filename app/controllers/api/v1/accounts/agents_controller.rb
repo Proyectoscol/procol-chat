@@ -25,7 +25,7 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
 
   def update
     @agent.update!(agent_params.slice(:name, :avatar).compact)
-    @agent.current_account_user.update!(agent_params.slice(*account_user_attributes).compact)
+    @agent.current_account_user.update!(account_user_params)
   end
 
   def destroy
@@ -74,6 +74,16 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
 
   def account_user_attributes
     [:role, :availability, :auto_offline]
+  end
+
+  # An admin manually setting an agent's availability must stick even if the
+  # agent never opens a browser session — otherwise auto_offline's presence
+  # check (see AvailabilityStatusable) silently forces the display back to
+  # offline, making the manual override a no-op for agents who never log in.
+  def account_user_params
+    params = agent_params.slice(*account_user_attributes).compact
+    params[:auto_offline] = false if params.key?(:availability)
+    params
   end
 
   def allowed_agent_params
