@@ -4,7 +4,7 @@ import ApiClient from './ApiClient';
 
 const buildAgentFormData = data => {
   const formData = new FormData();
-  Object.entries(data).forEach(([key, value]) => {
+  Object.entries(data || {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       formData.append(`agent[${key}]`, value);
     }
