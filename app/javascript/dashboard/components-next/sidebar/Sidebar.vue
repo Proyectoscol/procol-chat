@@ -581,6 +581,9 @@ const menuItems = computed(() => {
             icon: 'i-lucide-phone',
             to: accountScopedRoute('calls_dashboard_index'),
             activeOn: ['calls_dashboard_index'],
+            // PROCOL CUSTOM: hidden — we use our own Asterisk/SIP "Llamadas" entry instead.
+            // To restore: remove this line.
+            hidden: true,
           },
         ]
       : []),
