@@ -167,7 +167,7 @@ class Rack::Attack
 
   ## VoIP Asterisk internal endpoints (server-to-server desde la app Stasis) — ENG-3 ###
   throttle('sip/internal/ip', limit: 60, period: 1.minute) do |req|
-    req.ip if req.path_without_extentions.start_with?('/api/v1/internal/sip')
+    req.ip if req.path_without_extensions.start_with?('/api/v1/internal/sip')
   end
 
   ## SIP credential endpoint — limita solicitudes por usuario autenticado ###
