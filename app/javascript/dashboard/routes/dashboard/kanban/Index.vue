@@ -17,13 +17,27 @@ const showConfigPanel = ref(false);
 const selectedContact = ref(null);
 const modalRef = ref(null);
 
-const storageKey = computed(() => `kanban_config_v1_${accountId.value}`);
+const storageKey = computed(() => `kanban_config_v2_${accountId.value}`);
 
 const listAttributes = computed(() =>
   (contactAttributes.value || []).filter(a => a.attributeDisplayType === 'list')
 );
 
 const isShowingBoard = computed(() => config.value && !showConfigPanel.value);
+
+const configColumnValues = computed(() =>
+  config.value?.mode === 'tags'
+    ? config.value.tagNames || []
+    : config.value?.attributeValues || []
+);
+
+const configBadgeLabel = computed(() => {
+  if (!config.value) return '';
+  if (config.value.mode === 'tags') {
+    return t('KANBAN.CONFIG.MODE_TAGS');
+  }
+  return config.value.attributeName;
+});
 
 onMounted(async () => {
   await store.dispatch('attributes/get');
@@ -84,7 +98,7 @@ const openContactModal = async contact => {
         >
           <span class="i-lucide-settings-2 size-4" />
           <span v-if="config" class="max-w-32 truncate text-xs">
-            {{ config.attributeName }}
+            {{ configBadgeLabel }}
           </span>
         </button>
       </template>
@@ -98,8 +112,9 @@ const openContactModal = async contact => {
 
     <KanbanBoard
       v-else
+      :mode="config.mode || 'attribute'"
       :attribute-key="config.attributeKey"
-      :attribute-values="config.attributeValues"
+      :column-values="configColumnValues"
       :search-query="searchQuery"
       @open-modal="openContactModal"
     />

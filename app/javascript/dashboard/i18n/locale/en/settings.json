@@ -1083,11 +1083,17 @@
       "DESCRIPTION": "Select the list-type contact custom attribute to use as board columns.",
       "EMPTY_STATE": "No list-type contact attributes found.",
       "EMPTY_CTA": "Create one in Settings → Custom Attributes.",
+      "EMPTY_TAGS_STATE": "No tags found. Create one in Settings → Labels.",
+      "MODE_ATTRIBUTE": "Custom attribute",
+      "MODE_TAGS": "Tags",
+      "TAGS_HINT": "Pick the tags to use as columns, in the order you want them to appear.",
       "CREATE_BUTTON": "Create board"
     },
     "COLUMN": {
       "EMPTY": "No contacts",
-      "LOAD_MORE": "Load more"
+      "LOAD_MORE": "Load more",
+      "NO_VALUE": "No value",
+      "NO_TAG": "No tag"
     },
     "CARD": {
       "NO_NAME": "No name",

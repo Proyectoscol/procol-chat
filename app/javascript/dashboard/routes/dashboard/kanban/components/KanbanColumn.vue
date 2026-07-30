@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import Draggable from 'vuedraggable';
 import { useI18n } from 'vue-i18n';
 import KanbanCard from './KanbanCard.vue';
@@ -9,25 +9,31 @@ const props = defineProps({
   searchQuery: { type: String, default: '' },
 });
 
-const emit = defineEmits(['contactMoved', 'loadMore', 'openModal']);
+const emit = defineEmits([
+  'contactMoved',
+  'loadMore',
+  'openModal',
+  'updateContacts',
+]);
 
 const { t } = useI18n();
 
 const isDragging = ref(false);
 
-// Local copy — avoids mutating prop; re-syncs when parent appends (loadMore)
-const localContacts = ref([]);
-watch(
-  () => props.column.contacts,
-  val => {
-    localContacts.value = [...val];
-  },
-  { immediate: true }
-);
+// Proxy straight through to the parent's authoritative array — vuedraggable
+// needs a real two-way binding on both sides of a cross-column drag to keep
+// position and membership correct. A locally-copied array (synced via watch)
+// silently falls out of sync with the parent whenever the parent reassigns
+// the array from elsewhere (pagination, refetch), snapping dropped cards
+// back to the top.
+const contacts = computed({
+  get: () => props.column.contacts,
+  set: value => emit('updateContacts', value),
+});
 
 const filteredContacts = computed(() => {
   const q = props.searchQuery.toLowerCase();
-  return localContacts.value.filter(
+  return contacts.value.filter(
     c =>
       c.name?.toLowerCase().includes(q) ||
       c.phone_number?.includes(q) ||
@@ -61,18 +67,18 @@ const onChange = event => {
       class="flex items-center justify-between px-3 py-2.5 border-b border-n-weak flex-shrink-0 bg-n-alpha-1"
     >
       <h3 class="text-sm font-semibold text-n-slate-12 truncate">
-        {{ column.value }}
+        {{ column.label }}
       </h3>
       <span
         class="text-xs font-medium text-n-slate-10 bg-n-background rounded-full px-2 py-0.5 flex-shrink-0 border border-n-weak"
       >
-        {{ localContacts.length }}
+        {{ contacts.length }}
       </span>
     </div>
 
     <div class="flex-1 overflow-y-auto p-2 min-h-0">
       <div
-        v-if="column.isLoading && localContacts.length === 0"
+        v-if="column.isLoading && contacts.length === 0"
         class="flex items-center justify-center py-8"
       >
         <span class="i-lucide-loader-2 size-5 text-n-slate-10 animate-spin" />
@@ -94,7 +100,7 @@ const onChange = event => {
       <!-- Draggable list when no search -->
       <Draggable
         v-else
-        v-model="localContacts"
+        v-model="contacts"
         :group="{ name: 'kanban', pull: true, put: true }"
         item-key="id"
         :delay="150"
@@ -118,7 +124,7 @@ const onChange = event => {
       </Draggable>
 
       <div
-        v-if="localContacts.length === 0 && !column.isLoading"
+        v-if="contacts.length === 0 && !column.isLoading"
         class="flex items-center justify-center py-8 text-xs text-n-slate-10"
       >
         {{ t('KANBAN.COLUMN.EMPTY') }}
@@ -133,7 +139,7 @@ const onChange = event => {
       </button>
 
       <div
-        v-if="column.isLoading && localContacts.length > 0"
+        v-if="column.isLoading && contacts.length > 0"
         class="flex justify-center py-2"
       >
         <span class="i-lucide-loader-2 size-4 text-n-slate-10 animate-spin" />

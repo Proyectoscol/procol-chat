@@ -7,8 +7,9 @@ import ContactAPI from 'dashboard/api/contacts';
 import KanbanColumn from './KanbanColumn.vue';
 
 const props = defineProps({
-  attributeKey: { type: String, required: true },
-  attributeValues: { type: Array, default: () => [] },
+  mode: { type: String, default: 'attribute' }, // 'attribute' | 'tags'
+  attributeKey: { type: String, default: '' },
+  columnValues: { type: Array, default: () => [] },
   searchQuery: { type: String, default: '' },
 });
 
@@ -22,14 +23,77 @@ const { t } = useI18n();
 const columns = ref([]);
 const PAGE_SIZE = 25;
 
+const emptyColumnLabel = () =>
+  props.mode === 'tags'
+    ? t('KANBAN.COLUMN.NO_TAG')
+    : t('KANBAN.COLUMN.NO_VALUE');
+
 const buildColumns = () => {
-  columns.value = props.attributeValues.map(value => ({
+  const valueColumns = props.columnValues.map(value => ({
     value,
+    label: value,
     contacts: [],
     isLoading: false,
     page: 1,
     hasMore: false,
   }));
+  columns.value = [
+    {
+      value: null,
+      label: emptyColumnLabel(),
+      isEmptyColumn: true,
+      contacts: [],
+      isLoading: false,
+      page: 1,
+      hasMore: false,
+    },
+    ...valueColumns,
+  ];
+};
+
+// Tags mode has no per-value filter needing an array of values (rack-attack-style
+// quirk in Contacts::FilterService collapses any values array down to values[0]),
+// so "no tag" is expressed as one not_equal_to condition per tracked tag, ANDed
+// together — the same pattern app/javascript/dashboard/helper/filterQueryGenerator.js
+// already uses for multi-condition payloads.
+const buildFilterPayload = col => {
+  if (props.mode === 'tags') {
+    if (col.isEmptyColumn) {
+      return props.columnValues.map((tag, idx) => ({
+        attribute_key: 'labels',
+        filter_operator: 'not_equal_to',
+        values: [tag],
+        query_operator: idx === props.columnValues.length - 1 ? null : 'AND',
+      }));
+    }
+    return [
+      {
+        attribute_key: 'labels',
+        filter_operator: 'equal_to',
+        values: [col.value],
+        query_operator: null,
+      },
+    ];
+  }
+
+  if (col.isEmptyColumn) {
+    return [
+      {
+        attribute_key: props.attributeKey,
+        filter_operator: 'is_not_present',
+        values: [],
+        query_operator: null,
+      },
+    ];
+  }
+  return [
+    {
+      attribute_key: props.attributeKey,
+      filter_operator: 'equal_to',
+      values: [col.value],
+      query_operator: null,
+    },
+  ];
 };
 
 const fetchColumnContacts = async (colIndex, page = 1) => {
@@ -38,14 +102,7 @@ const fetchColumnContacts = async (colIndex, page = 1) => {
   col.isLoading = true;
   try {
     const { data } = await ContactAPI.filter(page, 'name', {
-      payload: [
-        {
-          attribute_key: props.attributeKey,
-          filter_operator: 'equal_to',
-          values: [col.value],
-          query_operator: null,
-        },
-      ],
+      payload: buildFilterPayload(col),
     });
     const incoming = data.payload || [];
     col.contacts = page === 1 ? incoming : [...col.contacts, ...incoming];
@@ -71,36 +128,35 @@ const loadMore = colIndex => {
 };
 
 const onContactMoved = async ({ contact, targetValue }) => {
-  // Find source column before any mutation
-  const sourceCol = columns.value.find(col =>
-    col.contacts.some(c => c.id === contact.id)
-  );
-
-  // Drop on same column or already moved — no-op
-  if (!sourceCol || sourceCol.value === targetValue) return;
-
-  // Optimistic update
-  sourceCol.contacts = sourceCol.contacts.filter(c => c.id !== contact.id);
-  const targetCol = columns.value.find(c => c.value === targetValue);
-  if (targetCol && !targetCol.contacts.find(c => c.id === contact.id)) {
-    targetCol.contacts.unshift(contact);
-  }
-
   try {
-    await store.dispatch('contacts/update', {
-      id: contact.id,
-      customAttributes: { [props.attributeKey]: targetValue },
-    });
+    if (props.mode === 'tags') {
+      await store.dispatch('contactLabels/get', contact.id);
+      const current = store.getters['contactLabels/getContactLabels'](
+        contact.id
+      );
+      const next = current
+        .filter(label => !props.columnValues.includes(label))
+        .concat(targetValue ? [targetValue] : []);
+      await store.dispatch('contactLabels/update', {
+        contactId: contact.id,
+        labels: next,
+      });
+    } else {
+      await store.dispatch('contacts/update', {
+        id: contact.id,
+        customAttributes: { [props.attributeKey]: targetValue },
+      });
+    }
   } catch {
-    // Rollback
-    if (targetCol)
-      targetCol.contacts = targetCol.contacts.filter(c => c.id !== contact.id);
-    if (sourceCol) sourceCol.contacts = [contact, ...sourceCol.contacts];
     useAlert(t('KANBAN.ERRORS.UPDATE_FAILED'));
+    fetchAll();
   }
 };
 
-watch(() => props.attributeKey, fetchAll);
+watch(
+  () => JSON.stringify([props.mode, props.attributeKey, props.columnValues]),
+  fetchAll
+);
 onMounted(fetchAll);
 </script>
 
@@ -109,15 +165,16 @@ onMounted(fetchAll);
     <div
       class="flex gap-3 h-full px-6 py-4"
       :style="{
-        minWidth: `${Math.max(attributeValues.length * 272 + 48, 100)}px`,
+        minWidth: `${Math.max((columnValues.length + 1) * 272 + 48, 100)}px`,
       }"
     >
       <KanbanColumn
         v-for="(col, idx) in columns"
-        :key="col.value"
+        :key="col.value ?? '__empty__'"
         :column="col"
         :search-query="searchQuery"
         @contact-moved="onContactMoved"
+        @update-contacts="col.contacts = $event"
         @load-more="loadMore(idx)"
         @open-modal="forwardOpenModal"
       />

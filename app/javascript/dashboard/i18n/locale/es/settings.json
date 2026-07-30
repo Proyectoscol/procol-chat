@@ -1078,11 +1078,17 @@
       "DESCRIPTION": "Selecciona el atributo personalizado de contacto (tipo lista) que usarás como columnas del tablero.",
       "EMPTY_STATE": "No hay atributos de contacto de tipo lista.",
       "EMPTY_CTA": "Crea uno en Ajustes → Atributos personalizados.",
+      "EMPTY_TAGS_STATE": "No hay etiquetas. Crea una en Ajustes → Etiquetas.",
+      "MODE_ATTRIBUTE": "Atributo personalizado",
+      "MODE_TAGS": "Etiquetas",
+      "TAGS_HINT": "Elige las etiquetas que quieres usar como columnas, en el orden en que quieres que aparezcan.",
       "CREATE_BUTTON": "Crear tablero"
     },
     "COLUMN": {
       "EMPTY": "Sin contactos",
-      "LOAD_MORE": "Ver más"
+      "LOAD_MORE": "Ver más",
+      "NO_VALUE": "Sin valor",
+      "NO_TAG": "Sin etiqueta"
     },
     "CARD": {
       "NO_NAME": "Sin nombre",
