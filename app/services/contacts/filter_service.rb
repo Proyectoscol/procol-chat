@@ -40,6 +40,35 @@ class Contacts::FilterService < FilterService
     }
   end
 
+  # `labels` (the base FilterService#tag_filter_query) checks tags applied
+  # directly to the contact. `conversation_labels` checks tags applied to any
+  # of the contact's conversations instead — the labels agents actually set
+  # day-to-day from the conversation sidebar.
+  def tag_filter_query(query_hash, current_index)
+    return super unless query_hash[:attribute_key].to_s == 'conversation_labels'
+
+    query_operator = query_hash[:query_operator]
+    @filter_values["value_#{current_index}"] = filter_values(query_hash)
+
+    tag_model_relation_query = <<~SQL.squish
+      SELECT 1 FROM conversations
+      INNER JOIN taggings ON taggings.taggable_id = conversations.id AND taggings.taggable_type = 'Conversation'
+      WHERE conversations.contact_id = contacts.id
+    SQL
+    tag_query = "AND taggings.tag_id IN (SELECT tags.id FROM tags WHERE tags.name IN (:value_#{current_index}))"
+
+    case query_hash[:filter_operator]
+    when 'equal_to'
+      "EXISTS (#{tag_model_relation_query} #{tag_query}) #{query_operator}"
+    when 'not_equal_to'
+      "NOT EXISTS (#{tag_model_relation_query} #{tag_query}) #{query_operator}"
+    when 'is_present'
+      "EXISTS (#{tag_model_relation_query}) #{query_operator}"
+    when 'is_not_present'
+      "NOT EXISTS (#{tag_model_relation_query}) #{query_operator}"
+    end
+  end
+
   private
 
   def equals_to_filter_string(filter_operator, current_index)

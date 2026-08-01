@@ -4,6 +4,7 @@ import { useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import ContactAPI from 'dashboard/api/contacts';
+import ConversationAPI from 'dashboard/api/conversations';
 import KanbanColumn from './KanbanColumn.vue';
 
 const props = defineProps({
@@ -51,16 +52,19 @@ const buildColumns = () => {
   ];
 };
 
-// Tags mode has no per-value filter needing an array of values (rack-attack-style
-// quirk in Contacts::FilterService collapses any values array down to values[0]),
-// so "no tag" is expressed as one not_equal_to condition per tracked tag, ANDed
-// together — the same pattern app/javascript/dashboard/helper/filterQueryGenerator.js
-// already uses for multi-condition payloads.
+// "conversation_labels" (not the separate, rarely-used contact-level "labels")
+// matches tags applied to any of the contact's conversations — the labels
+// agents actually set day-to-day from the conversation sidebar. It has no
+// per-value filter needing an array of values (Contacts::FilterService
+// collapses any values array down to values[0]), so "no tag" is expressed as
+// one not_equal_to condition per tracked tag, ANDed together — the same
+// pattern app/javascript/dashboard/helper/filterQueryGenerator.js already
+// uses for multi-condition payloads.
 const buildFilterPayload = col => {
   if (props.mode === 'tags') {
     if (col.isEmptyColumn) {
       return props.columnValues.map((tag, idx) => ({
-        attribute_key: 'labels',
+        attribute_key: 'conversation_labels',
         filter_operator: 'not_equal_to',
         values: [tag],
         query_operator: idx === props.columnValues.length - 1 ? null : 'AND',
@@ -68,7 +72,7 @@ const buildFilterPayload = col => {
     }
     return [
       {
-        attribute_key: 'labels',
+        attribute_key: 'conversation_labels',
         filter_operator: 'equal_to',
         values: [col.value],
         query_operator: null,
@@ -127,20 +131,42 @@ const loadMore = colIndex => {
   }
 };
 
+// Tags mode writes to the contact's most recent conversation (matching
+// where these labels are actually managed day-to-day), and also strips any
+// tracked tag from older conversations that still carry one — otherwise the
+// contact could keep showing up in a stale column via an older conversation.
+const moveContactTags = async (contact, targetValue) => {
+  const { data } = await ContactAPI.getConversations(contact.id);
+  const conversations = data.payload || [];
+  if (conversations.length === 0) {
+    throw new Error('Contact has no conversation to tag');
+  }
+
+  const [mostRecent, ...rest] = conversations;
+  const updates = rest
+    .filter(conv =>
+      (conv.labels || []).some(l => props.columnValues.includes(l))
+    )
+    .map(conv => ({
+      id: conv.id,
+      labels: (conv.labels || []).filter(l => !props.columnValues.includes(l)),
+    }));
+
+  const mostRecentLabels = (mostRecent.labels || []).filter(
+    l => !props.columnValues.includes(l)
+  );
+  if (targetValue) mostRecentLabels.push(targetValue);
+  updates.push({ id: mostRecent.id, labels: mostRecentLabels });
+
+  await Promise.all(
+    updates.map(u => ConversationAPI.updateLabels(u.id, u.labels))
+  );
+};
+
 const onContactMoved = async ({ contact, targetValue }) => {
   try {
     if (props.mode === 'tags') {
-      await store.dispatch('contactLabels/get', contact.id);
-      const current = store.getters['contactLabels/getContactLabels'](
-        contact.id
-      );
-      const next = current
-        .filter(label => !props.columnValues.includes(label))
-        .concat(targetValue ? [targetValue] : []);
-      await store.dispatch('contactLabels/update', {
-        contactId: contact.id,
-        labels: next,
-      });
+      await moveContactTags(contact, targetValue);
     } else {
       await store.dispatch('contacts/update', {
         id: contact.id,
