@@ -1,9 +1,8 @@
 class Contacts::AttributeStatsBuilder
   include DateRangeHelper
 
-  DENYLIST_KEYS = %w[social_profiles avatar_url_hash last_avatar_sync_at organization_id lead_timestamp].freeze
   MAX_VALUES_PER_KEY = 12
-  BLANK_LABEL = 'N/A'.freeze
+  BLANK_LABEL = Contacts::LeadStatsFilter::BLANK_LABEL
 
   def initialize(account:, params:)
     @account = account
@@ -12,9 +11,11 @@ class Contacts::AttributeStatsBuilder
 
   def build
     {
-      total_count: base_relation.count,
-      keys: available_keys,
-      breakdowns: available_keys.index_with { |key| breakdown_for(key) }
+      total_count: filter.relation.count,
+      keys: filter.available_keys,
+      breakdowns: filter.available_keys.index_with { |key| breakdown_for(key) },
+      daily_series: daily_series,
+      hourly_series: hourly_series
     }
   end
 
@@ -22,50 +23,51 @@ class Contacts::AttributeStatsBuilder
 
   attr_reader :account, :params
 
-  def base_relation
-    @base_relation ||= begin
-      relation = account.contacts
-      relation = relation.where(created_at: range) if range.present?
-      relation = relation.where(id: ContactInbox.where(inbox_id: params[:inbox_id]).select(:contact_id)) if params[:inbox_id].present?
-      active_filters.each { |key, value| relation = relation.where(attribute_equals_sql(key, value)) }
-      relation
-    end
-  end
-
-  def attribute_equals_sql(key, value)
-    if value == BLANK_LABEL
-      ActiveRecord::Base.sanitize_sql_array(
-        ['(contacts.additional_attributes ->> ? IS NULL OR contacts.additional_attributes ->> ? = ?)', key, key, '']
-      )
-    else
-      ActiveRecord::Base.sanitize_sql_array(['contacts.additional_attributes ->> ? = ?', key, value])
-    end
-  end
-
-  def active_filters
-    raw = params[:filters].is_a?(ActionController::Parameters) ? params[:filters].to_unsafe_h : (params[:filters] || {})
-    raw.slice(*available_keys)
-  end
-
-  def discovered_keys
-    @discovered_keys ||= ActiveRecord::Base.connection.select_values(
-      ActiveRecord::Base.sanitize_sql_array(
-        ['SELECT DISTINCT jsonb_object_keys(additional_attributes) FROM contacts WHERE account_id = ?', account.id]
-      )
-    )
-  end
-
-  def available_keys
-    @available_keys ||= discovered_keys - DENYLIST_KEYS
+  def filter
+    @filter ||= Contacts::LeadStatsFilter.new(account: account, params: params)
   end
 
   def breakdown_for(key)
-    base_relation
-      .group(Arel.sql(ActiveRecord::Base.sanitize_sql_array(["NULLIF(contacts.additional_attributes ->> ?, '')", key])))
-      .count
-      .transform_keys { |v| v || BLANK_LABEL }
-      .sort_by { |_, count| -count }
-      .first(MAX_VALUES_PER_KEY)
-      .to_h
+    filter.relation
+          .group(Arel.sql(ActiveRecord::Base.sanitize_sql_array(["NULLIF(contacts.additional_attributes ->> ?, '')", key])))
+          .count
+          .transform_keys { |v| v || BLANK_LABEL }
+          .sort_by { |_, count| -count }
+          .first(MAX_VALUES_PER_KEY)
+          .to_h
+  end
+
+  def daily_series
+    totals = group_by_day(filter.relation_without_label_filter)
+    label_series = filter.label_titles.index_with { |title| group_by_day(filter.relation_for_single_label(title)) }
+
+    totals.keys.sort.map do |bucket|
+      {
+        date: bucket.to_date.iso8601,
+        timestamp: bucket.to_time.to_i,
+        total: totals[bucket] || 0,
+        labels: label_series.transform_values { |series| series[bucket] || 0 }
+      }
+    end
+  end
+
+  def hourly_series
+    filter.relation
+          .group_by_hour_of_day(:created_at, default_value: 0)
+          .count
+          .sort
+          .map { |hour, total| { hour: hour, total: total } }
+  end
+
+  def group_by_day(relation)
+    relation.group_by_period(:day, :created_at, default_value: 0, range: series_range, time_zone: timezone).count
+  end
+
+  def series_range
+    range.presence || (30.days.ago..Time.current)
+  end
+
+  def timezone
+    account.reporting_timezone.presence || 'UTC'
   end
 end

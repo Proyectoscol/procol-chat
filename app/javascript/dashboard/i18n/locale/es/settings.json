@@ -1135,6 +1135,32 @@
     "FILTERED_BY": "Filtrado por:",
     "CLEAR_ALL_FILTERS": "Limpiar todos los filtros",
     "NO_DATA": "Sin datos",
-    "ALL_INBOXES": "Todas las bandejas"
+    "ALL_INBOXES": "Todas las bandejas",
+    "DAILY_TREND": {
+      "TITLE": "Ingresos por día",
+      "TOTAL_DATASET": "Total",
+      "EXPAND": "Expandir"
+    },
+    "HOURLY": {
+      "TITLE": "Ingresos por hora del día"
+    },
+    "PREVIEW": {
+      "TITLE": "Contactos",
+      "TOTAL": "{count} en total",
+      "VIEW_ALL": "Ver todos"
+    },
+    "DRAWER": {
+      "TITLE": "Contactos",
+      "RESULT_COUNT": "{count} resultados",
+      "CLOSE": "Cerrar",
+      "ERROR": "Ocurrió un error. Inténtalo de nuevo.",
+      "EMPTY": "No se encontraron contactos.",
+      "NO_NAME": "Sin nombre",
+      "LOAD_MORE": "Cargar más"
+    },
+    "EXPORT": {
+      "BUTTON": "Exportar",
+      "SUCCESS": "Exportación iniciada. Recibirás un correo cuando el archivo esté listo para descargar."
+    }
   }
 }

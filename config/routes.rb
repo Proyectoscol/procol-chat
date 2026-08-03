@@ -222,6 +222,8 @@ Rails.application.routes.draw do
               post :import
               post :export
               get :attribute_stats
+              get :lead_stats_contacts, to: 'contacts/lead_stats#contacts'
+              post :lead_stats_export, to: 'contacts/lead_stats#export'
             end
             member do
               get :contactable_inboxes

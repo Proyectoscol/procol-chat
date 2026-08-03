@@ -108,9 +108,47 @@ class ContactAPI extends ApiClient {
     return axios.post(`${this.url}/export`, queryPayload);
   }
 
-  attributeStats({ since, until, filters, inboxId } = {}) {
+  attributeStats({ since, until, filters, inboxId, labelTitles } = {}) {
     return axios.get(`${this.url}/attribute_stats`, {
-      params: { since, until, filters, inbox_id: inboxId || undefined },
+      params: {
+        since,
+        until,
+        filters,
+        inbox_id: inboxId || undefined,
+        label_titles: labelTitles,
+      },
+    });
+  }
+
+  leadStatsContacts({
+    since,
+    until,
+    filters,
+    inboxId,
+    labelTitles,
+    page = 1,
+    signal,
+  } = {}) {
+    return axios.get(`${this.url}/lead_stats_contacts`, {
+      params: {
+        since,
+        until,
+        filters,
+        inbox_id: inboxId || undefined,
+        label_titles: labelTitles,
+        page,
+      },
+      signal,
+    });
+  }
+
+  leadStatsExport({ since, until, filters, inboxId, labelTitles } = {}) {
+    return axios.post(`${this.url}/lead_stats_export`, {
+      since,
+      until,
+      filters,
+      inbox_id: inboxId || undefined,
+      label_titles: labelTitles,
     });
   }
 }

@@ -27,6 +27,14 @@ class ContactPolicy < ApplicationPolicy
     @account_user.administrator?
   end
 
+  def lead_stats_contacts?
+    @account_user.administrator?
+  end
+
+  def lead_stats_export?
+    @account_user.administrator?
+  end
+
   def update?
     true
   end

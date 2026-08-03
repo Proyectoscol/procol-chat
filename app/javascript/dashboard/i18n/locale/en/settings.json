@@ -1140,6 +1140,32 @@
     "FILTERED_BY": "Filtered by:",
     "CLEAR_ALL_FILTERS": "Clear all filters",
     "NO_DATA": "No data",
-    "ALL_INBOXES": "All inboxes"
+    "ALL_INBOXES": "All inboxes",
+    "DAILY_TREND": {
+      "TITLE": "Daily entries",
+      "TOTAL_DATASET": "Total",
+      "EXPAND": "Expand"
+    },
+    "HOURLY": {
+      "TITLE": "Entries by hour of day"
+    },
+    "PREVIEW": {
+      "TITLE": "Contacts",
+      "TOTAL": "{count} total",
+      "VIEW_ALL": "View all"
+    },
+    "DRAWER": {
+      "TITLE": "Contacts",
+      "RESULT_COUNT": "{count} results",
+      "CLOSE": "Close",
+      "ERROR": "Something went wrong. Please try again.",
+      "EMPTY": "No contacts found.",
+      "NO_NAME": "No name",
+      "LOAD_MORE": "Load more"
+    },
+    "EXPORT": {
+      "BUTTON": "Export",
+      "SUCCESS": "Export started. You'll receive an email when it's ready to download."
+    }
   }
 }
