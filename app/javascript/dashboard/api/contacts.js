@@ -107,6 +107,12 @@ class ContactAPI extends ApiClient {
   exportContacts(queryPayload) {
     return axios.post(`${this.url}/export`, queryPayload);
   }
+
+  attributeStats({ since, until, filters } = {}) {
+    return axios.get(`${this.url}/attribute_stats`, {
+      params: { since, until, filters },
+    });
+  }
 }
 
 export default new ContactAPI();

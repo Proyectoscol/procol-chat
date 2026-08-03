@@ -321,6 +321,7 @@
     "REPORTS": "Reports",
     "KANBAN": "Kanban",
     "AGENT_LOCK": "Advisor Lock",
+    "CONTACT_STATS": "Lead Stats",
     "CALLS": "Calls",
     "SETTINGS": "Settings",
     "CONTACTS": "Contacts",
@@ -1130,5 +1131,14 @@
     "EMPTY_STATE": "No advisors found.",
     "NO_RESULTS": "No advisors found matching your search",
     "STATUS_UPDATE_ERROR": "Could not update advisor status. Please try again."
+  },
+  "CONTACT_STATS": {
+    "TITLE": "Lead Stats",
+    "TOTAL_LABEL": "Total Contacts",
+    "EMPTY_STATE": "No contacts found in this date range.",
+    "LOADING": "Loading stats...",
+    "FILTERED_BY": "Filtered by:",
+    "CLEAR_ALL_FILTERS": "Clear all filters",
+    "NO_DATA": "No data"
   }
 }

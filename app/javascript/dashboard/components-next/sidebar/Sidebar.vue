@@ -686,6 +686,13 @@ const menuItems = computed(() => {
       activeOn: ['agent_lock_view'],
     },
     {
+      name: 'ContactStats',
+      label: t('SIDEBAR.CONTACT_STATS'),
+      icon: 'i-lucide-chart-pie',
+      to: accountScopedRoute('contact_stats_view'),
+      activeOn: ['contact_stats_view'],
+    },
+    {
       name: 'Calls',
       label: t('SIDEBAR.CALLS'),
       icon: 'i-lucide-phone',

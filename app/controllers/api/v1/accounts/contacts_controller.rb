@@ -71,6 +71,10 @@ class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
     render_could_not_create_error(e.message)
   end
 
+  def attribute_stats
+    render json: Contacts::AttributeStatsBuilder.new(account: Current.account, params: params).build
+  end
+
   def contactable_inboxes
     @all_contactable_inboxes = Contacts::ContactableInboxesService.new(contact: @contact).get
     @contactable_inboxes = @all_contactable_inboxes.select { |contactable_inbox| policy(contactable_inbox[:inbox]).show? }

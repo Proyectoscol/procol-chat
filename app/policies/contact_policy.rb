@@ -23,6 +23,10 @@ class ContactPolicy < ApplicationPolicy
     true
   end
 
+  def attribute_stats?
+    @account_user.administrator?
+  end
+
   def update?
     true
   end

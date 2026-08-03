@@ -12,6 +12,7 @@ import campaignsRoutes from './campaigns/campaigns.routes';
 import { routes as captainRoutes } from './captain/captain.routes';
 import { routes as kanbanRoutes } from './kanban/routes';
 import { routes as agentLockRoutes } from './agent-lock/routes';
+import { routes as contactStatsRoutes } from './contact-stats/routes';
 import { routes as callsRoutes } from './calls/routes';
 import AppContainer from './Dashboard.vue';
 import Suspended from './suspended/Index.vue';
@@ -34,6 +35,7 @@ export default {
         ...companyRoutes,
         ...kanbanRoutes,
         ...agentLockRoutes,
+        ...contactStatsRoutes,
         ...callsRoutes,
         ...searchRoutes,
         ...notificationRoutes,
