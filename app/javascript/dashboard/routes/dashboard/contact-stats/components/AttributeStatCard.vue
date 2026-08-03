@@ -1,8 +1,6 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import BarChart from 'shared/components/charts/BarChart.vue';
-import DoughnutChart from 'shared/components/charts/DoughnutChart.vue';
 
 const props = defineProps({
   attributeKey: {
@@ -43,28 +41,24 @@ const PALETTE = [
 ];
 
 const entries = computed(() => Object.entries(props.breakdown));
-const isDonut = computed(
-  () => entries.value.length > 0 && entries.value.length <= 6
-);
-const chartComponent = computed(() =>
-  isDonut.value ? DoughnutChart : BarChart
+const total = computed(() =>
+  entries.value.reduce((sum, [, count]) => sum + count, 0)
 );
 
-const collection = computed(() => ({
-  labels: entries.value.map(([value]) => value),
-  datasets: [
-    {
-      label: props.label,
-      data: entries.value.map(([, count]) => count),
-      backgroundColor: entries.value.map(
-        (_, index) => PALETTE[index % PALETTE.length]
-      ),
-    },
-  ],
-}));
+const rows = computed(() =>
+  entries.value.map(([value, count], index) => ({
+    value,
+    count,
+    percent: total.value ? Math.round((count / total.value) * 100) : 0,
+    color: PALETTE[index % PALETTE.length],
+  }))
+);
 
-const onElementClick = ({ label }) => {
-  emit('select', { key: props.attributeKey, value: label });
+const toggleValue = value => {
+  emit('select', {
+    key: props.attributeKey,
+    value: props.activeValue === value ? '' : value,
+  });
 };
 </script>
 
@@ -74,28 +68,61 @@ const onElementClick = ({ label }) => {
       <h3 class="text-sm font-medium truncate text-n-slate-12">
         {{ label }}
       </h3>
-      <button
-        v-if="activeValue"
-        class="text-xs px-2 py-0.5 rounded-full bg-n-brand/10 text-n-brand hover:bg-n-brand/20 flex-shrink-0"
-        @click="emit('select', { key: attributeKey, value: '' })"
-      >
-        {{ activeValue }}
-        <span class="i-lucide-x size-3 ml-0.5 inline-block align-middle" />
-      </button>
+      <span class="text-xs flex-shrink-0 text-n-slate-10">{{ total }}</span>
     </div>
+
     <div
-      v-if="!entries.length"
+      v-if="!rows.length"
       class="flex items-center justify-center py-8 text-xs text-n-slate-10"
     >
       {{ t('CONTACT_STATS.NO_DATA') }}
     </div>
-    <div v-else class="h-48">
-      <component
-        :is="chartComponent"
-        :collection="collection"
-        clickable
-        @element-click="onElementClick"
-      />
-    </div>
+
+    <template v-else>
+      <div
+        class="flex w-full h-2.5 mb-3 overflow-hidden rounded-full bg-n-alpha-2"
+      >
+        <div
+          v-for="row in rows"
+          :key="row.value"
+          :style="{ width: `${row.percent}%`, backgroundColor: row.color }"
+          class="h-full first:rounded-s-full last:rounded-e-full"
+        />
+      </div>
+
+      <ul class="flex flex-col gap-0.5 max-h-40 overflow-y-auto">
+        <li v-for="row in rows" :key="row.value">
+          <button
+            type="button"
+            class="flex items-center justify-between w-full gap-2 px-1.5 py-1 rounded-md text-left hover:bg-n-alpha-1"
+            :class="{ 'bg-n-brand/10': activeValue === row.value }"
+            @click="toggleValue(row.value)"
+          >
+            <span class="flex items-center min-w-0 gap-2">
+              <span
+                class="flex-shrink-0 rounded-full size-2"
+                :style="{ backgroundColor: row.color }"
+              />
+              <span
+                class="text-xs truncate"
+                :class="
+                  activeValue === row.value
+                    ? 'font-medium text-n-brand'
+                    : 'text-n-slate-12'
+                "
+              >
+                {{ row.value }}
+              </span>
+            </span>
+            <span
+              class="flex items-center flex-shrink-0 gap-1 text-xs text-n-slate-10"
+            >
+              <span>{{ row.percent }}%</span>
+              <span class="font-medium text-n-slate-12">{{ row.count }}</span>
+            </span>
+          </button>
+        </li>
+      </ul>
+    </template>
   </div>
 </template>

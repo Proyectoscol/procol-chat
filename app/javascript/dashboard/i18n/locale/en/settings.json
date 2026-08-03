@@ -1139,6 +1139,7 @@
     "LOADING": "Loading stats...",
     "FILTERED_BY": "Filtered by:",
     "CLEAR_ALL_FILTERS": "Clear all filters",
-    "NO_DATA": "No data"
+    "NO_DATA": "No data",
+    "ALL_INBOXES": "All inboxes"
   }
 }

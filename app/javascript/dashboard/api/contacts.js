@@ -108,9 +108,9 @@ class ContactAPI extends ApiClient {
     return axios.post(`${this.url}/export`, queryPayload);
   }
 
-  attributeStats({ since, until, filters } = {}) {
+  attributeStats({ since, until, filters, inboxId } = {}) {
     return axios.get(`${this.url}/attribute_stats`, {
-      params: { since, until, filters },
+      params: { since, until, filters, inbox_id: inboxId || undefined },
     });
   }
 }

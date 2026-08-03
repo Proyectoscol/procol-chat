@@ -320,6 +320,7 @@
     "REPORTS": "Informes",
     "KANBAN": "Kanban",
     "AGENT_LOCK": "Bloqueo de Asesores",
+    "CONTACT_STATS": "Estadísticas de Leads",
     "CALLS": "Llamadas",
     "SETTINGS": "Ajustes",
     "CONTACTS": "Contactos",
@@ -1125,5 +1126,15 @@
     "EMPTY_STATE": "No se encontraron asesores.",
     "NO_RESULTS": "No se encontraron asesores con esa búsqueda",
     "STATUS_UPDATE_ERROR": "No se pudo actualizar el estado del asesor. Inténtalo de nuevo."
+  },
+  "CONTACT_STATS": {
+    "TITLE": "Estadísticas de Leads",
+    "TOTAL_LABEL": "Total de Contactos",
+    "EMPTY_STATE": "No se encontraron contactos en este rango de fechas.",
+    "LOADING": "Cargando estadísticas...",
+    "FILTERED_BY": "Filtrado por:",
+    "CLEAR_ALL_FILTERS": "Limpiar todos los filtros",
+    "NO_DATA": "Sin datos",
+    "ALL_INBOXES": "Todas las bandejas"
   }
 }

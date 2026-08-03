@@ -26,6 +26,7 @@ class Contacts::AttributeStatsBuilder
     @base_relation ||= begin
       relation = account.contacts
       relation = relation.where(created_at: range) if range.present?
+      relation = relation.where(id: ContactInbox.where(inbox_id: params[:inbox_id]).select(:contact_id)) if params[:inbox_id].present?
       active_filters.each { |key, value| relation = relation.where(attribute_equals_sql(key, value)) }
       relation
     end
