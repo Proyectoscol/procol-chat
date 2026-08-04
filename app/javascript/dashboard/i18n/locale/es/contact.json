@@ -300,6 +300,8 @@
       "SEND_MESSAGE": "Enviar mensaje",
       "BLOCK_CONTACT": "Bloquear contacto",
       "UNBLOCK_CONTACT": "Desbloquear contacto",
+      "MARK_INTERNAL": "Marcar como interno",
+      "UNMARK_INTERNAL": "Desmarcar como interno",
       "BREADCRUMB": {
         "CONTACTS": "Contactos"
       },
@@ -318,6 +320,10 @@
         "BLOCK_ERROR_MESSAGE": "No se pudo bloquear el contacto. Inténtalo de nuevo más tarde.",
         "UNBLOCK_SUCCESS_MESSAGE": "Este contacto está desbloqueado correctamente",
         "UNBLOCK_ERROR_MESSAGE": "No se pudo desbloquear el contacto. Inténtalo de nuevo más tarde.",
+        "MARK_INTERNAL_SUCCESS_MESSAGE": "Este contacto quedó marcado como interno. Se excluirá de Kanban y de Estadísticas de Leads.",
+        "MARK_INTERNAL_ERROR_MESSAGE": "No se pudo marcar el contacto como interno. Inténtalo de nuevo más tarde.",
+        "UNMARK_INTERNAL_SUCCESS_MESSAGE": "Este contacto ya no está marcado como interno",
+        "UNMARK_INTERNAL_ERROR_MESSAGE": "No se pudo desmarcar el contacto como interno. Inténtalo de nuevo más tarde.",
         "IMPORT_CONTACT": {
           "TITLE": "Importar contactos",
           "DESCRIPTION": "Importar contactos a través de un archivo CSV.",

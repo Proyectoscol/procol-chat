@@ -220,6 +220,12 @@ contacts:
     filter_operators:
       - "equal_to"
       - "not_equal_to"
+  internal:
+    attribute_type: "standard"
+    data_type: "boolean"
+    filter_operators:
+      - "equal_to"
+      - "not_equal_to"
 
 ### ----- End of Contact Filters ----- ###
 

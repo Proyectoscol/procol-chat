@@ -75,6 +75,10 @@ const resolveAttributesModalRef = ref(null);
 const activeAssigneeTab = ref(wootConstants.ASSIGNEE_TYPE.ME);
 const activeStatus = ref(wootConstants.STATUS_TYPE.OPEN);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
+// Opt-in filter: hides conversations belonging to contacts marked "internal"
+// (staff/test contacts, see the toggle on the Contact page). Off by default
+// so the main inbox behaves exactly as before unless explicitly turned on.
+const hideInternalContacts = ref(false);
 const showAdvancedFilters = ref(false);
 // chatsOnView is to store the chats that are currently visible on the screen,
 // which mirrors the conversationList.
@@ -256,6 +260,7 @@ const conversationFilters = computed(() => {
     labels: props.label ? [props.label] : undefined,
     teamId: props.teamId || undefined,
     conversationType: props.conversationType || undefined,
+    hideInternalContacts: hideInternalContacts.value || undefined,
   };
 });
 
@@ -934,6 +939,18 @@ watch(conversationFilters, (newVal, oldVal) => {
       is-compact
       @chat-tab-change="updateAssigneeTab"
     />
+
+    <label
+      class="flex items-center gap-1.5 px-4 py-1.5 text-xs text-n-slate-11 cursor-pointer"
+    >
+      <input
+        v-model="hideInternalContacts"
+        type="checkbox"
+        class="reset-base"
+        @change="resetAndFetchData"
+      />
+      {{ $t('CHAT_LIST.HIDE_INTERNAL_CONTACTS') }}
+    </label>
 
     <p
       v-if="!chatListLoading && !conversationList.length"

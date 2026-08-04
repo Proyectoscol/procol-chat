@@ -119,6 +119,35 @@ const toggleContactBlock = async isBlocked => {
   }
 };
 
+const toggleContactInternal = async isInternal => {
+  const ALERT_MESSAGES = {
+    success: {
+      mark: t('CONTACTS_LAYOUT.HEADER.ACTIONS.MARK_INTERNAL_SUCCESS_MESSAGE'),
+      unmark: t(
+        'CONTACTS_LAYOUT.HEADER.ACTIONS.UNMARK_INTERNAL_SUCCESS_MESSAGE'
+      ),
+    },
+    error: {
+      mark: t('CONTACTS_LAYOUT.HEADER.ACTIONS.MARK_INTERNAL_ERROR_MESSAGE'),
+      unmark: t('CONTACTS_LAYOUT.HEADER.ACTIONS.UNMARK_INTERNAL_ERROR_MESSAGE'),
+    },
+  };
+
+  try {
+    await store.dispatch(`contacts/update`, {
+      ...selectedContact.value,
+      internal: !isInternal,
+    });
+    useAlert(
+      isInternal ? ALERT_MESSAGES.success.unmark : ALERT_MESSAGES.success.mark
+    );
+  } catch (error) {
+    useAlert(
+      isInternal ? ALERT_MESSAGES.error.unmark : ALERT_MESSAGES.error.mark
+    );
+  }
+};
+
 onMounted(() => {
   fetchActiveContact();
   fetchContactNotes();
@@ -139,6 +168,7 @@ onMounted(() => {
       :is-updating="isUpdatingContact"
       @go-to-contacts-list="goToContactsList"
       @toggle-block="toggleContactBlock"
+      @toggle-internal="toggleContactInternal"
     >
       <div
         v-if="showSpinner"

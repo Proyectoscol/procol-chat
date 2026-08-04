@@ -60,7 +60,7 @@ const buildColumns = () => {
 // one not_equal_to condition per tracked tag, ANDed together — the same
 // pattern app/javascript/dashboard/helper/filterQueryGenerator.js already
 // uses for multi-condition payloads.
-const buildFilterPayload = col => {
+const buildColumnConditions = col => {
   if (props.mode === 'tags') {
     if (col.isEmptyColumn) {
       return props.columnValues.map((tag, idx) => ({
@@ -95,6 +95,27 @@ const buildFilterPayload = col => {
       attribute_key: props.attributeKey,
       filter_operator: 'equal_to',
       values: [col.value],
+      query_operator: null,
+    },
+  ];
+};
+
+// Contacts marked as "internal" (staff/test contacts, see Contact page toggle)
+// never belong on the board — always AND in an exclusion condition after the
+// column's own conditions, re-terminating the chain on it.
+const buildFilterPayload = col => {
+  const conditions = buildColumnConditions(col);
+  const chained = conditions.map((condition, idx) =>
+    idx === conditions.length - 1
+      ? { ...condition, query_operator: 'AND' }
+      : condition
+  );
+  return [
+    ...chained,
+    {
+      attribute_key: 'internal',
+      filter_operator: 'equal_to',
+      values: [false],
       query_operator: null,
     },
   ];

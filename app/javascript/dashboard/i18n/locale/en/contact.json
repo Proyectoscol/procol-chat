@@ -301,6 +301,8 @@
       "SEND_MESSAGE": "Send message",
       "BLOCK_CONTACT": "Block contact",
       "UNBLOCK_CONTACT": "Unblock contact",
+      "MARK_INTERNAL": "Mark as internal",
+      "UNMARK_INTERNAL": "Unmark as internal",
       "BREADCRUMB": {
         "CONTACTS": "Contacts"
       },
@@ -319,6 +321,10 @@
         "BLOCK_ERROR_MESSAGE": "Unable to block contact. Please try again later.",
         "UNBLOCK_SUCCESS_MESSAGE": "This contact is unblocked successfully",
         "UNBLOCK_ERROR_MESSAGE": "Unable to unblock contact. Please try again later.",
+        "MARK_INTERNAL_SUCCESS_MESSAGE": "This contact is marked as internal. It will be excluded from Kanban and Lead Stats.",
+        "MARK_INTERNAL_ERROR_MESSAGE": "Unable to mark contact as internal. Please try again later.",
+        "UNMARK_INTERNAL_SUCCESS_MESSAGE": "This contact is no longer marked as internal",
+        "UNMARK_INTERNAL_ERROR_MESSAGE": "Unable to unmark contact as internal. Please try again later.",
         "IMPORT_CONTACT": {
           "TITLE": "Import contacts",
           "DESCRIPTION": "Import contacts through a CSV file.",

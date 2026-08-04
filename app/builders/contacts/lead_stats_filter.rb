@@ -42,7 +42,7 @@ class Contacts::LeadStatsFilter
 
   def base_relation
     @base_relation ||= begin
-      scoped = account.contacts
+      scoped = account.contacts.where(internal: false)
       scoped = scoped.where(created_at: range) if range.present?
       scoped = scoped.where(id: ContactInbox.where(inbox_id: params[:inbox_id]).select(:contact_id)) if params[:inbox_id].present?
       active_filters.each { |key, value| scoped = scoped.where(attribute_equals_sql(key, value)) }
@@ -74,7 +74,7 @@ class Contacts::LeadStatsFilter
   def discovered_keys
     @discovered_keys ||= ActiveRecord::Base.connection.select_values(
       ActiveRecord::Base.sanitize_sql_array(
-        ['SELECT DISTINCT jsonb_object_keys(additional_attributes) FROM contacts WHERE account_id = ?', account.id]
+        ['SELECT DISTINCT jsonb_object_keys(additional_attributes) FROM contacts WHERE account_id = ? AND internal = false', account.id]
       )
     )
   end

@@ -20,7 +20,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['goToContactsList', 'toggleBlock']);
+const emit = defineEmits(['goToContactsList', 'toggleBlock', 'toggleInternal']);
 
 const { t } = useI18n();
 const slots = useSlots();
@@ -53,12 +53,20 @@ const isContactBlocked = computed(() => {
   return props.selectedContact?.blocked;
 });
 
+const isContactInternal = computed(() => {
+  return props.selectedContact?.internal;
+});
+
 const handleBreadcrumbClick = () => {
   emit('goToContactsList');
 };
 
 const toggleBlock = () => {
   emit('toggleBlock', isContactBlocked.value);
+};
+
+const toggleInternal = () => {
+  emit('toggleInternal', isContactInternal.value);
 };
 
 const handleConversationSidebarToggle = () => {
@@ -99,6 +107,18 @@ const closeMobileSidebar = () => {
                 :is-loading="isUpdating"
                 :disabled="isUpdating"
                 @click="toggleBlock"
+              />
+              <Button
+                :label="
+                  !isContactInternal
+                    ? $t('CONTACTS_LAYOUT.HEADER.MARK_INTERNAL')
+                    : $t('CONTACTS_LAYOUT.HEADER.UNMARK_INTERNAL')
+                "
+                size="sm"
+                slate
+                :is-loading="isUpdating"
+                :disabled="isUpdating"
+                @click="toggleInternal"
               />
               <VoiceCallButton
                 :phone="selectedContact?.phoneNumber"
