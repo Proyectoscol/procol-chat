@@ -14,6 +14,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['selectHour']);
+
 const { t } = useI18n();
 
 const formatHour = hour => {
@@ -36,6 +38,13 @@ const collection = computed(() => ({
 const hasData = computed(() =>
   props.hourlySeries.some(entry => entry.total > 0)
 );
+
+const onElementClick = ({ dataIndex }) => {
+  const entry = props.hourlySeries[dataIndex];
+  if (!entry) return;
+
+  emit('selectHour', { hour: entry.hour, label: formatHour(entry.hour) });
+};
 </script>
 
 <template>
@@ -57,7 +66,11 @@ const hasData = computed(() =>
       {{ t('CONTACT_STATS.NO_DATA') }}
     </span>
     <div v-else class="h-56">
-      <BarChart :collection="collection" />
+      <BarChart
+        :collection="collection"
+        clickable
+        @element-click="onElementClick"
+      />
     </div>
   </div>
 </template>

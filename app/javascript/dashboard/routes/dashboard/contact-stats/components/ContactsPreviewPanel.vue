@@ -14,10 +14,12 @@ const props = defineProps({
   filters: { type: Object, default: () => ({}) },
   inboxId: { type: String, default: '' },
   labelTitles: { type: Array, default: () => [] },
+  hourOfDay: { type: Number, default: null },
   dayFilterLabel: { type: String, default: '' },
+  hourFilterLabel: { type: String, default: '' },
 });
 
-const emit = defineEmits(['clearDayFilter']);
+const emit = defineEmits(['clearDayFilter', 'clearHourFilter']);
 
 const { t } = useI18n();
 
@@ -48,6 +50,7 @@ const fetchContacts = () => {
     filters: props.filters,
     inboxId: props.inboxId,
     labelTitles: props.labelTitles,
+    hourOfDay: props.hourOfDay,
   });
 };
 
@@ -58,6 +61,7 @@ watch(
     props.filters,
     props.inboxId,
     props.labelTitles,
+    props.hourOfDay,
   ],
   fetchContacts,
   { deep: true }
@@ -79,15 +83,26 @@ onMounted(fetchContacts);
           }}
         </p>
       </div>
-      <button
-        v-if="dayFilterLabel"
-        type="button"
-        class="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-n-brand/10 text-n-brand hover:bg-n-brand/20"
-        @click="emit('clearDayFilter')"
-      >
-        {{ dayFilterLabel }}
-        <span class="i-lucide-x size-3" />
-      </button>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button
+          v-if="dayFilterLabel"
+          type="button"
+          class="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-n-brand/10 text-n-brand hover:bg-n-brand/20"
+          @click="emit('clearDayFilter')"
+        >
+          {{ dayFilterLabel }}
+          <span class="i-lucide-x size-3" />
+        </button>
+        <button
+          v-if="hourFilterLabel"
+          type="button"
+          class="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-n-brand/10 text-n-brand hover:bg-n-brand/20"
+          @click="emit('clearHourFilter')"
+        >
+          {{ hourFilterLabel }}
+          <span class="i-lucide-x size-3" />
+        </button>
+      </div>
     </div>
 
     <div

@@ -1,5 +1,6 @@
 class Contacts::AttributeStatsBuilder
   include DateRangeHelper
+  include TimezoneHelper
 
   MAX_VALUES_PER_KEY = 12
   BLANK_LABEL = Contacts::LeadStatsFilter::BLANK_LABEL
@@ -53,7 +54,7 @@ class Contacts::AttributeStatsBuilder
 
   def hourly_series
     filter.relation
-          .group_by_hour_of_day(:created_at, default_value: 0)
+          .group_by_hour_of_day(:created_at, default_value: 0, time_zone: timezone)
           .count
           .sort
           .map { |hour, total| { hour: hour, total: total } }
@@ -67,7 +68,13 @@ class Contacts::AttributeStatsBuilder
     range.presence || (30.days.ago..Time.current)
   end
 
+  # Prefer the browser's own timezone (sent as `timezone_offset`, same convention
+  # used by the Reports module) over the account's `reporting_timezone` setting,
+  # so the daily/hourly buckets always match how the viewer perceives "today" —
+  # not a possibly-unset or stale account-level setting.
   def timezone
+    return timezone_name_from_offset(params[:timezone_offset]) if params[:timezone_offset].present?
+
     account.reporting_timezone.presence || 'UTC'
   end
 end

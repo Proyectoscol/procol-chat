@@ -39,6 +39,7 @@ const stats = ref({
 });
 
 const dayFilter = ref(null);
+const hourFilter = ref(null);
 
 const since = computed(() => getUnixStartOfDay(customDateRange.value[0]));
 const until = computed(() => getUnixEndOfDay(customDateRange.value[1]));
@@ -71,6 +72,7 @@ const requestFilters = computed(() => ({
 const previewSince = computed(() => dayFilter.value?.since ?? since.value);
 const previewUntil = computed(() => dayFilter.value?.until ?? until.value);
 const dayFilterLabel = computed(() => dayFilter.value?.label ?? '');
+const hourFilterLabel = computed(() => hourFilter.value?.label ?? '');
 
 const fetchStats = async () => {
   isFetching.value = true;
@@ -87,6 +89,7 @@ const onDateRangeChange = value => {
   customDateRange.value = [startDate, endDate];
   selectedDateRange.value = rangeType || DATE_RANGE_TYPES.CUSTOM_RANGE;
   dayFilter.value = null;
+  hourFilter.value = null;
   fetchStats();
 };
 
@@ -131,6 +134,14 @@ const onSelectDay = entry => {
 
 const clearDayFilter = () => {
   dayFilter.value = null;
+};
+
+const onSelectHour = ({ hour, label }) => {
+  hourFilter.value = { hour, label };
+};
+
+const clearHourFilter = () => {
+  hourFilter.value = null;
 };
 
 const onExport = async () => {
@@ -261,6 +272,7 @@ onMounted(() => {
           <ContactHourlyCard
             :hourly-series="stats.hourly_series"
             :is-fetching="isFetching"
+            @select-hour="onSelectHour"
           />
         </div>
 
@@ -271,8 +283,11 @@ onMounted(() => {
             :filters="activeFilters"
             :inbox-id="selectedInboxId"
             :label-titles="selectedLabelTitles"
+            :hour-of-day="hourFilter?.hour ?? null"
             :day-filter-label="dayFilterLabel"
+            :hour-filter-label="hourFilterLabel"
             @clear-day-filter="clearDayFilter"
+            @clear-hour-filter="clearHourFilter"
           />
 
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">

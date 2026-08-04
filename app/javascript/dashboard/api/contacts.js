@@ -1,6 +1,8 @@
 /* global axios */
 import ApiClient from './ApiClient';
 
+const getTimeOffset = () => -new Date().getTimezoneOffset() / 60;
+
 export const buildContactParams = (page, sortAttr, label, search) => {
   let params = `include_contact_inboxes=false&page=${page}&sort=${sortAttr}`;
   if (search) {
@@ -116,6 +118,7 @@ class ContactAPI extends ApiClient {
         filters,
         inbox_id: inboxId || undefined,
         label_titles: labelTitles,
+        timezone_offset: getTimeOffset(),
       },
     });
   }
@@ -126,6 +129,7 @@ class ContactAPI extends ApiClient {
     filters,
     inboxId,
     labelTitles,
+    hourOfDay,
     page = 1,
     signal,
   } = {}) {
@@ -136,6 +140,8 @@ class ContactAPI extends ApiClient {
         filters,
         inbox_id: inboxId || undefined,
         label_titles: labelTitles,
+        hour_of_day: hourOfDay ?? undefined,
+        timezone_offset: getTimeOffset(),
         page,
       },
       signal,
