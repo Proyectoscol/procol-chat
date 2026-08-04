@@ -11,6 +11,8 @@ defineProps({
   },
 });
 
+defineEmits(['click']);
+
 const { t } = useI18n();
 const labels = useMapGetter('labels/getLabels');
 
@@ -22,7 +24,11 @@ const formatDate = timestamp =>
 </script>
 
 <template>
-  <div class="flex items-start gap-3 rounded-lg border border-n-weak p-3">
+  <button
+    type="button"
+    class="flex items-start w-full gap-3 p-3 text-left transition-colors border rounded-lg border-n-weak hover:bg-n-alpha-1 hover:border-n-slate-6"
+    @click="$emit('click')"
+  >
     <img
       v-if="contact.thumbnail"
       :src="contact.thumbnail"
@@ -59,5 +65,5 @@ const formatDate = timestamp =>
         </span>
       </div>
     </div>
-  </div>
+  </button>
 </template>

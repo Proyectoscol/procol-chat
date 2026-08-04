@@ -14,7 +14,6 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import ContactAPI from 'dashboard/api/contacts';
 import AttributeStatCard from './components/AttributeStatCard.vue';
 import ContactsPreviewPanel from './components/ContactsPreviewPanel.vue';
-import ContactsDrawer from './components/ContactsDrawer.vue';
 import ContactDailyTrendCard from './components/ContactDailyTrendCard.vue';
 import ContactHourlyCard from './components/ContactHourlyCard.vue';
 
@@ -30,7 +29,6 @@ const selectedInboxId = ref('');
 const selectedLabelTitles = ref([]);
 const activeFilters = ref({});
 const isFetching = ref(false);
-const isFetchingPreview = ref(false);
 const isExporting = ref(false);
 const stats = ref({
   total_count: 0,
@@ -39,10 +37,8 @@ const stats = ref({
   daily_series: [],
   hourly_series: [],
 });
-const previewContacts = ref([]);
 
-const isDrawerOpen = ref(false);
-const drawerDayOverride = ref(null);
+const dayFilter = ref(null);
 
 const since = computed(() => getUnixStartOfDay(customDateRange.value[0]));
 const until = computed(() => getUnixEndOfDay(customDateRange.value[1]));
@@ -72,6 +68,10 @@ const requestFilters = computed(() => ({
   labelTitles: selectedLabelTitles.value,
 }));
 
+const previewSince = computed(() => dayFilter.value?.since ?? since.value);
+const previewUntil = computed(() => dayFilter.value?.until ?? until.value);
+const dayFilterLabel = computed(() => dayFilter.value?.label ?? '');
+
 const fetchStats = async () => {
   isFetching.value = true;
   try {
@@ -82,50 +82,33 @@ const fetchStats = async () => {
   }
 };
 
-const fetchPreviewContacts = async () => {
-  isFetchingPreview.value = true;
-  try {
-    const { data } = await ContactAPI.leadStatsContacts({
-      ...requestFilters.value,
-      page: 1,
-    });
-    previewContacts.value = (data.payload || []).slice(0, 8);
-  } finally {
-    isFetchingPreview.value = false;
-  }
-};
-
-const refreshAll = () => {
-  fetchStats();
-  fetchPreviewContacts();
-};
-
 const onDateRangeChange = value => {
   const [startDate, endDate, rangeType] = value;
   customDateRange.value = [startDate, endDate];
   selectedDateRange.value = rangeType || DATE_RANGE_TYPES.CUSTOM_RANGE;
-  refreshAll();
+  dayFilter.value = null;
+  fetchStats();
 };
 
-watch(selectedInboxId, refreshAll);
+watch(selectedInboxId, fetchStats);
 
 const toggleLabel = title => {
   selectedLabelTitles.value = selectedLabelTitles.value.includes(title)
     ? selectedLabelTitles.value.filter(selected => selected !== title)
     : [...selectedLabelTitles.value, title];
-  refreshAll();
+  fetchStats();
 };
 
 const clearFilter = key => {
   const updated = { ...activeFilters.value };
   delete updated[key];
   activeFilters.value = updated;
-  refreshAll();
+  fetchStats();
 };
 
 const clearAllFilters = () => {
   activeFilters.value = {};
-  refreshAll();
+  fetchStats();
 };
 
 const onSegmentSelect = ({ key, value }) => {
@@ -134,34 +117,21 @@ const onSegmentSelect = ({ key, value }) => {
     return;
   }
   activeFilters.value = { ...activeFilters.value, [key]: value };
-  refreshAll();
-};
-
-const openDrawer = (dayOverride = null) => {
-  drawerDayOverride.value = dayOverride;
-  isDrawerOpen.value = true;
-};
-
-const closeDrawer = () => {
-  isDrawerOpen.value = false;
+  fetchStats();
 };
 
 const onSelectDay = entry => {
   const day = parseISO(entry.date);
-  openDrawer({
+  dayFilter.value = {
     since: getUnixStartOfDay(day),
     until: getUnixEndOfDay(day),
-    title: format(day, 'MMM d, yyyy'),
-  });
+    label: format(day, 'MMM d, yyyy'),
+  };
 };
 
-const drawerSince = computed(
-  () => drawerDayOverride.value?.since ?? since.value
-);
-const drawerUntil = computed(
-  () => drawerDayOverride.value?.until ?? until.value
-);
-const drawerTitle = computed(() => drawerDayOverride.value?.title ?? '');
+const clearDayFilter = () => {
+  dayFilter.value = null;
+};
 
 const onExport = async () => {
   isExporting.value = true;
@@ -175,7 +145,7 @@ const onExport = async () => {
 
 onMounted(() => {
   store.dispatch('labels/get');
-  refreshAll();
+  fetchStats();
 });
 </script>
 
@@ -281,26 +251,31 @@ onMounted(() => {
           </span>
         </div>
 
-        <div class="mb-4">
+        <div class="grid grid-cols-1 gap-4 mb-4 lg:grid-cols-2">
           <ContactDailyTrendCard
             :daily-series="stats.daily_series"
             :active-labels="activeLabelObjects"
             :is-fetching="isFetching"
             @select-day="onSelectDay"
           />
+          <ContactHourlyCard
+            :hourly-series="stats.hourly_series"
+            :is-fetching="isFetching"
+          />
         </div>
 
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div class="lg:col-span-2">
-            <ContactsPreviewPanel
-              :contacts="previewContacts"
-              :total-count="stats.total_count"
-              :is-fetching="isFetchingPreview"
-              @view-all="openDrawer()"
-            />
-          </div>
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <ContactsPreviewPanel
+            :since="previewSince"
+            :until="previewUntil"
+            :filters="activeFilters"
+            :inbox-id="selectedInboxId"
+            :label-titles="selectedLabelTitles"
+            :day-filter-label="dayFilterLabel"
+            @clear-day-filter="clearDayFilter"
+          />
 
-          <div class="flex flex-col gap-4">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <AttributeStatCard
               v-for="key in stats.keys"
               :key="key"
@@ -310,24 +285,9 @@ onMounted(() => {
               :active-value="activeFilters[key] || ''"
               @select="onSegmentSelect"
             />
-            <ContactHourlyCard
-              :hourly-series="stats.hourly_series"
-              :is-fetching="isFetching"
-            />
           </div>
         </div>
       </template>
     </div>
-
-    <ContactsDrawer
-      :open="isDrawerOpen"
-      :title="drawerTitle"
-      :since="drawerSince"
-      :until="drawerUntil"
-      :filters="activeFilters"
-      :inbox-id="selectedInboxId"
-      :label-titles="selectedLabelTitles"
-      @close="closeDrawer"
-    />
   </div>
 </template>

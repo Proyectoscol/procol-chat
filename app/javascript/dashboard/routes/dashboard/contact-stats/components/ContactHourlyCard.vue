@@ -46,17 +46,17 @@ const hasData = computed(() =>
 
     <span
       v-if="isFetching"
-      class="flex h-40 items-center justify-center text-xs text-n-slate-10"
+      class="flex h-56 items-center justify-center text-xs text-n-slate-10"
     >
       {{ t('CONTACT_STATS.LOADING') }}
     </span>
     <span
       v-else-if="!hasData"
-      class="flex h-40 items-center justify-center text-xs text-n-slate-10"
+      class="flex h-56 items-center justify-center text-xs text-n-slate-10"
     >
       {{ t('CONTACT_STATS.NO_DATA') }}
     </span>
-    <div v-else class="h-40">
+    <div v-else class="h-56">
       <BarChart :collection="collection" />
     </div>
   </div>
