@@ -83,6 +83,30 @@ Cuando el usuario quiera traer cambios del chatwoot oficial:
 - No escribir specs a menos que se pida explícitamente
 - Eliminar código muerto/no alcanzable
 - No escribir múltiples versiones del mismo logic
+- Prefer the smallest production-ready change that solves the current problem.
+- Build for the expected production path first. Do not add speculative guards, fallbacks, retries, or edge-case handling unless the caller can actually hit that case or production has proven it necessary.
+- Enforce eligibility and exclusivity rules at the earliest shared entry point. Do not repeat backup guards across downstream jobs, callbacks, services, or writes unless a proven independent path bypasses that point.
+- When an impossible or misconfigured state would indicate a setup/deployment bug, let it fail loudly instead of silently skipping behavior.
+- For locked/internal configs that must exist in production, prefer direct reads (`find`, `find_by!`, required hash keys) over silent fallbacks.
+- Do not add validation or response checks unless the code uses the result or the check changes behavior meaningfully.
+- Prefer existing repo dependencies/client libraries over hand-rolled protocol code for auth, signing, parsing, or API plumbing.
+- Avoid one-use private helpers unless they hide real complexity or make the main flow meaningfully easier to read.
+- Prefer minimal, readable code over elaborate abstractions; clarity beats cleverness
+- Break down complex tasks into small, testable units
+- Iterate after confirmation
+- Avoid writing specs unless explicitly asked
+- In specs, avoid custom helper methods for setup/data. Prefer `let` values and direct per-example setup; only add a helper when it removes meaningful repeated complexity.
+- Remove dead/unreachable/unused code
+- Don’t write multiple versions or backups for the same logic — pick the best approach and implement it
+- Prefer `with_modified_env` (from spec helpers) over stubbing `ENV` directly in specs
+- Specs in parallel/reloading environments: prefer comparing `error.class.name` over constant class equality when asserting raised errors
+
+## Codex Worktree Workflow
+
+- Use a separate git worktree + branch per task to keep changes isolated.
+- Keep Codex-specific local setup under `.codex/` and use `Procfile.worktree` for worktree process orchestration.
+- The setup workflow in `.codex/environments/environment.toml` should dynamically generate per-worktree DB/port values (Rails, Vite, Redis DB index) to avoid collisions.
+- Start each worktree with its own Overmind socket/title so multiple instances can run at the same time.
 
 ## Commit Messages
 
@@ -99,7 +123,12 @@ Cuando el usuario quiera traer cambios del chatwoot oficial:
 
 - Archivos en `app/javascript/`
 - Rutas Vue en `app/javascript/dashboard/router/`
-- Usar `components-next/` para message bubbles
+- Usar `components-next/` para message bubbles (el resto está en deprecación)
+- **Translations**:
+  - For product and source-string changes, only update `en.yml` and `en.json`; other languages are handled through Crowdin and the community
+  - Crowdin-generated translation sync PRs may update non-English locale files; do not flag those changes solely for modifying translated locale files
+  - Preserve product and brand names, OAuth scopes, API values, and other machine-readable identifiers unless an official localized form exists
+  - When reviewing Crowdin syncs, verify protected terms remain unchanged. Add newly introduced product names, brand names, and machine-readable identifiers to the Crowdin glossary as non-translatable, and keep the glossary current
 
 ## Enterprise Edition
 
@@ -107,6 +136,15 @@ Cuando el usuario quiera traer cambios del chatwoot oficial:
 - Buscar archivos relacionados en ambos árboles antes de editar
 - Evitar hardcodear comportamiento específico de plan en OSS
 - Preferir feature flags o extension points
+
+## Frontend Conventions
+
+- Prefer existing design-system utilities and shared composables.
+- Use typography utilities instead of manually recreating font styles.
+- Use logical Tailwind utilities (`ms`, `me`, `start`, `end`) for direction-aware layouts.
+- Use `rem` for arbitrary CSS dimensions; preserve native numeric values required by chart/SVG APIs.
+- Extract repeated or domain-specific strings, thresholds, colors, and durations into named constants.
+- Use shared request-cancellation utilities instead of local `AbortController` logic.
 
 ## Stack del proyecto
 
