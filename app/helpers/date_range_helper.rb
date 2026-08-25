@@ -14,6 +14,10 @@ module DateRangeHelper
     return datetime if datetime.is_a?(DateTime)
     return datetime.to_datetime if datetime.is_a?(Time) || datetime.is_a?(Date)
 
-    DateTime.strptime(datetime, '%s')
+    # `strptime` requires a String. Query params arrive as strings already, but
+    # params round-tripped through an ActiveJob (e.g. Sidekiq's JSON args)
+    # preserve their original JSON type, so a unix timestamp can reach here as
+    # an Integer.
+    DateTime.strptime(datetime.to_s, '%s')
   end
 end

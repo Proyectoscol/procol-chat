@@ -36,6 +36,13 @@ class Contacts::LeadStatsFilter
     @available_keys ||= discovered_keys - DENYLIST_KEYS
   end
 
+  # All contact-level custom attributes defined on the account, regardless of
+  # whether a given contact has a value for them — lets the export show one
+  # column per definition, blank where the contact has no value.
+  def available_custom_attribute_keys
+    @available_custom_attribute_keys ||= account.custom_attribute_definitions.contact_attribute.pluck(:attribute_key)
+  end
+
   private
 
   attr_reader :account, :params

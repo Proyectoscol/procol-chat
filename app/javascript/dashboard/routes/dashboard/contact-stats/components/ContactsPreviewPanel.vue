@@ -71,7 +71,9 @@ onMounted(fetchContacts);
 </script>
 
 <template>
-  <div class="flex flex-col rounded-xl border border-n-weak bg-n-solid-1 p-4">
+  <div
+    class="flex flex-col h-full rounded-xl border border-n-weak bg-n-solid-1 p-4"
+  >
     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
       <div>
         <h3 class="text-sm font-medium text-n-slate-12">
@@ -107,36 +109,38 @@ onMounted(fetchContacts);
 
     <div
       v-if="isFetching"
-      class="flex items-center justify-center py-10 text-xs text-n-slate-10"
+      class="flex items-center justify-center flex-1 py-10 text-xs text-n-slate-10"
     >
       <Spinner />
     </div>
     <div
       v-else-if="hasError"
-      class="flex items-center justify-center py-10 text-xs text-n-ruby-11"
+      class="flex items-center justify-center flex-1 py-10 text-xs text-n-ruby-11"
     >
       {{ t('CONTACT_STATS.DRAWER.ERROR') }}
     </div>
     <div
       v-else-if="!hasRecords"
-      class="flex items-center justify-center py-10 text-xs text-n-slate-10"
+      class="flex items-center justify-center flex-1 py-10 text-xs text-n-slate-10"
     >
       {{ t('CONTACT_STATS.EMPTY_STATE') }}
     </div>
-    <div v-else class="flex flex-col gap-2 overflow-y-auto max-h-[32rem]">
-      <ContactListItem
-        v-for="contact in records"
-        :key="contact.id"
-        :contact="contact"
-        @click="openContactModal(contact)"
-      />
+    <div v-else class="flex flex-col flex-1 min-h-0">
+      <div class="flex flex-col flex-1 gap-2 overflow-y-auto min-h-0">
+        <ContactListItem
+          v-for="contact in records"
+          :key="contact.id"
+          :contact="contact"
+          @click="openContactModal(contact)"
+        />
+      </div>
 
       <Button
         v-if="hasMore"
         faded
         slate
         size="sm"
-        class="mx-auto mt-2"
+        class="mx-auto mt-2 flex-shrink-0"
         :label="t('CONTACT_STATS.DRAWER.LOAD_MORE')"
         :is-loading="isFetchingMore"
         @click="loadMore"

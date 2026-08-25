@@ -1,9 +1,11 @@
 class Account::LeadStatsExportJob < ApplicationJob
   queue_as :low
 
-  BASE_COLUMNS = %w[id name email phone_number created_at].freeze
+  BASE_COLUMNS = %w[id name phone_number email country_code location created_at last_activity_at].freeze
   LABELS_COLUMN = 'labels'.freeze
   LABELS_DELIMITER = ','.freeze
+  CUSTOM_ATTRIBUTE_PREFIX = 'custom_'.freeze
+  TIMESTAMP_COLUMNS = %w[created_at last_activity_at].freeze
 
   def perform(account_id, user_id, params)
     @account = Account.find(account_id)
@@ -11,7 +13,7 @@ class Account::LeadStatsExportJob < ApplicationJob
     @params = params.with_indifferent_access
 
     generate_csv
-    send_mail
+    notify_export_ready
   end
 
   private
@@ -20,8 +22,12 @@ class Account::LeadStatsExportJob < ApplicationJob
     @filter ||= Contacts::LeadStatsFilter.new(account: @account, params: @params)
   end
 
+  def custom_attribute_headers
+    filter.available_custom_attribute_keys.map { |key| "#{CUSTOM_ATTRIBUTE_PREFIX}#{key}" }
+  end
+
   def headers
-    @headers ||= BASE_COLUMNS + filter.available_keys + [LABELS_COLUMN]
+    @headers ||= BASE_COLUMNS + [LABELS_COLUMN] + filter.available_keys + custom_attribute_headers
   end
 
   def generate_csv
@@ -38,7 +44,8 @@ class Account::LeadStatsExportJob < ApplicationJob
 
   def value_for(contact, header)
     return @labels_by_contact_id.fetch(contact.id, []).join(LABELS_DELIMITER) if header == LABELS_COLUMN
-    return contact.created_at.iso8601 if header == 'created_at'
+    return contact.send(header)&.iso8601 if TIMESTAMP_COLUMNS.include?(header)
+    return contact.custom_attributes[header.delete_prefix(CUSTOM_ATTRIBUTE_PREFIX)] if header.start_with?(CUSTOM_ATTRIBUTE_PREFIX)
     return contact.additional_attributes[header] unless BASE_COLUMNS.include?(header)
 
     contact.send(header)
@@ -58,9 +65,14 @@ class Account::LeadStatsExportJob < ApplicationJob
     )
   end
 
-  def send_mail
+  # No email involved: the file is attached above, and the browser is told to
+  # download it the moment it's ready via ActionCable (same pattern as
+  # Account::BrandingEnrichmentJob's 'account.enrichment_completed' broadcast).
+  def notify_export_ready
+    return unless @account.lead_stats_export.attached?
+
     file_url = Rails.application.routes.url_helpers.rails_blob_url(@account.lead_stats_export)
-    mailer = AdministratorNotifications::AccountNotificationMailer.with(account: @account)
-    mailer.contact_export_complete(file_url, @account_user.email)&.deliver_later
+    data = { account_id: @account.id, download_url: file_url }
+    ActionCableBroadcastJob.perform_later([@account_user.pubsub_token], 'lead_stats_export.completed', data)
   end
 end

@@ -1165,7 +1165,7 @@
     },
     "EXPORT": {
       "BUTTON": "Export",
-      "SUCCESS": "Export started. You'll receive an email when it's ready to download."
+      "SUCCESS": "Export started. The download will start automatically when it's ready."
     }
   }
 }
