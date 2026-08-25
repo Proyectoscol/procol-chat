@@ -72,7 +72,7 @@ const onChange = event => {
       <span
         class="text-xs font-medium text-n-slate-10 bg-n-background rounded-full px-2 py-0.5 flex-shrink-0 border border-n-weak"
       >
-        {{ contacts.length }}
+        {{ column.totalCount ?? contacts.length }}
       </span>
     </div>
 

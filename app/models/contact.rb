@@ -188,6 +188,16 @@ class Contact < ApplicationRecord
     where("contacts.email <> '' OR contacts.phone_number <> '' OR contacts.identifier <> ''")
   end
 
+  # Matches contacts tagged directly (rarely used) OR whose conversations
+  # carry the label (how agents actually tag leads day-to-day), so filtering
+  # by label here agrees with the Kanban's 'conversation_labels' filter.
+  def self.tagged_with_label(label_names)
+    taggings = ActsAsTaggableOn::Tagging.joins(:tag).where(context: 'labels', tags: { name: Array(label_names) })
+    own_ids = taggings.where(taggable_type: 'Contact').select(:taggable_id)
+    convo_ids = Conversation.where(id: taggings.where(taggable_type: 'Conversation').select(:taggable_id)).select(:contact_id)
+    where(id: own_ids).or(where(id: convo_ids))
+  end
+
   def discard_invalid_attrs
     phone_number_format
     email_format

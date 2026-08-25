@@ -37,6 +37,7 @@ const buildColumns = () => {
     isLoading: false,
     page: 1,
     hasMore: false,
+    totalCount: null,
   }));
   columns.value = [
     {
@@ -47,6 +48,7 @@ const buildColumns = () => {
       isLoading: false,
       page: 1,
       hasMore: false,
+      totalCount: null,
     },
     ...valueColumns,
   ];
@@ -133,6 +135,7 @@ const fetchColumnContacts = async (colIndex, page = 1) => {
     col.contacts = page === 1 ? incoming : [...col.contacts, ...incoming];
     col.page = page;
     col.hasMore = incoming.length === PAGE_SIZE;
+    col.totalCount = data.meta?.count ?? col.contacts.length;
   } catch {
     // silent per-column failure
   } finally {
