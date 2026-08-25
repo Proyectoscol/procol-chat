@@ -1165,7 +1165,8 @@
     },
     "EXPORT": {
       "BUTTON": "Export",
-      "SUCCESS": "Export started. The download will start automatically when it's ready."
+      "SUCCESS": "Export started. The download will start automatically when it's ready.",
+      "READY": "Your Lead Stats export is ready. Download started."
     }
   }
 }

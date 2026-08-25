@@ -346,7 +346,7 @@ class ActionCableConnector extends BaseActionCableConnector {
     if (!this.isAValidEvent(data)) return;
 
     this.triggerDownload(data.download_url);
-    useAlert('Your Lead Stats export is ready. Download started.');
+    useAlert(this.app.$t('CONTACT_STATS.EXPORT.READY'));
   };
 
   // eslint-disable-next-line class-methods-use-this
@@ -442,7 +442,7 @@ class ActionCableConnector extends BaseActionCableConnector {
 }
 
 export default {
-  init(store, pubsubToken) {
-    return new ActionCableConnector({ $store: store }, pubsubToken);
+  init(store, pubsubToken, t) {
+    return new ActionCableConnector({ $store: store, $t: t }, pubsubToken);
   },
 };
