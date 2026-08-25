@@ -23,6 +23,7 @@
 # - 'contact_manage': Can manage contacts.
 # - 'report_manage': Can manage reports.
 # - 'knowledge_base_manage': Can manage knowledge base portals.
+# - 'lead_stats_manage': Can view and export Lead Statistics only.
 
 class CustomRole < ApplicationRecord
   belongs_to :account
@@ -39,6 +40,7 @@ class CustomRole < ApplicationRecord
     contact_manage
     report_manage
     knowledge_base_manage
+    lead_stats_manage
   ].freeze
 
   validates :name, presence: true

@@ -28,6 +28,8 @@ import {
   resolveSidebarSort,
   sortSidebarItems,
 } from 'dashboard/helper/sidebarSort';
+import { getUserPermissions } from 'dashboard/helper/permissionsHelper';
+import { LEAD_STATS_PERMISSIONS } from 'dashboard/constants/permissions.js';
 
 const props = defineProps({
   isMobileSidebarOpen: {
@@ -66,6 +68,17 @@ const isMobile = computed(() => windowWidth.value < 768);
 const accountId = useMapGetter('getCurrentAccountId');
 const currentUser = useMapGetter('getCurrentUser');
 const currentUserId = useMapGetter('getCurrentUserID');
+
+// A custom role's permissions fully replace the base agent/administrator
+// permissions (see Enterprise::AccountUser#permissions), so holding only
+// `lead_stats_manage` means the user has no other route access at all —
+// the sidebar should reflect that instead of listing links that just
+// bounce them back via the route guard.
+const isLeadStatsOnlyUser = computed(() =>
+  getUserPermissions(currentUser.value, accountId.value).includes(
+    LEAD_STATS_PERMISSIONS
+  )
+);
 const isFeatureEnabledonAccount = useMapGetter(
   'accounts/isFeatureEnabledonAccount'
 );
@@ -971,6 +984,9 @@ const menuItems = computed(() => {
       ],
     },
   ]
+    .filter(item =>
+      isLeadStatsOnlyUser.value ? item.name === 'ContactStats' : true
+    )
     .filter(item => !item.hidden)
     .map(item => ({
       ...item,
