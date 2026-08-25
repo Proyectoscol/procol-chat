@@ -11,6 +11,7 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
       email: new_agent_params['email'],
       name: new_agent_params['name'],
       role: new_agent_params['role'],
+      custom_role_id: new_agent_params['custom_role_id'],
       availability: new_agent_params['availability'],
       auto_offline: new_agent_params['auto_offline'],
       inviter: current_user,
@@ -68,14 +69,19 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
   # agent never opens a browser session — otherwise auto_offline's presence
   # check (see AvailabilityStatusable) silently forces the display back to
   # offline, making the manual override a no-op for agents who never log in.
+  #
+  # custom_role_id is handled separately from `.compact`: switching an agent
+  # back to a plain role sends it as null on purpose, and `.compact` would
+  # silently drop that null and leave the stale custom role in place.
   def account_user_params
     params = agent_params.slice(*account_user_attributes).compact
     params[:auto_offline] = false if params.key?(:availability)
+    params[:custom_role_id] = agent_params[:custom_role_id] if agent_params.key?(:custom_role_id)
     params
   end
 
   def allowed_agent_params
-    [:name, :email, :role, :availability, :auto_offline, :avatar]
+    [:name, :email, :role, :custom_role_id, :availability, :auto_offline, :avatar]
   end
 
   def agent_params
@@ -83,7 +89,7 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
   end
 
   def new_agent_params
-    params.require(:agent).permit(:email, :name, :role, :availability, :auto_offline, :avatar)
+    params.require(:agent).permit(:email, :name, :role, :custom_role_id, :availability, :auto_offline, :avatar)
   end
 
   def agents
