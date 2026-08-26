@@ -117,9 +117,9 @@ RSpec.describe Captain::AssistantStatsBuilder do
     end
 
     it 'falls back to the default range for values outside the allowed set' do
-      expect(described_class.new(assistant, '365000').range).to eq('30')
-      expect(described_class.new(assistant, 'bogus').range).to eq('30')
-      expect(described_class.new(assistant, nil).range).to eq('30')
+      expect(described_class.new(assistant, '365000').range).to eq('7')
+      expect(described_class.new(assistant, 'bogus').range).to eq('7')
+      expect(described_class.new(assistant, nil).range).to eq('7')
     end
   end
 
@@ -193,7 +193,10 @@ RSpec.describe Captain::AssistantStatsBuilder do
                                  name: 'conversation_opened', value: 120,
                                  event_start_time: Time.utc(2026, 6, 12), event_end_time: Time.utc(2026, 7, 1))
 
-        expect(described_class.new(assistant, 'last_month').metrics[:reopen_rate][:current]).to eq(0.0)
+        # Explicit UTC offset: this test fixes its fixtures to UTC month boundaries,
+        # so it must anchor to UTC regardless of this fork's config.time_zone
+        # default (America/Bogota) — see 'timezone anchoring' below.
+        expect(described_class.new(assistant, 'last_month', 0).metrics[:reopen_rate][:current]).to eq(0.0)
       end
     end
 
@@ -213,7 +216,7 @@ RSpec.describe Captain::AssistantStatsBuilder do
     # 2026-07-01 03:00 UTC is still 2026-06-30 in any timezone behind UTC by 4h+.
     it 'anchors the this_month window to the supplied offset, not UTC' do
       travel_to(Time.utc(2026, 7, 1, 3, 0, 0)) do
-        utc = described_class.new(assistant, 'this_month').period
+        utc = described_class.new(assistant, 'this_month', 0).period
         la = described_class.new(assistant, 'this_month', -7).period
 
         expect(utc[:starts_on]).to eq(Date.new(2026, 7, 1))
@@ -222,9 +225,12 @@ RSpec.describe Captain::AssistantStatsBuilder do
       end
     end
 
-    it 'defaults to UTC when no offset is given' do
+    # This fork sets config.time_zone = 'America/Bogota' (config/application.rb),
+    # so with no explicit offset the window anchors to Time.zone (Bogota, UTC-5)
+    # rather than UTC — 2026-07-01 03:00 UTC is still 2026-06-30 22:00 there.
+    it 'defaults to the account time zone when no offset is given' do
       travel_to(Time.utc(2026, 7, 1, 3, 0, 0)) do
-        expect(described_class.new(assistant, 'this_month').period[:starts_on]).to eq(Date.new(2026, 7, 1))
+        expect(described_class.new(assistant, 'this_month').period[:starts_on]).to eq(Date.new(2026, 6, 1))
       end
     end
   end
