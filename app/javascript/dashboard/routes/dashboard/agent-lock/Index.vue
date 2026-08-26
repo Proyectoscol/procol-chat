@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useStore, useStoreGetters } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
-import { picoSearch } from '@scmmishra/pico-search';
+import { picoSearch } from '@chatwoot/pico-search';
 import AgentLockCard from './components/AgentLockCard.vue';
 
 const store = useStore();
