@@ -3,7 +3,6 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import startOfMonth from 'date-fns/startOfMonth';
 import parseISO from 'date-fns/parseISO';
-import format from 'date-fns/format';
 import { getUnixStartOfDay, getUnixEndOfDay } from 'helpers/DateHelper';
 import WootDatePicker from 'dashboard/components/ui/DatePicker/DatePicker.vue';
 import { DATE_RANGE_TYPES } from 'dashboard/components/ui/DatePicker/helpers/DatePickerHelper';
@@ -23,28 +22,40 @@ const store = useStore();
 const inboxes = useMapGetter('inboxes/getInboxes');
 const labels = useMapGetter('labels/getLabels');
 
+const contactAttributeDefinitions = useMapGetter(
+  'attributes/getContactAttributes'
+);
+
 const customDateRange = ref([startOfMonth(new Date()), new Date()]);
 const selectedDateRange = ref(DATE_RANGE_TYPES.MONTH_TO_DATE);
 const selectedInboxId = ref('');
 const selectedLabelTitles = ref([]);
+const selectedContactIds = ref([]);
 const activeFilters = ref({});
+const activeCustomFilters = ref({});
 const isFetching = ref(false);
 const isExporting = ref(false);
 const stats = ref({
   total_count: 0,
   keys: [],
   breakdowns: {},
+  custom_keys: [],
+  custom_breakdowns: {},
+  label_counts: {},
   daily_series: [],
   hourly_series: [],
 });
 
-const dayFilter = ref(null);
+const previousDateRange = ref(null);
 const hourFilter = ref(null);
 
 const since = computed(() => getUnixStartOfDay(customDateRange.value[0]));
 const until = computed(() => getUnixEndOfDay(customDateRange.value[1]));
 
 const activeFilterEntries = computed(() => Object.entries(activeFilters.value));
+const activeCustomFilterEntries = computed(() =>
+  Object.entries(activeCustomFilters.value)
+);
 
 const activeLabelObjects = computed(() =>
   labels.value.filter(label => selectedLabelTitles.value.includes(label.title))
@@ -61,17 +72,20 @@ const inboxOptions = computed(() => [
 const humanize = key =>
   key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 
+const customAttributeLabel = key =>
+  contactAttributeDefinitions.value.find(a => a.attributeKey === key)
+    ?.attributeDisplayName || humanize(key);
+
 const requestFilters = computed(() => ({
   since: since.value,
   until: until.value,
   filters: activeFilters.value,
+  customFilters: activeCustomFilters.value,
   inboxId: selectedInboxId.value,
   labelTitles: selectedLabelTitles.value,
+  contactIds: selectedContactIds.value,
 }));
 
-const previewSince = computed(() => dayFilter.value?.since ?? since.value);
-const previewUntil = computed(() => dayFilter.value?.until ?? until.value);
-const dayFilterLabel = computed(() => dayFilter.value?.label ?? '');
 const hourFilterLabel = computed(() => hourFilter.value?.label ?? '');
 
 const fetchStats = async () => {
@@ -88,12 +102,13 @@ const onDateRangeChange = value => {
   const [startDate, endDate, rangeType] = value;
   customDateRange.value = [startDate, endDate];
   selectedDateRange.value = rangeType || DATE_RANGE_TYPES.CUSTOM_RANGE;
-  dayFilter.value = null;
+  previousDateRange.value = null;
   hourFilter.value = null;
   fetchStats();
 };
 
 watch(selectedInboxId, fetchStats);
+watch(selectedContactIds, fetchStats, { deep: true });
 
 const toggleLabel = title => {
   selectedLabelTitles.value = selectedLabelTitles.value.includes(title)
@@ -102,38 +117,57 @@ const toggleLabel = title => {
   fetchStats();
 };
 
-const clearFilter = key => {
-  const updated = { ...activeFilters.value };
+const clearFilterFrom = (filtersRef, key) => {
+  const updated = { ...filtersRef.value };
   delete updated[key];
-  activeFilters.value = updated;
+  filtersRef.value = updated;
   fetchStats();
 };
 
-const clearAllFilters = () => {
-  activeFilters.value = {};
-  fetchStats();
-};
-
-const onSegmentSelect = ({ key, value }) => {
+const setFilterFrom = (filtersRef, key, value) => {
   if (!value) {
-    clearFilter(key);
+    clearFilterFrom(filtersRef, key);
     return;
   }
-  activeFilters.value = { ...activeFilters.value, [key]: value };
+  filtersRef.value = { ...filtersRef.value, [key]: value };
   fetchStats();
+};
+
+const clearFilter = key => clearFilterFrom(activeFilters, key);
+const clearAllFilters = () => {
+  activeFilters.value = {};
+  activeCustomFilters.value = {};
+  fetchStats();
+};
+const onSegmentSelect = ({ key, value }) =>
+  setFilterFrom(activeFilters, key, value);
+
+const clearCustomFilter = key => clearFilterFrom(activeCustomFilters, key);
+const onCustomSegmentSelect = ({ key, value }) =>
+  setFilterFrom(activeCustomFilters, key, value);
+
+const clearContactSelection = () => {
+  selectedContactIds.value = [];
 };
 
 const onSelectDay = entry => {
   const day = parseISO(entry.date);
-  dayFilter.value = {
-    since: getUnixStartOfDay(day),
-    until: getUnixEndOfDay(day),
-    label: format(day, 'MMM d, yyyy'),
+  previousDateRange.value = {
+    range: [...customDateRange.value],
+    type: selectedDateRange.value,
   };
+  customDateRange.value = [day, day];
+  selectedDateRange.value = DATE_RANGE_TYPES.CUSTOM_RANGE;
+  hourFilter.value = null;
+  fetchStats();
 };
 
-const clearDayFilter = () => {
-  dayFilter.value = null;
+const revertDayFilter = () => {
+  if (!previousDateRange.value) return;
+  customDateRange.value = previousDateRange.value.range;
+  selectedDateRange.value = previousDateRange.value.type;
+  previousDateRange.value = null;
+  fetchStats();
 };
 
 const onSelectHour = ({ hour, label }) => {
@@ -156,6 +190,7 @@ const onExport = async () => {
 
 onMounted(() => {
   store.dispatch('labels/get');
+  store.dispatch('attributes/get');
   fetchStats();
 });
 </script>
@@ -180,6 +215,15 @@ onMounted(() => {
             v-model:date-range="customDateRange"
             v-model:range-type="selectedDateRange"
             @date-range-changed="onDateRangeChange"
+          />
+          <Button
+            v-if="previousDateRange"
+            faded
+            slate
+            size="sm"
+            icon="i-lucide-undo-2"
+            :label="t('CONTACT_STATS.REVERT_DAY_FILTER')"
+            @click="revertDayFilter"
           />
           <Select v-model="selectedInboxId" :options="inboxOptions" />
           <Button
@@ -210,12 +254,19 @@ onMounted(() => {
               :style="{ backgroundColor: label.color }"
             />
             {{ label.title }}
+            <span class="text-[10px] text-n-slate-10">
+              {{ stats.label_counts?.[label.title] ?? 0 }}
+            </span>
           </button>
         </div>
       </div>
 
       <div
-        v-if="activeFilterEntries.length"
+        v-if="
+          activeFilterEntries.length ||
+          activeCustomFilterEntries.length ||
+          selectedContactIds.length
+        "
         class="flex flex-wrap items-center gap-2 mb-4"
       >
         <span class="text-xs text-n-slate-10">
@@ -223,11 +274,32 @@ onMounted(() => {
         </span>
         <button
           v-for="[key, value] in activeFilterEntries"
-          :key="key"
+          :key="`std-${key}`"
           class="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-n-brand/10 text-n-brand hover:bg-n-brand/20"
           @click="clearFilter(key)"
         >
           {{ humanize(key) }}: {{ value }}
+          <span class="i-lucide-x size-3" />
+        </button>
+        <button
+          v-for="[key, value] in activeCustomFilterEntries"
+          :key="`custom-${key}`"
+          class="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-n-brand/10 text-n-brand hover:bg-n-brand/20"
+          @click="clearCustomFilter(key)"
+        >
+          {{ customAttributeLabel(key) }}: {{ value }}
+          <span class="i-lucide-x size-3" />
+        </button>
+        <button
+          v-if="selectedContactIds.length"
+          class="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-n-brand/10 text-n-brand hover:bg-n-brand/20"
+          @click="clearContactSelection"
+        >
+          {{
+            t('CONTACT_STATS.SELECTED_CONTACTS', {
+              count: selectedContactIds.length,
+            })
+          }}
           <span class="i-lucide-x size-3" />
         </button>
         <button
@@ -278,28 +350,49 @@ onMounted(() => {
 
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <ContactsPreviewPanel
-            :since="previewSince"
-            :until="previewUntil"
+            v-model:selected-contact-ids="selectedContactIds"
+            :since="since"
+            :until="until"
             :filters="activeFilters"
+            :custom-filters="activeCustomFilters"
             :inbox-id="selectedInboxId"
             :label-titles="selectedLabelTitles"
             :hour-of-day="hourFilter?.hour ?? null"
-            :day-filter-label="dayFilterLabel"
             :hour-filter-label="hourFilterLabel"
-            @clear-day-filter="clearDayFilter"
             @clear-hour-filter="clearHourFilter"
           />
 
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <AttributeStatCard
-              v-for="key in stats.keys"
-              :key="key"
-              :attribute-key="key"
-              :label="humanize(key)"
-              :breakdown="stats.breakdowns[key]"
-              :active-value="activeFilters[key] || ''"
-              @select="onSegmentSelect"
-            />
+          <div class="flex flex-col gap-4">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <AttributeStatCard
+                v-for="key in stats.keys"
+                :key="key"
+                :attribute-key="key"
+                :label="humanize(key)"
+                :breakdown="stats.breakdowns[key]"
+                :active-value="activeFilters[key] || ''"
+                @select="onSegmentSelect"
+              />
+            </div>
+
+            <div v-if="stats.custom_keys?.length" class="flex flex-col gap-2">
+              <h3
+                class="text-xs font-semibold text-n-slate-10 uppercase tracking-wide"
+              >
+                {{ t('CONTACT_STATS.CUSTOM_ATTRIBUTES.TITLE') }}
+              </h3>
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <AttributeStatCard
+                  v-for="key in stats.custom_keys"
+                  :key="key"
+                  :attribute-key="key"
+                  :label="customAttributeLabel(key)"
+                  :breakdown="stats.custom_breakdowns[key]"
+                  :active-value="activeCustomFilters[key] || ''"
+                  @select="onCustomSegmentSelect"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </template>

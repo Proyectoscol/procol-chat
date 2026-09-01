@@ -15,6 +15,9 @@ class Contacts::AttributeStatsBuilder
       total_count: filter.relation.count,
       keys: filter.available_keys,
       breakdowns: filter.available_keys.index_with { |key| breakdown_for(key) },
+      custom_keys: filter.available_custom_attribute_keys,
+      custom_breakdowns: filter.available_custom_attribute_keys.index_with { |key| custom_breakdown_for(key) },
+      label_counts: filter.label_counts,
       daily_series: daily_series,
       hourly_series: hourly_series
     }
@@ -31,6 +34,16 @@ class Contacts::AttributeStatsBuilder
   def breakdown_for(key)
     filter.relation
           .group(Arel.sql(ActiveRecord::Base.sanitize_sql_array(["NULLIF(contacts.additional_attributes ->> ?, '')", key])))
+          .count
+          .transform_keys { |v| v || BLANK_LABEL }
+          .sort_by { |_, count| -count }
+          .first(MAX_VALUES_PER_KEY)
+          .to_h
+  end
+
+  def custom_breakdown_for(key)
+    filter.relation
+          .group(Arel.sql(ActiveRecord::Base.sanitize_sql_array(["NULLIF(contacts.custom_attributes ->> ?, '')", key])))
           .count
           .transform_keys { |v| v || BLANK_LABEL }
           .sort_by { |_, count| -count }

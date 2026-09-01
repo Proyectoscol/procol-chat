@@ -12,14 +12,15 @@ const props = defineProps({
   since: { type: Number, default: null },
   until: { type: Number, default: null },
   filters: { type: Object, default: () => ({}) },
+  customFilters: { type: Object, default: () => ({}) },
   inboxId: { type: String, default: '' },
   labelTitles: { type: Array, default: () => [] },
   hourOfDay: { type: Number, default: null },
-  dayFilterLabel: { type: String, default: '' },
   hourFilterLabel: { type: String, default: '' },
+  selectedContactIds: { type: Array, default: () => [] },
 });
 
-const emit = defineEmits(['clearDayFilter', 'clearHourFilter']);
+const emit = defineEmits(['clearHourFilter', 'update:selectedContactIds']);
 
 const { t } = useI18n();
 
@@ -48,9 +49,11 @@ const fetchContacts = () => {
     since: props.since,
     until: props.until,
     filters: props.filters,
+    customFilters: props.customFilters,
     inboxId: props.inboxId,
     labelTitles: props.labelTitles,
     hourOfDay: props.hourOfDay,
+    contactIds: props.selectedContactIds,
   });
 };
 
@@ -59,15 +62,24 @@ watch(
     props.since,
     props.until,
     props.filters,
+    props.customFilters,
     props.inboxId,
     props.labelTitles,
     props.hourOfDay,
+    props.selectedContactIds,
   ],
   fetchContacts,
   { deep: true }
 );
 
 onMounted(fetchContacts);
+
+const toggleContactSelection = contactId => {
+  const updated = props.selectedContactIds.includes(contactId)
+    ? props.selectedContactIds.filter(id => id !== contactId)
+    : [...props.selectedContactIds, contactId];
+  emit('update:selectedContactIds', updated);
+};
 </script>
 
 <template>
@@ -86,15 +98,6 @@ onMounted(fetchContacts);
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-1.5">
-        <button
-          v-if="dayFilterLabel"
-          type="button"
-          class="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-n-brand/10 text-n-brand hover:bg-n-brand/20"
-          @click="emit('clearDayFilter')"
-        >
-          {{ dayFilterLabel }}
-          <span class="i-lucide-x size-3" />
-        </button>
         <button
           v-if="hourFilterLabel"
           type="button"
@@ -131,7 +134,9 @@ onMounted(fetchContacts);
           v-for="contact in records"
           :key="contact.id"
           :contact="contact"
+          :selected="selectedContactIds.includes(contact.id)"
           @click="openContactModal(contact)"
+          @toggle-select="toggleContactSelection(contact.id)"
         />
       </div>
 
@@ -150,6 +155,7 @@ onMounted(fetchContacts);
     <KanbanContactDetailModal
       ref="modalRef"
       :contact="selectedContact"
+      open-in-new-tab
       @close="selectedContact = null"
     />
   </div>

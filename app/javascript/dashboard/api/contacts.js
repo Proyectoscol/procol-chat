@@ -102,7 +102,15 @@ class ContactAPI extends ApiClient {
     return axios.post(`${this.url}/export`, queryPayload);
   }
 
-  attributeStats({ since, until, filters, inboxId, labelTitles } = {}) {
+  attributeStats({
+    since,
+    until,
+    filters,
+    inboxId,
+    labelTitles,
+    contactIds,
+    customFilters,
+  } = {}) {
     return axios.get(`${this.url}/attribute_stats`, {
       params: {
         since,
@@ -110,6 +118,8 @@ class ContactAPI extends ApiClient {
         filters,
         inbox_id: inboxId || undefined,
         label_titles: labelTitles,
+        contact_ids: contactIds,
+        custom_filters: customFilters,
         timezone_offset: getTimeOffset(),
       },
     });
@@ -122,6 +132,8 @@ class ContactAPI extends ApiClient {
     inboxId,
     labelTitles,
     hourOfDay,
+    contactIds,
+    customFilters,
     page = 1,
     signal,
   } = {}) {
@@ -133,6 +145,8 @@ class ContactAPI extends ApiClient {
         inbox_id: inboxId || undefined,
         label_titles: labelTitles,
         hour_of_day: hourOfDay ?? undefined,
+        contact_ids: contactIds,
+        custom_filters: customFilters,
         timezone_offset: getTimeOffset(),
         page,
       },
@@ -140,13 +154,23 @@ class ContactAPI extends ApiClient {
     });
   }
 
-  leadStatsExport({ since, until, filters, inboxId, labelTitles } = {}) {
+  leadStatsExport({
+    since,
+    until,
+    filters,
+    inboxId,
+    labelTitles,
+    contactIds,
+    customFilters,
+  } = {}) {
     return axios.post(`${this.url}/lead_stats_export`, {
       since,
       until,
       filters,
       inbox_id: inboxId || undefined,
       label_titles: labelTitles,
+      contact_ids: contactIds,
+      custom_filters: customFilters,
     });
   }
 }

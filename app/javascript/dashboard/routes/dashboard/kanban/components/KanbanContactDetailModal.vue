@@ -11,6 +11,7 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 
 const props = defineProps({
   contact: { type: Object, default: null },
+  openInNewTab: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['close']);
@@ -118,16 +119,25 @@ const navigateToConversation = conv => {
   const path = frontendURL(
     conversationUrl({ accountId: route.params.accountId, id: conv.id })
   );
+  if (props.openInNewTab) {
+    window.open(router.resolve({ path }).href, '_blank');
+    return;
+  }
   close();
   router.push({ path });
 };
 
 const goToContact = () => {
-  close();
-  router.push({
+  const location = {
     name: 'contacts_edit',
     params: { contactId: displayContact.value?.id },
-  });
+  };
+  if (props.openInNewTab) {
+    window.open(router.resolve(location).href, '_blank');
+    return;
+  }
+  close();
+  router.push(location);
 };
 
 const goToBestConversation = async () => {

@@ -38,9 +38,16 @@ class Contacts::LeadStatsFilter
 
   # All contact-level custom attributes defined on the account, regardless of
   # whether a given contact has a value for them — lets the export show one
-  # column per definition, blank where the contact has no value.
+  # column per definition, blank where the contact has no value, and doubles
+  # as the filter/breakdown whitelist for contacts.custom_attributes.
   def available_custom_attribute_keys
     @available_custom_attribute_keys ||= account.custom_attribute_definitions.contact_attribute.pluck(:attribute_key)
+  end
+
+  # Per-label contact counts, independent of `label_titles` — lets the UI show
+  # every tag's total up front instead of only after it's selected as a filter.
+  def label_counts
+    account.labels.pluck(:title).index_with { |title| relation_for_single_label(title).count }
   end
 
   private
@@ -52,9 +59,19 @@ class Contacts::LeadStatsFilter
       scoped = account.contacts.where(internal: false)
       scoped = scoped.where(created_at: range) if range.present?
       scoped = scoped.where(id: ContactInbox.where(inbox_id: params[:inbox_id]).select(:contact_id)) if params[:inbox_id].present?
-      active_filters.each { |key, value| scoped = scoped.where(attribute_equals_sql(key, value)) }
-      scoped
+      scoped = scoped.where(id: contact_ids) if contact_ids.present?
+      apply_attribute_filters(scoped)
     end
+  end
+
+  def apply_attribute_filters(scoped)
+    active_filters.each { |key, value| scoped = scoped.where(attribute_equals_sql(key, value)) }
+    active_custom_filters.each { |key, value| scoped = scoped.where(custom_attribute_equals_sql(key, value)) }
+    scoped
+  end
+
+  def contact_ids
+    @contact_ids ||= Array(params[:contact_ids]).map(&:to_i).reject(&:zero?)
   end
 
   def apply_label_filter(scoped, titles)
@@ -73,9 +90,24 @@ class Contacts::LeadStatsFilter
     end
   end
 
+  def custom_attribute_equals_sql(key, value)
+    if value == BLANK_LABEL
+      ActiveRecord::Base.sanitize_sql_array(
+        ['(contacts.custom_attributes ->> ? IS NULL OR contacts.custom_attributes ->> ? = ?)', key, key, '']
+      )
+    else
+      ActiveRecord::Base.sanitize_sql_array(['contacts.custom_attributes ->> ? = ?', key, value])
+    end
+  end
+
   def active_filters
     raw = params[:filters].is_a?(ActionController::Parameters) ? params[:filters].to_unsafe_h : (params[:filters] || {})
     raw.slice(*available_keys)
+  end
+
+  def active_custom_filters
+    raw = params[:custom_filters].is_a?(ActionController::Parameters) ? params[:custom_filters].to_unsafe_h : (params[:custom_filters] || {})
+    raw.slice(*available_custom_attribute_keys)
   end
 
   def discovered_keys

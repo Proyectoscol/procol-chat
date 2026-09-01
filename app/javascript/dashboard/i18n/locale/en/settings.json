@@ -1152,6 +1152,11 @@
     "CLEAR_ALL_FILTERS": "Clear all filters",
     "NO_DATA": "No data",
     "ALL_INBOXES": "All inboxes",
+    "REVERT_DAY_FILTER": "Revert",
+    "SELECTED_CONTACTS": "{count} contacts selected",
+    "CUSTOM_ATTRIBUTES": {
+      "TITLE": "Custom attributes"
+    },
     "DAILY_TREND": {
       "TITLE": "Daily entries",
       "TOTAL_DATASET": "Total",

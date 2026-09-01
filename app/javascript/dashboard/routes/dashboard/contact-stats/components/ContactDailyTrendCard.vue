@@ -35,17 +35,19 @@ const dayLabels = computed(() =>
 );
 
 const collection = computed(() => ({
-  labels: dayLabels.value,
-  datasets: [
+  categories: dayLabels.value,
+  series: [
     {
+      id: 'total',
       label: t('CONTACT_STATS.DAILY_TREND.TOTAL_DATASET'),
+      color: TOTAL_COLOR,
       data: props.dailySeries.map(entry => entry.total),
-      backgroundColor: TOTAL_COLOR,
     },
     ...props.activeLabels.map(label => ({
+      id: label.title,
       label: label.title,
+      color: label.color,
       data: props.dailySeries.map(entry => entry.labels?.[label.title] || 0),
-      backgroundColor: label.color,
     })),
   ],
 }));
@@ -54,8 +56,8 @@ const hasData = computed(() =>
   props.dailySeries.some(entry => entry.total > 0)
 );
 
-const onElementClick = ({ dataIndex }) => {
-  const entry = props.dailySeries[dataIndex];
+const onElementClick = ({ pointIndex }) => {
+  const entry = props.dailySeries[pointIndex];
   if (!entry) return;
 
   emit('selectDay', entry);
@@ -100,9 +102,10 @@ useEventListener(document, 'keydown', onKeydown);
     </span>
     <div v-else class="h-56">
       <BarChart
-        :collection="collection"
+        :data="collection"
+        :aria-label="t('CONTACT_STATS.DAILY_TREND.TITLE')"
         clickable
-        @element-click="onElementClick"
+        @item-click="onElementClick"
       />
     </div>
 
@@ -135,9 +138,10 @@ useEventListener(document, 'keydown', onKeydown);
             </div>
             <div class="h-[60vh]">
               <BarChart
-                :collection="collection"
+                :data="collection"
+                :aria-label="t('CONTACT_STATS.DAILY_TREND.TITLE')"
                 clickable
-                @element-click="onElementClick"
+                @item-click="onElementClick"
               />
             </div>
           </div>

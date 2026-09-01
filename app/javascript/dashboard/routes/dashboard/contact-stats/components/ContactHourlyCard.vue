@@ -25,12 +25,13 @@ const formatHour = hour => {
 };
 
 const collection = computed(() => ({
-  labels: props.hourlySeries.map(entry => formatHour(entry.hour)),
-  datasets: [
+  categories: props.hourlySeries.map(entry => formatHour(entry.hour)),
+  series: [
     {
+      id: 'total',
       label: t('CONTACT_STATS.HOURLY.TITLE'),
+      color: '#1f93ff',
       data: props.hourlySeries.map(entry => entry.total),
-      backgroundColor: '#1f93ff',
     },
   ],
 }));
@@ -39,8 +40,8 @@ const hasData = computed(() =>
   props.hourlySeries.some(entry => entry.total > 0)
 );
 
-const onElementClick = ({ dataIndex }) => {
-  const entry = props.hourlySeries[dataIndex];
+const onElementClick = ({ pointIndex }) => {
+  const entry = props.hourlySeries[pointIndex];
   if (!entry) return;
 
   emit('selectHour', { hour: entry.hour, label: formatHour(entry.hour) });
@@ -67,9 +68,10 @@ const onElementClick = ({ dataIndex }) => {
     </span>
     <div v-else class="h-56">
       <BarChart
-        :collection="collection"
+        :data="collection"
+        :aria-label="t('CONTACT_STATS.HOURLY.TITLE')"
         clickable
-        @element-click="onElementClick"
+        @item-click="onElementClick"
       />
     </div>
   </div>

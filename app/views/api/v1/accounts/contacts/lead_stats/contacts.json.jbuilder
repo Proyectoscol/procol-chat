@@ -12,6 +12,7 @@ json.payload do
     json.thumbnail contact.avatar_url
     json.created_at contact.created_at.to_i
     json.additional_attributes contact.additional_attributes
+    json.custom_attributes contact.custom_attributes
     json.labels @contact_labels_by_id.fetch(contact.id, [])
   end
 end
