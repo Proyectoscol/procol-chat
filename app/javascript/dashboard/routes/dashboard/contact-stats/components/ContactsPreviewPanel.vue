@@ -44,6 +44,9 @@ const openContactModal = async contact => {
   modalRef.value?.open();
 };
 
+// Intentionally does NOT filter by selectedContactIds: the list stays
+// browsable so the user can keep picking more contacts. Only the rest of
+// the dashboard (charts, breakdowns, total) narrows to the selection.
 const fetchContacts = () => {
   openContacts({
     since: props.since,
@@ -53,7 +56,6 @@ const fetchContacts = () => {
     inboxId: props.inboxId,
     labelTitles: props.labelTitles,
     hourOfDay: props.hourOfDay,
-    contactIds: props.selectedContactIds,
   });
 };
 
@@ -66,7 +68,6 @@ watch(
     props.inboxId,
     props.labelTitles,
     props.hourOfDay,
-    props.selectedContactIds,
   ],
   fetchContacts,
   { deep: true }
@@ -84,7 +85,7 @@ const toggleContactSelection = contactId => {
 
 <template>
   <div
-    class="flex flex-col h-full rounded-xl border border-n-weak bg-n-solid-1 p-4"
+    class="flex flex-col h-[32rem] max-h-[32rem] rounded-xl border border-n-weak bg-n-solid-1 p-4"
   >
     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
       <div>

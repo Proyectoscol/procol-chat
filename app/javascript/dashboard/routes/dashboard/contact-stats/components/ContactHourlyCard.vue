@@ -17,6 +17,7 @@ const props = defineProps({
 const emit = defineEmits(['selectHour']);
 
 const { t } = useI18n();
+const CHART_HEIGHT = 224;
 
 const formatHour = hour => {
   const period = hour < 12 ? 'am' : 'pm';
@@ -66,10 +67,11 @@ const onElementClick = ({ pointIndex }) => {
     >
       {{ t('CONTACT_STATS.NO_DATA') }}
     </span>
-    <div v-else class="h-56">
+    <div v-else class="h-56 overflow-hidden">
       <BarChart
         :data="collection"
         :aria-label="t('CONTACT_STATS.HOURLY.TITLE')"
+        :height="CHART_HEIGHT"
         clickable
         @item-click="onElementClick"
       />

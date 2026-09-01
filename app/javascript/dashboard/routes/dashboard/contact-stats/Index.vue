@@ -348,7 +348,7 @@ onMounted(() => {
           />
         </div>
 
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 items-start">
           <ContactsPreviewPanel
             v-model:selected-contact-ids="selectedContactIds"
             :since="since"

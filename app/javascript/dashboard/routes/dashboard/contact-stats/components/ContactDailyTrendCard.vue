@@ -29,6 +29,8 @@ const { t } = useI18n();
 const isExpanded = ref(false);
 
 const TOTAL_COLOR = '#94a3b8';
+const CHART_HEIGHT = 224;
+const EXPANDED_CHART_HEIGHT = 480;
 
 const dayLabels = computed(() =>
   props.dailySeries.map(entry => format(parseISO(entry.date), 'MMM d'))
@@ -100,10 +102,11 @@ useEventListener(document, 'keydown', onKeydown);
     >
       {{ t('CONTACT_STATS.NO_DATA') }}
     </span>
-    <div v-else class="h-56">
+    <div v-else class="h-56 overflow-hidden">
       <BarChart
         :data="collection"
         :aria-label="t('CONTACT_STATS.DAILY_TREND.TITLE')"
+        :height="CHART_HEIGHT"
         clickable
         @item-click="onElementClick"
       />
@@ -136,10 +139,11 @@ useEventListener(document, 'keydown', onKeydown);
                 @click="isExpanded = false"
               />
             </div>
-            <div class="h-[60vh]">
+            <div class="h-[480px] overflow-hidden">
               <BarChart
                 :data="collection"
                 :aria-label="t('CONTACT_STATS.DAILY_TREND.TITLE')"
+                :height="EXPANDED_CHART_HEIGHT"
                 clickable
                 @item-click="onElementClick"
               />
