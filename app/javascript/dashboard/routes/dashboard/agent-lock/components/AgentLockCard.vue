@@ -11,6 +11,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  lockedSchedule: {
+    type: Object,
+    default: null,
+  },
 });
 
 const store = useStore();
@@ -59,6 +63,17 @@ const isOnline = computed({
         <Switch v-model="isOnline" />
       </div>
     </div>
+
+    <span
+      v-if="lockedSchedule"
+      class="px-2 py-0.5 rounded-md text-xs font-medium bg-n-ruby-3 text-n-ruby-11 w-fit"
+    >
+      {{
+        t('AGENT_LOCK.SCHEDULE.LOCKED_BADGE', {
+          time: lockedSchedule.endTime,
+        })
+      }}
+    </span>
 
     <div class="flex flex-wrap gap-1.5">
       <span

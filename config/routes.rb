@@ -62,6 +62,7 @@ Rails.application.routes.draw do
             post :bulk_create, on: :collection
             delete :avatar, on: :member
           end
+          resources :agent_availability_schedules, only: [:index, :create, :update, :destroy]
           namespace :captain do
             resource :preferences, only: [:show, :update]
             resources :assistants do

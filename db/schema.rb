@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_14_000000) do
+ActiveRecord::Schema[7.2].define(version: 2026_09_16_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -112,6 +112,25 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_14_000000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "agent_availability_schedules", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "created_by_id"
+    t.date "starts_on", null: false
+    t.date "ends_on", null: false
+    t.time "start_time", null: false
+    t.time "end_time", null: false
+    t.integer "weekdays", default: [1, 2, 3, 4, 5], null: false, array: true
+    t.boolean "active", default: true, null: false
+    t.boolean "currently_locked", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_agent_availability_schedules_on_account_id"
+    t.index ["created_by_id"], name: "index_agent_availability_schedules_on_created_by_id"
+    t.index ["user_id", "active"], name: "index_agent_availability_schedules_on_user_id_and_active"
+    t.index ["user_id"], name: "index_agent_availability_schedules_on_user_id"
   end
 
   create_table "agent_bot_inboxes", force: :cascade do |t|
@@ -890,8 +909,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_14_000000) do
     t.integer "priority"
     t.bigint "sla_policy_id"
     t.datetime "waiting_since"
-    t.text "cached_label_list"
     t.bigint "assignee_agent_bot_id"
+    t.string "cached_label_list"
     t.datetime "status_changed_at"
     t.string "ai_assignee_type"
     t.index ["account_id", "display_id"], name: "index_conversations_on_account_id_and_display_id", unique: true
@@ -1359,6 +1378,15 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_14_000000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "portal_members", force: :cascade do |t|
+    t.bigint "portal_id"
+    t.bigint "user_id"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.index ["portal_id", "user_id"], name: "index_portal_members_on_portal_id_and_user_id", unique: true
+    t.index ["user_id", "portal_id"], name: "index_portal_members_on_user_id_and_portal_id", unique: true
+  end
+
   create_table "portals", force: :cascade do |t|
     t.integer "account_id", null: false
     t.string "name", null: false
@@ -1534,6 +1562,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_14_000000) do
     t.index ["name", "account_id"], name: "index_teams_on_name_and_account_id", unique: true
   end
 
+  create_table "telegram_bots", id: :serial, force: :cascade do |t|
+    t.string "name"
+    t.string "auth_key"
+    t.integer "account_id"
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+  end
+
   create_table "user_sessions", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.string "client_id", null: false
@@ -1625,6 +1661,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_14_000000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "agent_availability_schedules", "accounts", on_delete: :cascade
+  add_foreign_key "agent_availability_schedules", "users", column: "created_by_id", on_delete: :nullify
+  add_foreign_key "agent_availability_schedules", "users", on_delete: :cascade
   add_foreign_key "campaign_recipients", "accounts", on_delete: :cascade
   add_foreign_key "campaign_recipients", "campaigns", on_delete: :cascade
   add_foreign_key "campaign_recipients", "contacts", on_delete: :cascade

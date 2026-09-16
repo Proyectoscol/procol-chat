@@ -1141,7 +1141,82 @@
     "NO_TEAMS": "No teams",
     "EMPTY_STATE": "No advisors found.",
     "NO_RESULTS": "No advisors found matching your search",
-    "STATUS_UPDATE_ERROR": "Could not update advisor status. Please try again."
+    "STATUS_UPDATE_ERROR": "Could not update advisor status. Please try again.",
+    "TABS": {
+      "MANUAL": "Manual lock",
+      "SCHEDULES": "Automatic schedules"
+    },
+    "SCHEDULE": {
+      "FORM_DESCRIPTION": "The advisor will be automatically locked (offline) during this daily time window, for every selected weekday within the date range.",
+      "CREATE": {
+        "TITLE": "New schedule",
+        "SUCCESS_MESSAGE": "Schedule created successfully",
+        "ERROR_MESSAGE": "Could not create schedule. Please try again."
+      },
+      "EDIT": {
+        "TITLE": "Edit schedule",
+        "SUCCESS_MESSAGE": "Schedule updated successfully",
+        "ERROR_MESSAGE": "Could not update schedule. Please try again."
+      },
+      "DELETE": {
+        "TITLE": "Delete schedule",
+        "DESCRIPTION": "This will stop the automatic lock/unlock for this advisor. This action cannot be undone.",
+        "CONFIRM": "Delete",
+        "SUCCESS_MESSAGE": "Schedule deleted successfully",
+        "ERROR_MESSAGE": "Could not delete schedule. Please try again."
+      },
+      "EMPTY_STATE": "No automatic schedules configured yet.",
+      "LOCKED_BADGE": "Locked by schedule until {time}",
+      "LIST": {
+        "AGENT": "Advisor",
+        "DATE_RANGE": "Date range",
+        "TIME_RANGE": "Daily window",
+        "WEEKDAYS": "Weekdays",
+        "STATUS": "Status",
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive",
+        "LOCKED_NOW": "Locked now"
+      },
+      "FORM": {
+        "AGENT": {
+          "LABEL": "Advisor",
+          "PLACEHOLDER": "Select an advisor",
+          "ERROR": "Please select an advisor"
+        },
+        "STARTS_ON": {
+          "LABEL": "Starts on",
+          "ERROR": "Please select a start date"
+        },
+        "ENDS_ON": {
+          "LABEL": "Ends on",
+          "ERROR": "End date must be on or after the start date"
+        },
+        "START_TIME": {
+          "LABEL": "Start time",
+          "ERROR": "Please select a start time"
+        },
+        "END_TIME": {
+          "LABEL": "End time",
+          "ERROR": "End time must be after the start time"
+        },
+        "WEEKDAYS": {
+          "LABEL": "Applies on",
+          "MON": "Mon",
+          "TUE": "Tue",
+          "WED": "Wed",
+          "THU": "Thu",
+          "FRI": "Fri",
+          "SAT": "Sat",
+          "SUN": "Sun"
+        },
+        "ACTIVE": {
+          "LABEL": "Active"
+        },
+        "CANCEL": "Cancel",
+        "CREATE": "Create",
+        "EDIT": "Save"
+      }
+    }
   },
   "CONTACT_STATS": {
     "TITLE": "Lead Stats",

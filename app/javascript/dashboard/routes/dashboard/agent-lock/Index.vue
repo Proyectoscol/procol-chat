@@ -3,13 +3,20 @@ import { ref, computed, onMounted } from 'vue';
 import { useStore, useStoreGetters } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
 import { picoSearch } from '@chatwoot/pico-search';
+import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import AgentLockCard from './components/AgentLockCard.vue';
+import AgentAvailabilityScheduleList from './components/AgentAvailabilityScheduleList.vue';
 
 const store = useStore();
 const getters = useStoreGetters();
 const { t } = useI18n();
 
 const searchQuery = ref('');
+const activeTabIndex = ref(0);
+const tabs = computed(() => [
+  { label: t('AGENT_LOCK.TABS.MANUAL') },
+  { label: t('AGENT_LOCK.TABS.SCHEDULES') },
+]);
 
 const agentList = computed(() => getters['agents/getAgents'].value);
 const uiFlags = computed(() => getters['agents/getUIFlags'].value);
@@ -20,8 +27,21 @@ const filteredAgentList = computed(() => {
   return picoSearch(agentList.value, query, ['name', 'email']);
 });
 
+const schedules = computed(
+  () =>
+    getters['agentAvailabilitySchedules/getAgentAvailabilitySchedules'].value
+);
+const activeLockedScheduleByAgentId = computed(() => {
+  const map = {};
+  schedules.value.forEach(schedule => {
+    if (schedule.currentlyLocked) map[schedule.userId] = schedule;
+  });
+  return map;
+});
+
 onMounted(() => {
   store.dispatch('agents/get');
+  store.dispatch('agentAvailabilitySchedules/get');
 });
 </script>
 
@@ -35,7 +55,14 @@ onMounted(() => {
         {{ t('AGENT_LOCK.TITLE') }}
       </h1>
 
+      <TabBar
+        :tabs="tabs"
+        :initial-active-tab="activeTabIndex"
+        @tab-changed="tab => (activeTabIndex = tabs.indexOf(tab))"
+      />
+
       <label
+        v-if="activeTabIndex === 0"
         class="flex items-center gap-2 h-8 px-2.5 rounded-lg border border-n-weak bg-n-background hover:border-n-slate-4 focus-within:ring-1 focus-within:ring-n-brand transition-colors cursor-text w-52"
       >
         <span class="i-lucide-search size-4 text-n-slate-10 flex-shrink-0" />
@@ -49,27 +76,36 @@ onMounted(() => {
     </header>
 
     <div class="flex-1 overflow-y-auto p-6">
-      <span
-        v-if="uiFlags.isFetching"
-        class="flex items-center justify-center py-20 text-center text-body-main !text-base text-n-slate-11"
-      >
-        {{ t('AGENT_LOCK.LOADING') }}
-      </span>
-      <span
-        v-else-if="!filteredAgentList.length"
-        class="flex items-center justify-center py-20 text-center text-body-main !text-base text-n-slate-11"
-      >
-        {{
-          searchQuery ? t('AGENT_LOCK.NO_RESULTS') : t('AGENT_LOCK.EMPTY_STATE')
-        }}
-      </span>
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <AgentLockCard
-          v-for="agent in filteredAgentList"
-          :key="agent.id"
-          :agent="agent"
-        />
-      </div>
+      <template v-if="activeTabIndex === 0">
+        <span
+          v-if="uiFlags.isFetching"
+          class="flex items-center justify-center py-20 text-center text-body-main !text-base text-n-slate-11"
+        >
+          {{ t('AGENT_LOCK.LOADING') }}
+        </span>
+        <span
+          v-else-if="!filteredAgentList.length"
+          class="flex items-center justify-center py-20 text-center text-body-main !text-base text-n-slate-11"
+        >
+          {{
+            searchQuery
+              ? t('AGENT_LOCK.NO_RESULTS')
+              : t('AGENT_LOCK.EMPTY_STATE')
+          }}
+        </span>
+        <div
+          v-else
+          class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+        >
+          <AgentLockCard
+            v-for="agent in filteredAgentList"
+            :key="agent.id"
+            :agent="agent"
+            :locked-schedule="activeLockedScheduleByAgentId[agent.id]"
+          />
+        </div>
+      </template>
+      <AgentAvailabilityScheduleList v-else />
     </div>
   </div>
 </template>
