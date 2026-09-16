@@ -12,6 +12,8 @@ class Agents::ApplyAvailabilityScheduleJob < ApplicationJob
       else
         unlock_agent(schedule)
       end
+    rescue ActiveRecord::RecordNotFound => e
+      Rails.logger.error("[Agents::ApplyAvailabilityScheduleJob] schedule=#{schedule.id} #{e.message}")
     end
   end
 
@@ -19,14 +21,19 @@ class Agents::ApplyAvailabilityScheduleJob < ApplicationJob
 
   # Mirrors Api::V1::Accounts::AgentsController#account_user_params: auto_offline
   # must be forced to false alongside availability, otherwise the presence
-  # heartbeat (AvailabilityStatusable) silently overrides the lock while the
-  # agent's browser tab stays open.
+  # heartbeat (AvailabilityStatusable) silently overrides the lock/unlock while
+  # the agent's browser tab stays open (lock) or is closed (unlock) — with
+  # auto_offline: true, a disconnected agent shows offline regardless of the
+  # availability column (see AvailabilityStatusable#user_availability_status),
+  # which is not what "back online after the break" should look like.
+  #
+  # find_by! (not find_by): a missing account_user is a misconfigured/impossible
+  # state, and must fail loudly here rather than silently mark the schedule as
+  # locked/unlocked without ever touching availability/auto_offline.
   def lock_agent(schedule)
     return if schedule.currently_locked
 
-    account_user = schedule.account.account_users.find_by(user_id: schedule.user_id)
-    return unless account_user
-
+    account_user = schedule.account.account_users.find_by!(user_id: schedule.user_id)
     account_user.update!(availability: :offline, auto_offline: false)
     schedule.update!(currently_locked: true)
   end
@@ -34,8 +41,8 @@ class Agents::ApplyAvailabilityScheduleJob < ApplicationJob
   def unlock_agent(schedule)
     return unless schedule.currently_locked
 
-    account_user = schedule.account.account_users.find_by(user_id: schedule.user_id)
-    account_user&.update!(auto_offline: true)
+    account_user = schedule.account.account_users.find_by!(user_id: schedule.user_id)
+    account_user.update!(availability: :online, auto_offline: false)
     schedule.update!(currently_locked: false)
   end
 end
