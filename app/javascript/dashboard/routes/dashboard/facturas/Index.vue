@@ -1,12 +1,21 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useVueTable, getCoreRowModel } from '@tanstack/vue-table';
+import Spinner from 'shared/components/Spinner.vue';
+import EmptyState from 'dashboard/components/widgets/EmptyState.vue';
+import Pagination from 'dashboard/components/table/Pagination.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import facturaAPI from 'dashboard/api/cartera/facturas';
-import FacturasTable from '../cartera-shared/FacturasTable.vue';
+import CarteraHeader from '../cartera-shared/CarteraHeader.vue';
+import TableCard from '../cartera-shared/TableCard.vue';
+import ClickableTable from '../cartera-shared/ClickableTable.vue';
+import { buildFacturasColumns } from '../cartera-shared/facturasColumns';
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 
 const TRAMOS = [
   'vigente',
@@ -19,12 +28,17 @@ const TRAMOS = [
 ];
 
 const items = ref([]);
-const page = ref(1);
 const total = ref(0);
-const pageSize = ref(20);
+const pageIndex = ref(0);
+const pageSize = ref(10);
 const isFetching = ref(false);
-const tramoSeleccionado = ref('');
-const estadoSeleccionado = ref('');
+// Prellenado desde Resumen (ej. click en un tramo de antiguedad) via query params.
+const tramoSeleccionado = ref(
+  TRAMOS.includes(route.query.tramo) ? route.query.tramo : ''
+);
+const estadoSeleccionado = ref(
+  ['abiertas', 'pagadas'].includes(route.query.estado) ? route.query.estado : ''
+);
 
 const tramoOptions = computed(() => [
   { value: '', label: t('CARTERA.FACTURAS.FILTER_TRAMO_ALL') },
@@ -44,62 +58,96 @@ const fetchFacturas = async () => {
   isFetching.value = true;
   try {
     const { data } = await facturaAPI.get({
-      page: page.value,
+      page: pageIndex.value + 1,
+      pageSize: pageSize.value,
       tramo: tramoSeleccionado.value,
       estado: estadoSeleccionado.value,
     });
     items.value = data.items;
     total.value = data.total;
-    pageSize.value = data.page_size;
   } finally {
     isFetching.value = false;
   }
 };
 
 watch([tramoSeleccionado, estadoSeleccionado], () => {
-  page.value = 1;
+  pageIndex.value = 0;
   fetchFacturas();
 });
 
-const onPageChange = newPage => {
-  page.value = newPage;
-  fetchFacturas();
+const columns = computed(() => buildFacturasColumns(t));
+
+const paginationState = computed(() => ({
+  pageIndex: pageIndex.value,
+  pageSize: pageSize.value,
+}));
+
+const table = useVueTable({
+  get data() {
+    return items.value;
+  },
+  get columns() {
+    return columns.value;
+  },
+  manualPagination: true,
+  enableSorting: false,
+  getCoreRowModel: getCoreRowModel(),
+  get rowCount() {
+    return total.value;
+  },
+  state: {
+    get pagination() {
+      return paginationState.value;
+    },
+  },
+  onPaginationChange: updater => {
+    const next = updater(paginationState.value);
+    pageIndex.value = next.pageIndex;
+    pageSize.value = next.pageSize;
+    fetchFacturas();
+  },
+});
+
+const abrirFicha = factura => {
+  router.push({
+    name: 'cartera_clientes_ficha_view',
+    params: { clienteId: factura.cliente_id },
+  });
 };
 
 onMounted(fetchFacturas);
 </script>
 
 <template>
-  <div class="flex flex-col flex-1 h-full overflow-hidden bg-n-surface-1">
-    <header
-      class="flex items-center justify-between gap-3 px-6 py-3 border-b border-n-weak flex-shrink-0"
-    >
-      <div class="flex items-center gap-3">
-        <span class="i-lucide-receipt size-5 text-n-slate-11" />
-        <h1 class="text-base font-semibold text-n-slate-12">
-          {{ t('CARTERA.FACTURAS.TITLE') }}
-        </h1>
-      </div>
+  <div>
+    <CarteraHeader :header-title="t('CARTERA.FACTURAS.TITLE')">
       <div class="flex items-center gap-2">
         <Select v-model="estadoSeleccionado" :options="estadoOptions" />
         <Select v-model="tramoSeleccionado" :options="tramoOptions" />
       </div>
-    </header>
+    </CarteraHeader>
 
-    <div class="flex-1 overflow-y-auto p-6">
-      <FacturasTable
-        :items="items"
-        :loading="isFetching"
-        :empty-message="t('CARTERA.FACTURAS.EMPTY_STATE')"
-      />
+    <TableCard>
+      <ClickableTable :table="table" @row-click="abrirFicha" />
+
+      <template #footer>
+        <Pagination
+          :table="table"
+          show-page-size-selector
+          :default-page-size="pageSize"
+        />
+      </template>
+    </TableCard>
+
+    <div
+      v-if="isFetching && !items.length"
+      class="flex items-center justify-center py-16"
+    >
+      <Spinner />
     </div>
-
-    <PaginationFooter
-      v-if="total > pageSize"
-      :current-page="page"
-      :total-items="total"
-      :items-per-page="pageSize"
-      @update:current-page="onPageChange"
+    <EmptyState
+      v-else-if="!isFetching && !items.length"
+      :title="t('CARTERA.FACTURAS.EMPTY_STATE')"
     />
   </div>
 </template>
