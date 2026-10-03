@@ -60,6 +60,7 @@ class Contact < ApplicationRecord
   belongs_to :account
   has_many :conversations, dependent: :destroy_async
   has_many :contact_inboxes, dependent: :destroy_async
+  has_many :cartera_clientes, class_name: 'Cartera::Cliente', dependent: :nullify
   has_many :csat_survey_responses, dependent: :destroy_async
   has_many :inboxes, through: :contact_inboxes
   has_many :messages, as: :sender, dependent: :destroy_async

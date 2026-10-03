@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_09_16_120000) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_03_120800) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -566,6 +566,155 @@ ActiveRecord::Schema[7.2].define(version: 2026_09_16_120000) do
     t.index ["assistant_id", "enabled"], name: "index_captain_scenarios_on_assistant_id_and_enabled"
     t.index ["assistant_id"], name: "index_captain_scenarios_on_assistant_id"
     t.index ["enabled"], name: "index_captain_scenarios_on_enabled"
+  end
+
+  create_table "cartera_alertas", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "tipo", null: false
+    t.bigint "cliente_id"
+    t.bigint "factura_id"
+    t.decimal "valor_en_riesgo", precision: 18, scale: 2
+    t.datetime "fecha_limite"
+    t.text "mensaje", null: false
+    t.boolean "leida", default: false, null: false
+    t.boolean "util"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "tipo", "factura_id"], name: "index_cartera_alertas_on_account_id_and_tipo_and_factura_id", unique: true
+    t.index ["account_id"], name: "index_cartera_alertas_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_alertas_on_cliente_id"
+    t.index ["factura_id"], name: "index_cartera_alertas_on_factura_id"
+  end
+
+  create_table "cartera_aplicaciones_pago", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pago_id", null: false
+    t.bigint "factura_id", null: false
+    t.decimal "valor_aplicado", precision: 18, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_cartera_aplicaciones_pago_on_account_id"
+    t.index ["factura_id"], name: "index_cartera_aplicaciones_pago_on_factura_id"
+    t.index ["pago_id"], name: "index_cartera_aplicaciones_pago_on_pago_id"
+  end
+
+  create_table "cartera_casos", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "cliente_id", null: false
+    t.string "estado", default: "abierto", null: false
+    t.decimal "prioridad_score", precision: 10, scale: 4
+    t.jsonb "factores_score"
+    t.string "nivel_escalamiento", default: "persuasivo", null: false
+    t.boolean "no_cobrar", default: false, null: false
+    t.string "razon_no_cobrar"
+    t.boolean "revisado", default: false, null: false
+    t.boolean "descartado", default: false, null: false
+    t.decimal "saldo_abierto", precision: 18, scale: 2
+    t.integer "puntaje_riesgo"
+    t.integer "score_credito"
+    t.decimal "total_facturado_historico", precision: 18, scale: 2
+    t.integer "facturas_abiertas_cantidad"
+    t.datetime "fecha_primera_factura"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "cliente_id"], name: "index_cartera_casos_on_account_id_and_cliente_id", unique: true
+    t.index ["account_id"], name: "index_cartera_casos_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_casos_on_cliente_id"
+    t.index ["prioridad_score"], name: "index_cartera_casos_on_prioridad_score"
+    t.index ["puntaje_riesgo"], name: "index_cartera_casos_on_puntaje_riesgo"
+    t.index ["saldo_abierto"], name: "index_cartera_casos_on_saldo_abierto"
+  end
+
+  create_table "cartera_clientes", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "contact_id"
+    t.string "external_id", null: false
+    t.integer "tipo_deudor", null: false
+    t.string "identificacion", null: false
+    t.string "nombre", null: false
+    t.string "email"
+    t.string "telefono"
+    t.string "sucursal"
+    t.decimal "cupo_asignado", precision: 18, scale: 2
+    t.boolean "es_estrategico", default: false, null: false
+    t.integer "grupo_control"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "external_id"], name: "index_cartera_clientes_on_account_id_and_external_id", unique: true
+    t.index ["account_id"], name: "index_cartera_clientes_on_account_id"
+    t.index ["contact_id"], name: "index_cartera_clientes_on_contact_id"
+  end
+
+  create_table "cartera_corridas_sync", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "conector", null: false
+    t.datetime "inicio", null: false
+    t.datetime "fin"
+    t.string "estado", default: "en_progreso", null: false
+    t.integer "registros_procesados", default: 0, null: false
+    t.jsonb "errores"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_cartera_corridas_sync_on_account_id"
+  end
+
+  create_table "cartera_eventos_radian", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "factura_id", null: false
+    t.integer "tipo_evento", null: false
+    t.datetime "fecha", null: false
+    t.string "fuente", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "factura_id", "tipo_evento"], name: "idx_cartera_eventos_radian_account_factura_tipo", unique: true
+    t.index ["account_id"], name: "index_cartera_eventos_radian_on_account_id"
+    t.index ["factura_id"], name: "index_cartera_eventos_radian_on_factura_id"
+  end
+
+  create_table "cartera_facturas", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "cliente_id", null: false
+    t.string "external_id", null: false
+    t.string "numero", null: false
+    t.string "cufe"
+    t.datetime "fecha_emision", null: false
+    t.datetime "fecha_vencimiento", null: false
+    t.decimal "valor_total", precision: 18, scale: 2, null: false
+    t.decimal "saldo_pendiente", precision: 18, scale: 2, null: false
+    t.integer "ultimo_tramo_notificado"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "cliente_id"], name: "index_cartera_facturas_on_account_id_and_cliente_id"
+    t.index ["account_id", "external_id"], name: "index_cartera_facturas_on_account_id_and_external_id", unique: true
+    t.index ["account_id", "fecha_vencimiento"], name: "index_cartera_facturas_on_account_id_and_fecha_vencimiento"
+    t.index ["account_id"], name: "index_cartera_facturas_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_facturas_on_cliente_id"
+  end
+
+  create_table "cartera_notas_credito", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "factura_id", null: false
+    t.string "external_id", null: false
+    t.decimal "valor", precision: 18, scale: 2, null: false
+    t.datetime "fecha", null: false
+    t.string "motivo"
+    t.datetime "created_at", null: false
+    t.index ["account_id", "external_id"], name: "index_cartera_notas_credito_on_account_id_and_external_id", unique: true
+    t.index ["account_id"], name: "index_cartera_notas_credito_on_account_id"
+    t.index ["factura_id"], name: "index_cartera_notas_credito_on_factura_id"
+  end
+
+  create_table "cartera_pagos", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "cliente_id", null: false
+    t.string "external_id", null: false
+    t.datetime "fecha", null: false
+    t.decimal "valor", precision: 18, scale: 2, null: false
+    t.string "medio_pago"
+    t.datetime "created_at", null: false
+    t.index ["account_id", "external_id"], name: "index_cartera_pagos_on_account_id_and_external_id", unique: true
+    t.index ["account_id"], name: "index_cartera_pagos_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_pagos_on_cliente_id"
   end
 
   create_table "categories", force: :cascade do |t|
@@ -1668,6 +1817,25 @@ ActiveRecord::Schema[7.2].define(version: 2026_09_16_120000) do
   add_foreign_key "campaign_recipients", "campaigns", on_delete: :cascade
   add_foreign_key "campaign_recipients", "contacts", on_delete: :cascade
   add_foreign_key "campaign_recipients", "inboxes", on_delete: :cascade
+  add_foreign_key "cartera_alertas", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_alertas", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_alertas", "cartera_facturas", column: "factura_id", on_delete: :cascade
+  add_foreign_key "cartera_aplicaciones_pago", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_aplicaciones_pago", "cartera_facturas", column: "factura_id", on_delete: :cascade
+  add_foreign_key "cartera_aplicaciones_pago", "cartera_pagos", column: "pago_id", on_delete: :cascade
+  add_foreign_key "cartera_casos", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_casos", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_clientes", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_clientes", "contacts", on_delete: :nullify
+  add_foreign_key "cartera_corridas_sync", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_eventos_radian", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_eventos_radian", "cartera_facturas", column: "factura_id", on_delete: :cascade
+  add_foreign_key "cartera_facturas", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_facturas", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_notas_credito", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_notas_credito", "cartera_facturas", column: "factura_id", on_delete: :cascade
+  add_foreign_key "cartera_pagos", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_pagos", "cartera_clientes", column: "cliente_id", on_delete: :cascade
   add_foreign_key "inboxes", "portals"
   add_foreign_key "user_sessions", "users"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).

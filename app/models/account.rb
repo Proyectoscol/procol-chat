@@ -73,6 +73,11 @@ class Account < ApplicationRecord
   has_many :macros, dependent: :destroy_async
   has_many :campaigns, dependent: :destroy_async
   has_many :canned_responses, dependent: :destroy_async
+  has_many :cartera_alertas, dependent: :destroy_async, class_name: 'Cartera::Alerta'
+  has_many :cartera_casos, dependent: :destroy_async, class_name: 'Cartera::Caso'
+  has_many :cartera_clientes, dependent: :destroy_async, class_name: 'Cartera::Cliente'
+  has_many :cartera_corridas_sync, dependent: :destroy_async, class_name: 'Cartera::CorridaSync'
+  has_many :cartera_facturas, dependent: :destroy_async, class_name: 'Cartera::Factura'
   has_many :categories, dependent: :destroy_async, class_name: '::Category'
   has_many :contacts, dependent: :destroy_async
   has_many :conversations, dependent: :destroy_async
