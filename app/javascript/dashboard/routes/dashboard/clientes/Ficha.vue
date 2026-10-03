@@ -1,13 +1,13 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import {
-  BaseTable,
-  BaseTableRow,
-  BaseTableCell,
-} from 'dashboard/components-next/table';
+  useVueTable,
+  createColumnHelper,
+  getCoreRowModel,
+} from '@tanstack/vue-table';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Editor from 'dashboard/components-next/Editor/Editor.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
@@ -15,14 +15,16 @@ import VoiceCallButton from 'dashboard/components-next/Contacts/VoiceCallButton.
 import ContactNoteItem from 'dashboard/components-next/Contacts/ContactsSidebar/components/ContactNoteItem.vue';
 import clienteAPI from 'dashboard/api/cartera/clientes';
 import facturaAPI from 'dashboard/api/cartera/facturas';
+import CarteraHeader from '../cartera-shared/CarteraHeader.vue';
 import FacturasTable from '../cartera-shared/FacturasTable.vue';
+import TableCard from '../cartera-shared/TableCard.vue';
+import ClickableTable from '../cartera-shared/ClickableTable.vue';
 import MetricCard from '../cartera-shared/MetricCard.vue';
 import Panel from '../cartera-shared/Panel.vue';
 import { formatearCop, formatearFecha } from '../cartera-shared/format';
 
 const { t } = useI18n();
 const route = useRoute();
-const router = useRouter();
 const store = useStore();
 
 const isFetching = ref(false);
@@ -120,7 +122,33 @@ const onDeleteNote = noteId => {
   store.dispatch('contactNotes/delete', { noteId, contactId: contactId.value });
 };
 
-const volver = () => router.push({ name: 'cartera_clientes_view' });
+const pagosColumnHelper = createColumnHelper();
+const pagosColumns = [
+  pagosColumnHelper.accessor('fecha', {
+    header: t('CARTERA.FICHA.PAGOS_HEADERS.FECHA'),
+    size: 140,
+    cell: cellProps => formatearFecha(cellProps.getValue()),
+  }),
+  pagosColumnHelper.accessor('valor', {
+    header: t('CARTERA.FICHA.PAGOS_HEADERS.VALOR'),
+    size: 150,
+    cell: cellProps => formatearCop(cellProps.getValue()),
+  }),
+  pagosColumnHelper.accessor('medio_pago', {
+    header: t('CARTERA.FICHA.PAGOS_HEADERS.MEDIO_PAGO'),
+    size: 150,
+    cell: cellProps => cellProps.getValue() || sinDato,
+  }),
+];
+
+const pagosTable = useVueTable({
+  get data() {
+    return pagosRecientes.value;
+  },
+  columns: pagosColumns,
+  enableSorting: false,
+  getCoreRowModel: getCoreRowModel(),
+});
 
 onMounted(async () => {
   await fetchFicha();
@@ -132,41 +160,37 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex flex-col flex-1 h-full overflow-hidden bg-n-surface-1">
-    <header
-      class="flex items-center gap-3 px-6 py-3 border-b border-n-weak flex-shrink-0"
+  <div>
+    <CarteraHeader
+      :header-title="cliente ? cliente.nombre_cliente : ''"
+      :header-description="cliente ? cliente.identificacion : ''"
+      has-back-button
+      :back-url="{ name: 'cartera_clientes_view' }"
     >
-      <Button icon="i-lucide-arrow-left" ghost slate sm @click="volver" />
-      <template v-if="cliente">
-        <h1 class="text-base font-semibold text-n-slate-12">
-          {{ cliente.nombre_cliente }}
-        </h1>
-        <span class="text-sm text-n-slate-10">{{
-          cliente.identificacion
-        }}</span>
+      <template #title-suffix>
         <span
-          v-if="cliente.no_cobrar"
+          v-if="cliente?.no_cobrar"
           class="rounded-full border border-n-ruby-6 bg-n-ruby-3 px-2 py-0.5 text-[10px] text-n-ruby-11"
         >
           {{ t('CARTERA.CLIENTES.NO_COBRAR') }}
         </span>
         <span
-          v-if="cliente.es_estrategico"
+          v-if="cliente?.es_estrategico"
           class="rounded-full border border-n-amber-6 bg-n-amber-3 px-2 py-0.5 text-[10px] text-n-amber-11"
         >
           {{ t('CARTERA.FICHA.ESTRATEGICO') }}
         </span>
       </template>
-    </header>
+    </CarteraHeader>
 
     <div
       v-if="isFetching && !cliente"
-      class="flex items-center justify-center py-20 text-body-main text-n-slate-11"
+      class="flex items-center justify-center py-20"
     >
-      {{ t('CARTERA.FICHA.LOADING') }}
+      <Spinner />
     </div>
 
-    <div v-else-if="cliente" class="flex-1 overflow-y-auto p-6 space-y-4">
+    <div v-else-if="cliente" class="space-y-4 pb-6">
       <Panel :title="t('CARTERA.FICHA.PERFIL_TITLE')">
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <MetricCard
@@ -385,37 +409,9 @@ onMounted(async () => {
       </Panel>
 
       <Panel :title="t('CARTERA.FICHA.PAGOS_TITLE')">
-        <BaseTable
-          v-if="pagosRecientes.length"
-          :headers="[
-            t('CARTERA.FICHA.PAGOS_HEADERS.FECHA'),
-            t('CARTERA.FICHA.PAGOS_HEADERS.VALOR'),
-            t('CARTERA.FICHA.PAGOS_HEADERS.MEDIO_PAGO'),
-          ]"
-          :items="pagosRecientes"
-        >
-          <template #row="{ items: rows }">
-            <BaseTableRow v-for="pago in rows" :key="pago.pago_id" :item="pago">
-              <template #default>
-                <BaseTableCell>
-                  <span class="text-body-main text-n-slate-11">
-                    {{ formatearFecha(pago.fecha) }}
-                  </span>
-                </BaseTableCell>
-                <BaseTableCell>
-                  <span class="text-body-main text-n-slate-12 tabular-nums">
-                    {{ formatearCop(pago.valor) }}
-                  </span>
-                </BaseTableCell>
-                <BaseTableCell>
-                  <span class="text-body-main text-n-slate-11 capitalize">
-                    {{ pago.medio_pago || sinDato }}
-                  </span>
-                </BaseTableCell>
-              </template>
-            </BaseTableRow>
-          </template>
-        </BaseTable>
+        <TableCard v-if="pagosRecientes.length">
+          <ClickableTable :table="pagosTable" :clickable="false" />
+        </TableCard>
         <p v-else class="text-sm text-n-slate-11">
           {{ t('CARTERA.FICHA.PAGOS_EMPTY') }}
         </p>
