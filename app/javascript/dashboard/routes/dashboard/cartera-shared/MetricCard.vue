@@ -3,6 +3,8 @@ defineProps({
   label: { type: String, required: true },
   value: { type: [String, Number], default: 0 },
   hint: { type: String, default: '' },
+  subtext: { type: String, default: '' },
+  valueClass: { type: String, default: 'text-n-slate-12' },
   loading: { type: Boolean, default: false },
 });
 </script>
@@ -20,11 +22,14 @@ defineProps({
       />
     </div>
     <div v-if="loading" class="w-24 rounded h-9 bg-n-slate-3 animate-pulse" />
-    <span
-      v-else
-      class="text-2xl font-semibold tracking-tight tabular-nums text-n-slate-12"
-    >
-      {{ value }}
-    </span>
+    <template v-else>
+      <span
+        class="text-2xl font-semibold tracking-tight tabular-nums"
+        :class="valueClass"
+      >
+        {{ value }}
+      </span>
+      <span v-if="subtext" class="text-xs text-n-slate-10">{{ subtext }}</span>
+    </template>
   </div>
 </template>
