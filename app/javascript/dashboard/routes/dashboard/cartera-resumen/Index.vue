@@ -2,15 +2,21 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { BarChart, LineChart } from '@chatwoot/viz';
+import { useAlert } from 'dashboard/composables';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import Select from 'dashboard/components-next/select/Select.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 import dashboardAPI from 'dashboard/api/cartera/dashboard';
+import syncAPI from 'dashboard/api/cartera/syncs';
 import MetricCard from '../cartera-shared/MetricCard.vue';
 import Panel from '../cartera-shared/Panel.vue';
 import { formatearCop } from '../cartera-shared/format';
 
 const { t } = useI18n();
+const { isAdmin } = useAdmin();
 
 const isFetching = ref(false);
+const isSyncing = ref(false);
 const sucursalSeleccionada = ref('');
 const sucursales = ref([]);
 const resumen = ref(null);
@@ -82,6 +88,25 @@ const fetchResumen = async () => {
   }
 };
 
+const actualizar = async () => {
+  isSyncing.value = true;
+  try {
+    const { data } = await syncAPI.create();
+    if (data.estado === 'fallida') {
+      useAlert(t('CARTERA.RESUMEN.SYNC_ERROR'));
+    } else {
+      useAlert(
+        t('CARTERA.RESUMEN.SYNC_SUCCESS', { count: data.registros_procesados })
+      );
+    }
+    await fetchResumen();
+  } catch {
+    useAlert(t('CARTERA.RESUMEN.SYNC_ERROR'));
+  } finally {
+    isSyncing.value = false;
+  }
+};
+
 watch(sucursalSeleccionada, fetchResumen);
 onMounted(fetchResumen);
 </script>
@@ -97,11 +122,23 @@ onMounted(fetchResumen);
           {{ t('CARTERA.RESUMEN.TITLE') }}
         </h1>
       </div>
-      <Select
-        v-if="sucursales.length"
-        v-model="sucursalSeleccionada"
-        :options="sucursalOptions"
-      />
+      <div class="flex items-center gap-2">
+        <Select
+          v-if="sucursales.length"
+          v-model="sucursalSeleccionada"
+          :options="sucursalOptions"
+        />
+        <Button
+          v-if="isAdmin"
+          icon="i-lucide-refresh-cw"
+          slate
+          faded
+          size="sm"
+          :is-loading="isSyncing"
+          :label="t('CARTERA.RESUMEN.SYNC_BUTTON')"
+          @click="actualizar"
+        />
+      </div>
     </header>
 
     <div class="flex-1 overflow-y-auto p-6">

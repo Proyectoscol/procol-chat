@@ -263,6 +263,7 @@ Rails.application.routes.draw do
               end
             end
             resources :facturas, only: [:index]
+            resources :syncs, only: [:create]
           end
           resources :data_imports, only: [:index, :show, :create] do
             collection do

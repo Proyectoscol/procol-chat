@@ -19,11 +19,16 @@ class Api::V1::Accounts::Cartera::FacturasController < Api::V1::Accounts::BaseCo
     facturas_filtradas.map { |factura| factura_item(factura) }
   end
 
+  # Por defecto trae TODAS las facturas (abiertas y pagadas) - filtrar por
+  # estado es una eleccion explicita del usuario, no el default.
   def facturas_filtradas
     scope = Current.account.cartera_facturas.includes(:cliente)
     scope = scope.where(cliente_id: params[:cliente_id]) if params[:cliente_id].present?
-    scope = scope.where('saldo_pendiente > 0') unless params[:incluir_pagadas] == 'true'
-    scope
+    case params[:estado]
+    when 'abiertas' then scope.where('saldo_pendiente > 0')
+    when 'pagadas' then scope.where('saldo_pendiente <= 0')
+    else scope
+    end
   end
 
   def factura_item(factura)

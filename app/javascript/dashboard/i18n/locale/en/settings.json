@@ -1248,7 +1248,10 @@
       "TENDENCIA_VENCIDO": "Overdue",
       "PRESCRIPCION_TITLE": "Statute-of-limitations alerts",
       "PRESCRIPCION_EMPTY": "No invoices approaching their statute-of-limitations deadline.",
-      "PRESCRIPCION_AVISO": "Operational estimate only - validate with legal counsel."
+      "PRESCRIPCION_AVISO": "Operational estimate only - validate with legal counsel.",
+      "SYNC_BUTTON": "Update",
+      "SYNC_SUCCESS": "Sync complete - {count} record(s) processed.",
+      "SYNC_ERROR": "Sync failed. Check ALEGRA_EMAIL/ALEGRA_TOKEN and try again."
     },
     "CLIENTES": {
       "TITLE": "Clientes",
@@ -1269,6 +1272,11 @@
       "TITLE": "Facturas",
       "EMPTY_STATE": "No invoices found.",
       "FILTER_TRAMO_ALL": "All buckets",
+      "FILTER_ESTADO_ALL": "All (open + paid)",
+      "FILTER_ESTADO_ABIERTAS": "Open only",
+      "FILTER_ESTADO_PAGADAS": "Paid only",
+      "ESTADO_ABIERTA": "Open",
+      "ESTADO_PAGADA": "Paid",
       "HEADERS": {
         "NUMERO": "Number",
         "CLIENTE": "Client",
@@ -1276,7 +1284,8 @@
         "DIAS_VENCIDOS": "Days overdue",
         "VALOR_TOTAL": "Total amount",
         "SALDO_PENDIENTE": "Outstanding balance",
-        "TRAMO": "Aging bucket"
+        "TRAMO": "Aging bucket",
+        "ESTADO": "Status"
       }
     }
   },

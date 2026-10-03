@@ -614,6 +614,11 @@ const menuItems = computed(() => {
       name: 'Contacts',
       label: t('SIDEBAR.CONTACTS'),
       icon: 'i-lucide-contact',
+      // Oculto cuando el feature flag "cartera" esta activo: Clientes (mas
+      // abajo) es el punto de entrada equivalente para esa cuenta - el
+      // contacto subyacente sigue existiendo (conversaciones, paneles de
+      // contacto), solo se retira este acceso directo del sidebar.
+      hidden: hasCartera.value,
       children: [
         {
           name: 'All Contacts',

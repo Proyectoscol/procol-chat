@@ -21,6 +21,7 @@ const headers = [
   t('CARTERA.FACTURAS.HEADERS.VALOR_TOTAL'),
   t('CARTERA.FACTURAS.HEADERS.SALDO_PENDIENTE'),
   t('CARTERA.FACTURAS.HEADERS.TRAMO'),
+  t('CARTERA.FACTURAS.HEADERS.ESTADO'),
 ];
 
 const TRAMOS = [
@@ -39,6 +40,7 @@ const total = ref(0);
 const pageSize = ref(20);
 const isFetching = ref(false);
 const tramoSeleccionado = ref('');
+const estadoSeleccionado = ref('');
 
 const tramoOptions = computed(() => [
   { value: '', label: t('CARTERA.FACTURAS.FILTER_TRAMO_ALL') },
@@ -48,12 +50,19 @@ const tramoOptions = computed(() => [
   })),
 ]);
 
+const estadoOptions = computed(() => [
+  { value: '', label: t('CARTERA.FACTURAS.FILTER_ESTADO_ALL') },
+  { value: 'abiertas', label: t('CARTERA.FACTURAS.FILTER_ESTADO_ABIERTAS') },
+  { value: 'pagadas', label: t('CARTERA.FACTURAS.FILTER_ESTADO_PAGADAS') },
+]);
+
 const fetchFacturas = async () => {
   isFetching.value = true;
   try {
     const { data } = await facturaAPI.get({
       page: page.value,
       tramo: tramoSeleccionado.value,
+      estado: estadoSeleccionado.value,
     });
     items.value = data.items;
     total.value = data.total;
@@ -63,7 +72,7 @@ const fetchFacturas = async () => {
   }
 };
 
-watch(tramoSeleccionado, () => {
+watch([tramoSeleccionado, estadoSeleccionado], () => {
   page.value = 1;
   fetchFacturas();
 });
@@ -88,7 +97,10 @@ onMounted(fetchFacturas);
           {{ t('CARTERA.FACTURAS.TITLE') }}
         </h1>
       </div>
-      <Select v-model="tramoSeleccionado" :options="tramoOptions" />
+      <div class="flex items-center gap-2">
+        <Select v-model="estadoSeleccionado" :options="estadoOptions" />
+        <Select v-model="tramoSeleccionado" :options="tramoOptions" />
+      </div>
     </header>
 
     <div class="flex-1 overflow-y-auto p-6">
@@ -140,6 +152,22 @@ onMounted(fetchFacturas);
                   class="text-body-main text-n-slate-11 whitespace-nowrap capitalize"
                 >
                   {{ t(`CARTERA.TRAMOS.${factura.tramo.toUpperCase()}`) }}
+                </span>
+              </BaseTableCell>
+              <BaseTableCell>
+                <span
+                  class="rounded-full border px-2 py-0.5 text-[10px] whitespace-nowrap"
+                  :class="
+                    factura.pagada
+                      ? 'border-n-teal-6 bg-n-teal-3 text-n-teal-11'
+                      : 'border-n-amber-6 bg-n-amber-3 text-n-amber-11'
+                  "
+                >
+                  {{
+                    factura.pagada
+                      ? t('CARTERA.FACTURAS.ESTADO_PAGADA')
+                      : t('CARTERA.FACTURAS.ESTADO_ABIERTA')
+                  }}
                 </span>
               </BaseTableCell>
             </template>
