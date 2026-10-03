@@ -13,6 +13,19 @@ class Api::V1::Accounts::Cartera::FacturasController < Api::V1::Accounts::BaseCo
     render json: { items: items, total: total, page: page, page_size: page_size }
   end
 
+  def show
+    factura = Current.account.cartera_facturas.includes(:cliente, :eventos_radian).find(params[:id])
+    eventos = factura.eventos_radian.map { |e| { tipo_evento: e.tipo_evento, fecha: e.fecha, fuente: e.fuente } }
+
+    render json: {
+      **factura_item(factura),
+      cufe: factura.cufe,
+      identificacion_cliente: factura.cliente.identificacion,
+      eventos_radian: eventos,
+      radian: Cartera::RadianValidator.clasificar_factura(eventos, Time.current)
+    }
+  end
+
   private
 
   def facturas_con_tramo
@@ -31,27 +44,41 @@ class Api::V1::Accounts::Cartera::FacturasController < Api::V1::Accounts::BaseCo
     end
   end
 
+  # Una factura pagada no tiene "dias vencidos" ni tramo de aging - esos
+  # conceptos solo aplican a saldo pendiente en vivo. Lo que sí aplica, y se
+  # calcula una sola vez (no crece con el reloj), es si se pagó a tiempo o
+  # con cuantos dias de mora: mismo criterio que PerfilPagoService#dias_pago.
   def factura_item(factura)
-    dias = Cartera::AgingCalculator.dias_vencido(factura.fecha_vencimiento, Time.current)
-    {
-      factura_id: factura.id,
-      numero: factura.numero,
-      cliente_id: factura.cliente_id,
-      nombre_cliente: factura.cliente.nombre,
-      fecha_emision: factura.fecha_emision,
-      fecha_vencimiento: factura.fecha_vencimiento,
-      dias_vencidos: dias,
-      valor_total: factura.valor_total.to_f.round(2),
-      saldo_pendiente: factura.saldo_pendiente.to_f.round(2),
-      pagada: factura.saldo_pendiente.to_f <= 0,
-      tramo: Cartera::AgingCalculator.tramo(dias),
+    pagada = factura.saldo_pendiente.to_f <= 0
+    base = {
+      factura_id: factura.id, numero: factura.numero, cliente_id: factura.cliente_id,
+      nombre_cliente: factura.cliente.nombre, fecha_emision: factura.fecha_emision,
+      fecha_vencimiento: factura.fecha_vencimiento, valor_total: factura.valor_total.to_f.round(2),
+      saldo_pendiente: factura.saldo_pendiente.to_f.round(2), pagada: pagada,
       pronto_pago: Cartera::ProntoPagoCalculator.calcular(factura)
     }
+
+    pagada ? base.merge(datos_factura_pagada(factura)) : base.merge(datos_factura_abierta(factura))
+  end
+
+  def datos_factura_abierta(factura)
+    dias = Cartera::AgingCalculator.dias_vencido(factura.fecha_vencimiento, Time.current)
+    { dias_vencidos: dias, tramo: Cartera::AgingCalculator.tramo(dias), fecha_pago: nil, dias_mora_pago: nil }
+  end
+
+  def datos_factura_pagada(factura)
+    fecha_pago = ultima_fecha_pago(factura)
+    dias_mora_pago = fecha_pago && Cartera::AgingCalculator.dias_vencido(factura.fecha_vencimiento, fecha_pago)
+    { dias_vencidos: nil, tramo: nil, fecha_pago: fecha_pago, dias_mora_pago: dias_mora_pago }
+  end
+
+  def ultima_fecha_pago(factura)
+    factura.aplicaciones_pago.includes(:pago).map { |a| a.pago.fecha }.max
   end
 
   def ordenar(items)
     sort_by = SORTABLE.include?(params[:sort_by]) ? params[:sort_by].to_sym : :fecha_vencimiento
-    ordenados = items.sort_by { |f| f[sort_by] }
+    ordenados = items.sort_by { |f| f[sort_by].nil? ? 0 : f[sort_by] }
     params[:sort_dir] == 'asc' ? ordenados : ordenados.reverse
   end
 

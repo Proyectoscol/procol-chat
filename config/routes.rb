@@ -262,7 +262,7 @@ Rails.application.routes.draw do
                 get :search
               end
             end
-            resources :facturas, only: [:index]
+            resources :facturas, only: [:index, :show]
             resources :syncs, only: [:create]
           end
           resources :data_imports, only: [:index, :show, :create] do
