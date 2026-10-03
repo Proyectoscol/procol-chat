@@ -14,9 +14,9 @@ class CarteraClienteAPI extends ApiClient {
   }
 
   get(params = {}) {
-    const { page = 1, sortBy, sortDir } = params;
+    const { page = 1, pageSize, sortBy, sortDir } = params;
     return axios.get(
-      `${this.url}?${buildParams({ page, sort_by: sortBy, sort_dir: sortDir })}`
+      `${this.url}?${buildParams({ page, page_size: pageSize, sort_by: sortBy, sort_dir: sortDir })}`
     );
   }
 

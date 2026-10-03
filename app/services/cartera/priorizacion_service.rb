@@ -33,7 +33,7 @@ class Cartera::PriorizacionService
 
   def listar_paginado(page: 1, page_size: 20, incluir_no_cobrar: false, sort_by: nil, sort_dir: 'desc')
     page = [1, page.to_i].max
-    page_size = page_size.to_i.clamp(1, 100)
+    page_size = (page_size || 20).to_i.clamp(1, 100)
     scope = @account.cartera_casos.includes(:cliente)
     scope = scope.where(no_cobrar: false) unless incluir_no_cobrar
     scope = aplicar_orden(scope, sort_by, sort_dir)
