@@ -177,6 +177,30 @@ end
 # valor_factura dentro de un rango creible relativo al cupo del cliente.
 valor_factura = ->(cupo) { (cupo * RNG.rand(0.04..0.22)).round(-4).clamp(150_000, cupo * 0.5) }
 
+# Eventos RADIAN variados para que el panel de "Estado de ejecutabilidad" de
+# la ficha de factura muestre los 4 estados posibles en el demo: sin
+# eventos (no_verificable), solo 030 (incompleta), 030+032 o 030+032+033
+# (ejecutable), 030+031 (en_reclamo).
+agregar_eventos_radian = lambda do |factura, fecha_emision|
+  roll = RNG.rand
+  return if roll < 0.1
+
+  fecha_030 = fecha_emision + RNG.rand(0..2).days
+  factura.eventos_radian.create!(account: account, tipo_evento: :evento_030, fecha: fecha_030, fuente: 'alegra')
+  return if roll < 0.3
+
+  fecha_032 = fecha_030 + RNG.rand(1..4).days
+  factura.eventos_radian.create!(account: account, tipo_evento: :evento_032, fecha: fecha_032, fuente: 'alegra')
+
+  if roll < 0.8
+    nil # aceptacion tacita (sin evento 033) una vez vencido el plazo de reclamo
+  elsif roll < 0.9
+    factura.eventos_radian.create!(account: account, tipo_evento: :evento_033, fecha: fecha_032 + 1.day, fuente: 'alegra')
+  else
+    factura.eventos_radian.create!(account: account, tipo_evento: :evento_031, fecha: fecha_032 + 1.day, fuente: 'alegra')
+  end
+end
+
 # Crea una factura histórica. `desenlace` decide si queda paga (a tiempo o
 # tarde, según `offset_dias`) o abierta y vencida (para poblar tramos de
 # aging vencido).
@@ -187,9 +211,11 @@ crear_factura_historica = lambda do |cliente, cupo, dias_emision_atras, plazo_di
 
   factura = account.cartera_facturas.create!(
     cliente: cliente, external_id: "#{DEMO_PREFIX}#{cliente.external_id}-H#{idx}",
-    numero: "FV-#{((cliente.id * 100) + idx).to_s.rjust(6, '0')}", fecha_emision: fecha_emision,
-    fecha_vencimiento: fecha_vencimiento, valor_total: valor, saldo_pendiente: desenlace == :abierta ? valor : 0
+    numero: "FV-#{((cliente.id * 100) + idx).to_s.rjust(6, '0')}", cufe: SecureRandom.hex(48),
+    fecha_emision: fecha_emision, fecha_vencimiento: fecha_vencimiento, valor_total: valor,
+    saldo_pendiente: desenlace == :abierta ? valor : 0
   )
+  agregar_eventos_radian.call(factura, fecha_emision)
 
   return factura if desenlace == :abierta
 
@@ -209,8 +235,8 @@ crear_factura_futura = lambda do |cliente, cupo, dias_hasta_vencer, idx|
 
   account.cartera_facturas.create!(
     cliente: cliente, external_id: "#{DEMO_PREFIX}#{cliente.external_id}-F#{idx}",
-    numero: "FV-#{((cliente.id * 100) + 50 + idx).to_s.rjust(6, '0')}", fecha_emision: fecha_emision,
-    fecha_vencimiento: fecha_vencimiento, valor_total: valor, saldo_pendiente: valor
+    numero: "FV-#{((cliente.id * 100) + 50 + idx).to_s.rjust(6, '0')}", cufe: SecureRandom.hex(48),
+    fecha_emision: fecha_emision, fecha_vencimiento: fecha_vencimiento, valor_total: valor, saldo_pendiente: valor
   )
 end
 
