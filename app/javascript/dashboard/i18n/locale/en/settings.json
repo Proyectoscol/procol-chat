@@ -1222,7 +1222,6 @@
     }
   },
   "CARTERA": {
-    "PAGINATION": "Page {page} of {totalPages}",
     "TRAMOS": {
       "VIGENTE": "Current",
       "D1_30": "1-30 days",
@@ -1233,22 +1232,51 @@
       "MAS_360": "360+ days"
     },
     "RESUMEN": {
-      "TITLE": "Cartera overview",
+      "TITLE": "Portfolio summary",
       "LOADING": "Loading overview...",
       "VALOR_VIGENTE": "Current balance",
       "VALOR_VENCIDO": "Overdue balance",
       "VALOR_TOTAL": "Total balance",
+      "AGING_EMPTY": "Total balance: {value}",
       "CUPO_TOTAL": "Total credit limit",
       "CUPO_DISPONIBLE": "Available credit",
       "FACTURAS_CALIDAD_DATOS": "Invoices needing review",
+      "FACTURAS_COUNT": "{count} invoices",
       "SUCURSAL_ALL": "All branches",
       "AGING_TITLE": "Aging by bucket",
       "TENDENCIA_TITLE": "12-month trend",
       "TENDENCIA_VIGENTE": "Current",
       "TENDENCIA_VENCIDO": "Overdue",
+      "POR_VENCER_TITLE": "Upcoming due dates (expected cash flow)",
+      "POR_VENCER_EMPTY": "No open invoices due in the next 360 days.",
+      "PLAZO_PROMEDIO_COBRO_LINE": "Average days to due date: {value}",
+      "PLAZO_PROMEDIO_COBRO_VALOR": "{dias} days",
+      "PLAZO_PROMEDIO_COBRO_SIN_DATO": "No data",
+      "TRAMOS_POR_VENCER": {
+        "D0_30": "Due in 0-30 days",
+        "D31_60": "Due in 31-60 days",
+        "D61_90": "Due in 61-90 days",
+        "D91_180": "Due in 91-180 days",
+        "D181_360": "Due in 181-360 days",
+        "MAS_360": "Due in 360+ days"
+      },
+      "TABLE_MES": "Month",
+      "TABLE_VIGENTE": "Current",
+      "TABLE_VENCIDO": "Overdue",
+      "TABLE_TOTAL": "Total",
+      "TABLE_TRAMO": "Bucket",
+      "TABLE_FACTURAS": "Invoices",
+      "TABLE_VALOR": "Amount",
       "PRESCRIPCION_TITLE": "Statute-of-limitations alerts",
       "PRESCRIPCION_EMPTY": "No invoices approaching their statute-of-limitations deadline.",
       "PRESCRIPCION_AVISO": "Operational estimate only - validate with legal counsel.",
+      "PRESCRIPCION_TABLE_VENTANA": "Window",
+      "PRESCRIPCION_VENTANAS": {
+        "VENCIDA": "Already past the deadline",
+        "3_MESES": "Within 3 months",
+        "6_MESES": "Within 6 months",
+        "12_MESES": "Within 12 months"
+      },
       "SYNC_BUTTON": "Update",
       "SYNC_SUCCESS": "Sync complete - {count} record(s) processed.",
       "SYNC_ERROR": "Sync failed. Check ALEGRA_EMAIL/ALEGRA_TOKEN and try again."
@@ -1287,6 +1315,39 @@
         "SALDO_PENDIENTE": "Outstanding balance",
         "TRAMO": "Aging bucket",
         "ESTADO": "Status"
+      }
+    },
+    "FICHA": {
+      "LOADING": "Loading client...",
+      "ESTRATEGICO": "Strategic client",
+      "SIN_CONTACTO": "Not linked to a Chatwoot contact yet - the next sync links it automatically once the phone or email matches.",
+      "PERFIL_TITLE": "Payment profile",
+      "SALDO_ABIERTO": "Outstanding balance",
+      "PUNTAJE_RIESGO": "Risk score",
+      "SCORE_CREDITO": "Credit score",
+      "MORA": "Aging",
+      "DIAS_PROMEDIO_PAGO": "Avg. days to pay (business days)",
+      "PORCENTAJE_TARDE": "Paid late (business days)",
+      "CUPO_UTILIZADO": "Credit limit used",
+      "ANTIGUEDAD_RELACION": "Relationship age",
+      "ANTIGUEDAD_RELACION_VALOR": "{dias} days",
+      "TENDENCIA_6_MESES": "Late rate, last 6 months",
+      "TENDENCIA_12_MESES": "Late rate, last 12 months",
+      "TENDENCIA_FACTURAS_SUFFIX": "({count} invoices)",
+      "ACCIONES_TITLE": "Actions",
+      "LLAMAR": "Call",
+      "EXPORTAR_PDF": "Export PDF",
+      "EXPORTAR_PDF_PROXIMAMENTE": "Coming soon",
+      "INTERACCIONES_TITLE": "Interactions",
+      "FACTURAS_TITLE": "Invoices",
+      "FACTURAS_TAB_ABIERTAS": "Open",
+      "FACTURAS_TAB_PAGADAS": "Paid",
+      "PAGOS_TITLE": "Recent payments",
+      "PAGOS_EMPTY": "No payments recorded.",
+      "PAGOS_HEADERS": {
+        "FECHA": "Date",
+        "VALOR": "Amount",
+        "MEDIO_PAGO": "Payment method"
       }
     }
   },
