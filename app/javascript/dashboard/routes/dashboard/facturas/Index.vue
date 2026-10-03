@@ -110,8 +110,8 @@ const table = useVueTable({
 
 const abrirFicha = factura => {
   router.push({
-    name: 'cartera_clientes_ficha_view',
-    params: { clienteId: factura.cliente_id },
+    name: 'cartera_facturas_ficha_view',
+    params: { facturaId: factura.factura_id },
   });
 };
 

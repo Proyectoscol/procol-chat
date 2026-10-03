@@ -1350,6 +1350,49 @@
         "VALOR": "Amount",
         "MEDIO_PAGO": "Payment method"
       }
+    },
+    "FACTURA_FICHA": {
+      "LOADING": "Loading invoice...",
+      "DETALLE_TITLE": "Detail",
+      "DEUDOR": "Debtor",
+      "NIT": "NIT",
+      "FECHA_EMISION": "Issue date",
+      "FECHA_VENCIMIENTO": "Due date",
+      "VALOR_TOTAL": "Total amount",
+      "SALDO_PENDIENTE": "Outstanding balance",
+      "DIAS_VENCIDOS": "Days overdue",
+      "ESTADO_VIGENTE": "Current - not yet due",
+      "PAGADA_A_TIEMPO": "Paid on time",
+      "PAGADA_CON_MORA": "Paid {dias} days late",
+      "PAGADA_EL": "Paid on {fecha}",
+      "CUFE_TITLE": "CUFE",
+      "CUFE_SIN_DATO": "No CUFE on record for this invoice.",
+      "CUFE_COPIAR": "Copy",
+      "CUFE_COPIADO": "CUFE copied to clipboard.",
+      "CUFE_COPIAR_ERROR": "Could not copy the CUFE.",
+      "CONSULTAR_DIAN": "Look up at DIAN",
+      "RADIAN_TITLE": "RADIAN events",
+      "RADIAN_EMPTY": "No RADIAN events recorded for this invoice.",
+      "RADIAN_ESTADO_TITLE": "Enforceability status",
+      "RADIAN_AVISO": "Operational estimate only - validate with legal counsel.",
+      "RADIAN_ESTADOS": {
+        "EJECUTABLE": "Enforceable",
+        "INCOMPLETA": "Incomplete",
+        "EN_RECLAMO": "Under dispute",
+        "NO_VERIFICABLE": "Not verifiable"
+      },
+      "RADIAN_HEADERS": {
+        "EVENTO": "Event",
+        "FECHA": "Date",
+        "FUENTE": "Source"
+      },
+      "RADIAN_EVENTOS": {
+        "EVENTO_030": "030 - Acknowledgment of receipt",
+        "EVENTO_031": "031 - Claim",
+        "EVENTO_032": "032 - Receipt of goods or service",
+        "EVENTO_033": "033 - Express acceptance",
+        "EVENTO_034": "034 - Tacit acceptance"
+      }
     }
   },
   "CONTACT_STATS": {

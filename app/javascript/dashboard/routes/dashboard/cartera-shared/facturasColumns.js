@@ -43,8 +43,29 @@ export const buildFacturasColumns = (t, hideClienteColumn = false) =>
     columnHelper.accessor('dias_vencidos', {
       header: t('CARTERA.FACTURAS.HEADERS.DIAS_VENCIDOS'),
       size: 90,
-      cell: cellProps =>
-        spanCell(cellProps.getValue(), 'text-body-main text-n-slate-11'),
+      // Una factura pagada no tiene "dias vencidos" (ese concepto solo
+      // aplica a saldo pendiente en vivo) - se muestra si se pagó a
+      // tiempo o con cuantos dias de mora en su lugar.
+      cell: cellProps => {
+        const factura = cellProps.row.original;
+        if (!factura.pagada)
+          return spanCell(
+            factura.dias_vencidos,
+            'text-body-main text-n-slate-11'
+          );
+        if (factura.dias_mora_pago === null || factura.dias_mora_pago <= 0) {
+          return spanCell(
+            t('CARTERA.FACTURA_FICHA.PAGADA_A_TIEMPO'),
+            'text-body-main text-n-teal-11'
+          );
+        }
+        return spanCell(
+          t('CARTERA.FACTURA_FICHA.PAGADA_CON_MORA', {
+            dias: factura.dias_mora_pago,
+          }),
+          'text-body-main text-n-amber-11'
+        );
+      },
     }),
     columnHelper.accessor('valor_total', {
       header: t('CARTERA.FACTURAS.HEADERS.VALOR_TOTAL'),
@@ -67,11 +88,13 @@ export const buildFacturasColumns = (t, hideClienteColumn = false) =>
     columnHelper.accessor('tramo', {
       header: t('CARTERA.FACTURAS.HEADERS.TRAMO'),
       size: 120,
-      cell: cellProps =>
-        spanCell(
-          t(`CARTERA.TRAMOS.${cellProps.getValue().toUpperCase()}`),
+      cell: cellProps => {
+        const tramo = cellProps.getValue();
+        return spanCell(
+          tramo ? t(`CARTERA.TRAMOS.${tramo.toUpperCase()}`) : '—',
           'text-body-main text-n-slate-11 whitespace-nowrap capitalize'
-        ),
+        );
+      },
     }),
     columnHelper.accessor('pagada', {
       header: t('CARTERA.FACTURAS.HEADERS.ESTADO'),

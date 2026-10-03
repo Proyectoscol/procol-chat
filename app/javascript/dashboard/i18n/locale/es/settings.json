@@ -1274,6 +1274,49 @@
         "VALOR": "Valor",
         "MEDIO_PAGO": "Medio de pago"
       }
+    },
+    "FACTURA_FICHA": {
+      "LOADING": "Cargando factura...",
+      "DETALLE_TITLE": "Detalle",
+      "DEUDOR": "Deudor",
+      "NIT": "NIT",
+      "FECHA_EMISION": "Fecha de emisión",
+      "FECHA_VENCIMIENTO": "Fecha de vencimiento",
+      "VALOR_TOTAL": "Valor total",
+      "SALDO_PENDIENTE": "Saldo pendiente",
+      "DIAS_VENCIDOS": "Días vencidos",
+      "ESTADO_VIGENTE": "Vigente - aún no vence",
+      "PAGADA_A_TIEMPO": "Pagada a tiempo",
+      "PAGADA_CON_MORA": "Pagada con {dias} días de mora",
+      "PAGADA_EL": "Pagada el {fecha}",
+      "CUFE_TITLE": "CUFE",
+      "CUFE_SIN_DATO": "Esta factura no tiene CUFE registrado.",
+      "CUFE_COPIAR": "Copiar",
+      "CUFE_COPIADO": "CUFE copiado al portapapeles.",
+      "CUFE_COPIAR_ERROR": "No se pudo copiar el CUFE.",
+      "CONSULTAR_DIAN": "Consultar en la DIAN",
+      "RADIAN_TITLE": "Eventos RADIAN",
+      "RADIAN_EMPTY": "No hay eventos RADIAN registrados para esta factura.",
+      "RADIAN_ESTADO_TITLE": "Estado de ejecutabilidad",
+      "RADIAN_AVISO": "Estimado operativo únicamente - validar con asesoría jurídica.",
+      "RADIAN_ESTADOS": {
+        "EJECUTABLE": "Ejecutable",
+        "INCOMPLETA": "Incompleta",
+        "EN_RECLAMO": "En reclamo",
+        "NO_VERIFICABLE": "No verificable"
+      },
+      "RADIAN_HEADERS": {
+        "EVENTO": "Evento",
+        "FECHA": "Fecha",
+        "FUENTE": "Fuente"
+      },
+      "RADIAN_EVENTOS": {
+        "EVENTO_030": "030 - Acuse de recibo",
+        "EVENTO_031": "031 - Reclamo",
+        "EVENTO_032": "032 - Recibo del bien o servicio",
+        "EVENTO_033": "033 - Aceptación expresa",
+        "EVENTO_034": "034 - Aceptación tácita"
+      }
     }
   },
   "CONTACT_STATS": {

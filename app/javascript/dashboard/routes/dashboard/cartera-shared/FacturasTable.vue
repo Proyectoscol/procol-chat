@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { useVueTable, getCoreRowModel } from '@tanstack/vue-table';
 import Spinner from 'shared/components/Spinner.vue';
 import EmptyState from 'dashboard/components/widgets/EmptyState.vue';
@@ -16,6 +17,14 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const router = useRouter();
+
+const abrirFicha = factura => {
+  router.push({
+    name: 'cartera_facturas_ficha_view',
+    params: { facturaId: factura.factura_id },
+  });
+};
 
 const columns = computed(() =>
   buildFacturasColumns(t, props.hideClienteColumn)
@@ -35,7 +44,7 @@ const table = useVueTable({
 
 <template>
   <TableCard>
-    <ClickableTable :table="table" :clickable="false" />
+    <ClickableTable :table="table" @row-click="abrirFicha" />
   </TableCard>
   <div
     v-if="loading && !items.length"

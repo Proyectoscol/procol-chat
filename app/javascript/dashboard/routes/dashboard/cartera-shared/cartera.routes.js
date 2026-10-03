@@ -4,6 +4,7 @@ import CarteraResumenIndex from '../cartera-resumen/Index.vue';
 import ClientesIndex from '../clientes/Index.vue';
 import ClientesFicha from '../clientes/Ficha.vue';
 import FacturasIndex from '../facturas/Index.vue';
+import FacturasFicha from '../facturas/Ficha.vue';
 
 const meta = {
   permissions: ['administrator', 'agent'],
@@ -37,6 +38,12 @@ export const routes = [
         name: 'cartera_facturas_view',
         meta,
         component: FacturasIndex,
+      },
+      {
+        path: 'facturas/:facturaId',
+        name: 'cartera_facturas_ficha_view',
+        meta,
+        component: FacturasFicha,
       },
     ],
   },
