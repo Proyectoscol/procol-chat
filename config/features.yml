@@ -276,4 +276,3 @@
   display_name: Cartera
   enabled: false
   column: feature_flags_ext_1
-  chatwoot_internal: true
