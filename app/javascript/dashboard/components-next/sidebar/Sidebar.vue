@@ -114,6 +114,13 @@ const hasDataImport = computed(() => {
   );
 });
 
+const hasCartera = computed(() => {
+  return isFeatureEnabledonAccount.value(
+    accountId.value,
+    FEATURE_FLAGS.CARTERA
+  );
+});
+
 const fetchConversationUnreadCounts = ([currentAccountId, isEnabled]) => {
   if (!currentAccountId) return;
 
@@ -715,6 +722,30 @@ const menuItems = computed(() => {
       to: accountScopedRoute('calls_view'),
       activeOn: ['calls_view'],
       hidden: !currentUser.value?.sip_extension,
+    },
+    {
+      name: 'CarteraResumen',
+      label: t('SIDEBAR.CARTERA_RESUMEN'),
+      icon: 'i-lucide-layout-dashboard',
+      to: accountScopedRoute('cartera_resumen_view'),
+      activeOn: ['cartera_resumen_view'],
+      hidden: !hasCartera.value,
+    },
+    {
+      name: 'CarteraClientes',
+      label: t('SIDEBAR.CARTERA_CLIENTES'),
+      icon: 'i-lucide-users',
+      to: accountScopedRoute('cartera_clientes_view'),
+      activeOn: ['cartera_clientes_view'],
+      hidden: !hasCartera.value,
+    },
+    {
+      name: 'CarteraFacturas',
+      label: t('SIDEBAR.CARTERA_FACTURAS'),
+      icon: 'i-lucide-receipt',
+      to: accountScopedRoute('cartera_facturas_view'),
+      activeOn: ['cartera_facturas_view'],
+      hidden: !hasCartera.value,
     },
     {
       name: 'Reports',

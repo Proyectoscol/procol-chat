@@ -12,6 +12,9 @@ import { routes as captainRoutes } from './captain/captain.routes';
 import { routes as kanbanRoutes } from './kanban/routes';
 import { routes as agentLockRoutes } from './agent-lock/routes';
 import { routes as contactStatsRoutes } from './contact-stats/routes';
+import { routes as carteraResumenRoutes } from './cartera-resumen/routes';
+import { routes as carteraClientesRoutes } from './clientes/routes';
+import { routes as carteraFacturasRoutes } from './facturas/routes';
 import { routes as callsRoutes } from './calls/routes';
 import AppContainer from './Dashboard.vue';
 import Suspended from './suspended/Index.vue';
@@ -35,6 +38,9 @@ export default {
         ...kanbanRoutes,
         ...agentLockRoutes,
         ...contactStatsRoutes,
+        ...carteraResumenRoutes,
+        ...carteraClientesRoutes,
+        ...carteraFacturasRoutes,
         ...callsRoutes,
         ...searchRoutes,
         ...helpcenterRoutes.routes,

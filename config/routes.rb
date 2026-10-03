@@ -255,6 +255,15 @@ Rails.application.routes.draw do
               post :call, on: :member, to: 'calls#create' if ChatwootApp.enterprise?
             end
           end
+          namespace :cartera do
+            resource :dashboard, only: [:show]
+            resources :clientes, only: [:index] do
+              collection do
+                get :search
+              end
+            end
+            resources :facturas, only: [:index]
+          end
           resources :data_imports, only: [:index, :show, :create] do
             collection do
               post :validate_source

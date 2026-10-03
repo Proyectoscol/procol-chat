@@ -322,6 +322,9 @@
     "KANBAN": "Kanban",
     "AGENT_LOCK": "Advisor Lock",
     "CONTACT_STATS": "Lead Stats",
+    "CARTERA_RESUMEN": "Resumen",
+    "CARTERA_CLIENTES": "Clientes",
+    "CARTERA_FACTURAS": "Facturas",
     "CALLS": "Calls",
     "SETTINGS": "Settings",
     "CONTACTS": "Contacts",
@@ -1215,6 +1218,65 @@
         "CANCEL": "Cancel",
         "CREATE": "Create",
         "EDIT": "Save"
+      }
+    }
+  },
+  "CARTERA": {
+    "PAGINATION": "Page {page} of {totalPages}",
+    "TRAMOS": {
+      "VIGENTE": "Current",
+      "D1_30": "1-30 days",
+      "D31_60": "31-60 days",
+      "D61_90": "61-90 days",
+      "D91_180": "91-180 days",
+      "D181_360": "181-360 days",
+      "MAS_360": "360+ days"
+    },
+    "RESUMEN": {
+      "TITLE": "Cartera overview",
+      "LOADING": "Loading overview...",
+      "VALOR_VIGENTE": "Current balance",
+      "VALOR_VENCIDO": "Overdue balance",
+      "VALOR_TOTAL": "Total balance",
+      "CUPO_TOTAL": "Total credit limit",
+      "CUPO_DISPONIBLE": "Available credit",
+      "FACTURAS_CALIDAD_DATOS": "Invoices needing review",
+      "SUCURSAL_ALL": "All branches",
+      "AGING_TITLE": "Aging by bucket",
+      "TENDENCIA_TITLE": "12-month trend",
+      "TENDENCIA_VIGENTE": "Current",
+      "TENDENCIA_VENCIDO": "Overdue",
+      "PRESCRIPCION_TITLE": "Statute-of-limitations alerts",
+      "PRESCRIPCION_EMPTY": "No invoices approaching their statute-of-limitations deadline.",
+      "PRESCRIPCION_AVISO": "Operational estimate only - validate with legal counsel."
+    },
+    "CLIENTES": {
+      "TITLE": "Clientes",
+      "EMPTY_STATE": "No clients found.",
+      "NO_COBRAR": "No cobrar",
+      "SIN_DATO": "—",
+      "HEADERS": {
+        "CLIENTE": "Client",
+        "NIT": "NIT",
+        "TELEFONO": "Phone",
+        "SALDO_PENDIENTE": "Outstanding balance",
+        "PUNTAJE_RIESGO": "Risk score",
+        "TOTAL_FACTURADO": "Total invoiced",
+        "FACTURAS_ABIERTAS": "Open invoices"
+      }
+    },
+    "FACTURAS": {
+      "TITLE": "Facturas",
+      "EMPTY_STATE": "No invoices found.",
+      "FILTER_TRAMO_ALL": "All buckets",
+      "HEADERS": {
+        "NUMERO": "Number",
+        "CLIENTE": "Client",
+        "FECHA_VENCIMIENTO": "Due date",
+        "DIAS_VENCIDOS": "Days overdue",
+        "VALOR_TOTAL": "Total amount",
+        "SALDO_PENDIENTE": "Outstanding balance",
+        "TRAMO": "Aging bucket"
       }
     }
   },
