@@ -54,16 +54,12 @@ class Cartera::PriorizacionService
     caso
   end
 
-  private
-
-  def aplicar_orden(scope, sort_by, sort_dir)
-    dir = sort_dir == 'asc' ? :asc : :desc
-    case sort_by
-    when 'nombre_deudor' then scope.joins(:cliente).order(Cartera::Cliente.arel_table[:nombre] => dir)
-    when 'saldo_abierto' then scope.order(saldo_abierto: dir)
-    when 'puntaje_riesgo' then scope.order(puntaje_riesgo: dir)
-    else scope.order(prioridad_score: dir)
-    end
+  # Ficha de un cliente individual (para la vista de detalle) - mismos campos
+  # que un registro de listar_paginado, construidos a partir del Cliente en
+  # vez de iterar el join de Caso+Cliente.
+  def ficha(cliente)
+    caso = cliente.caso
+    datos_cliente(cliente).merge(caso ? metricas_caso(caso).merge(estado_caso(caso)) : {})
   end
 
   def caso_resumen(caso)
@@ -76,8 +72,25 @@ class Cartera::PriorizacionService
       cliente_id: cliente.id,
       nombre_cliente: cliente.nombre,
       identificacion: cliente.identificacion,
+      email: cliente.email,
+      sucursal: cliente.sucursal,
+      cupo_asignado: cliente.cupo_asignado&.to_f,
+      es_estrategico: cliente.es_estrategico,
+      contact_id: cliente.contact_id,
       telefono_clasificado: Cartera::IndicativoTelefonico.clasificar_telefono(cliente.telefono, cliente.sucursal)
     }
+  end
+
+  private
+
+  def aplicar_orden(scope, sort_by, sort_dir)
+    dir = sort_dir == 'asc' ? :asc : :desc
+    case sort_by
+    when 'nombre_deudor' then scope.joins(:cliente).order(Cartera::Cliente.arel_table[:nombre] => dir)
+    when 'saldo_abierto' then scope.order(saldo_abierto: dir)
+    when 'puntaje_riesgo' then scope.order(puntaje_riesgo: dir)
+    else scope.order(prioridad_score: dir)
+    end
   end
 
   def metricas_caso(caso)

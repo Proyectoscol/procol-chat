@@ -257,7 +257,7 @@ Rails.application.routes.draw do
           end
           namespace :cartera do
             resource :dashboard, only: [:show]
-            resources :clientes, only: [:index] do
+            resources :clientes, only: [:index, :show] do
               collection do
                 get :search
               end
