@@ -1168,6 +1168,7 @@
       "FACTURAS_COUNT": "{count} facturas",
       "SUCURSAL_ALL": "Todas las sucursales",
       "AGING_TITLE": "Antigüedad por tramo",
+      "VALORES_EN_MILLONES": "Valores en millones de pesos (COP)",
       "TENDENCIA_TITLE": "Tendencia de 12 meses",
       "TENDENCIA_VIGENTE": "Vigente",
       "TENDENCIA_VENCIDO": "Vencido",

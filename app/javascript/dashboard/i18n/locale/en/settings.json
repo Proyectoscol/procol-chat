@@ -1244,6 +1244,7 @@
       "FACTURAS_COUNT": "{count} invoices",
       "SUCURSAL_ALL": "All branches",
       "AGING_TITLE": "Aging by bucket",
+      "VALORES_EN_MILLONES": "Values in millions of COP",
       "TENDENCIA_TITLE": "12-month trend",
       "TENDENCIA_VIGENTE": "Current",
       "TENDENCIA_VENCIDO": "Overdue",
