@@ -146,7 +146,7 @@ crear_contacto_y_canales = lambda do |nombre, telefono, email, sucursal, con_con
     dias_atras = RNG.rand(2..40)
     plantilla = format(
       PLANTILLAS_SALIENTES.sample(random: RNG),
-      nombre: nombre.split.first, numero: "F-DEMO-#{RNG.rand(1000..9999)}",
+      nombre: nombre.split.first, numero: "FV-#{RNG.rand(100_000..999_999)}",
       valor: ActiveSupport::NumberHelper.number_to_currency(RNG.rand(200_000..3_000_000), unit: '$', precision: 0, delimiter: '.'),
       fecha: (HOY - dias_atras.days).to_date.iso8601
     )
@@ -187,8 +187,8 @@ crear_factura_historica = lambda do |cliente, cupo, dias_emision_atras, plazo_di
 
   factura = account.cartera_facturas.create!(
     cliente: cliente, external_id: "#{DEMO_PREFIX}#{cliente.external_id}-H#{idx}",
-    numero: "FV-#{cliente.external_id}-#{idx}", fecha_emision: fecha_emision, fecha_vencimiento: fecha_vencimiento,
-    valor_total: valor, saldo_pendiente: desenlace == :abierta ? valor : 0
+    numero: "FV-#{((cliente.id * 100) + idx).to_s.rjust(6, '0')}", fecha_emision: fecha_emision,
+    fecha_vencimiento: fecha_vencimiento, valor_total: valor, saldo_pendiente: desenlace == :abierta ? valor : 0
   )
 
   return factura if desenlace == :abierta
@@ -209,8 +209,8 @@ crear_factura_futura = lambda do |cliente, cupo, dias_hasta_vencer, idx|
 
   account.cartera_facturas.create!(
     cliente: cliente, external_id: "#{DEMO_PREFIX}#{cliente.external_id}-F#{idx}",
-    numero: "FV-#{cliente.external_id}-F#{idx}", fecha_emision: fecha_emision, fecha_vencimiento: fecha_vencimiento,
-    valor_total: valor, saldo_pendiente: valor
+    numero: "FV-#{((cliente.id * 100) + 50 + idx).to_s.rjust(6, '0')}", fecha_emision: fecha_emision,
+    fecha_vencimiento: fecha_vencimiento, valor_total: valor, saldo_pendiente: valor
   )
 end
 
