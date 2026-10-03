@@ -81,3 +81,11 @@ apply_agent_availability_schedule_job:
   cron: '*/5 * * * *'
   class: 'Agents::ApplyAvailabilityScheduleJob'
   queue: scheduled_jobs
+
+# executed every 15 minutes
+# syncs clientes/facturas/pagos from the active accounting provider (Alegra)
+# for every account with the "cartera" feature flag enabled
+cartera_sync_job:
+  cron: '*/15 * * * *'
+  class: 'Cartera::SyncJob'
+  queue: scheduled_jobs
