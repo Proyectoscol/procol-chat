@@ -47,7 +47,22 @@ class DashboardController < ActionController::Base
   end
 
   def set_global_config
-    @global_config = GlobalConfig.get(*GLOBAL_CONFIG_KEYS).merge(app_config)
+    @global_config = GlobalConfig.get(*GLOBAL_CONFIG_KEYS).merge(app_config).merge(cartera_branding_override)
+  end
+
+  # El tab title/branding es una config global (una sola fila en installation_configs,
+  # compartida con el despliegue normal de Procol Chat en la misma base de datos) - no
+  # se puede renombrar para todos. En vez de eso, cuando la cuenta de la URL tiene el
+  # feature cartera activo, sobreescribimos el nombre solo para esa respuesta.
+  def cartera_branding_override
+    return {} unless current_account_from_path&.feature_enabled?('cartera')
+
+    { INSTALLATION_NAME: 'Procol Cartera', BRAND_NAME: 'Procol Cartera' }
+  end
+
+  def current_account_from_path
+    account_id = request.path[%r{/app/accounts/(\d+)}, 1]
+    account_id && Account.find_by(id: account_id)
   end
 
   def set_dashboard_scripts
