@@ -1,16 +1,18 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import {
   BaseTable,
   BaseTableRow,
   BaseTableCell,
 } from 'dashboard/components-next/table';
-import Button from 'dashboard/components-next/button/Button.vue';
+import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
 import clienteAPI from 'dashboard/api/cartera/clientes';
 import { formatearCop } from '../cartera-shared/format';
 
 const { t } = useI18n();
+const router = useRouter();
 
 const headers = [
   t('CARTERA.CLIENTES.HEADERS.CLIENTE'),
@@ -54,10 +56,16 @@ const fetchClientes = async () => {
   }
 };
 
-const goToPage = newPage => {
-  if (newPage < 1 || newPage > Math.ceil(total.value / pageSize.value)) return;
+const onPageChange = newPage => {
   page.value = newPage;
   fetchClientes();
+};
+
+const abrirFicha = cliente => {
+  router.push({
+    name: 'cartera_clientes_ficha_view',
+    params: { clienteId: cliente.cliente_id },
+  });
 };
 
 onMounted(fetchClientes);
@@ -86,6 +94,8 @@ onMounted(fetchClientes);
             v-for="cliente in rows"
             :key="cliente.cliente_id"
             :item="cliente"
+            class="cursor-pointer hover:bg-n-slate-2"
+            @click="abrirFicha(cliente)"
           >
             <template #default>
               <BaseTableCell>
@@ -157,38 +167,14 @@ onMounted(fetchClientes);
           </BaseTableRow>
         </template>
       </BaseTable>
-
-      <div
-        v-if="total > pageSize"
-        class="flex items-center justify-between mt-4"
-      >
-        <p class="text-sm text-n-slate-11">
-          {{
-            t('CARTERA.PAGINATION', {
-              page,
-              totalPages: Math.ceil(total / pageSize),
-            })
-          }}
-        </p>
-        <div class="flex gap-2">
-          <Button
-            icon="i-lucide-chevron-left"
-            ghost
-            slate
-            sm
-            :disabled="page <= 1"
-            @click="goToPage(page - 1)"
-          />
-          <Button
-            icon="i-lucide-chevron-right"
-            ghost
-            slate
-            sm
-            :disabled="page >= Math.ceil(total / pageSize)"
-            @click="goToPage(page + 1)"
-          />
-        </div>
-      </div>
     </div>
+
+    <PaginationFooter
+      v-if="total > pageSize"
+      :current-page="page"
+      :total-items="total"
+      :items-per-page="pageSize"
+      @update:current-page="onPageChange"
+    />
   </div>
 </template>
