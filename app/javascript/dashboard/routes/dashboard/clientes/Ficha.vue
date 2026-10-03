@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import {
   useVueTable,
@@ -13,6 +13,8 @@ import Editor from 'dashboard/components-next/Editor/Editor.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import VoiceCallButton from 'dashboard/components-next/Contacts/VoiceCallButton.vue';
 import ContactNoteItem from 'dashboard/components-next/Contacts/ContactsSidebar/components/ContactNoteItem.vue';
+import ContactDetails from 'dashboard/components-next/Contacts/Pages/ContactDetails.vue';
+import ContactCustomAttributes from 'dashboard/components-next/Contacts/ContactsSidebar/ContactCustomAttributes.vue';
 import clienteAPI from 'dashboard/api/cartera/clientes';
 import facturaAPI from 'dashboard/api/cartera/facturas';
 import CarteraHeader from '../cartera-shared/CarteraHeader.vue';
@@ -25,6 +27,7 @@ import { formatearCop, formatearFecha } from '../cartera-shared/format';
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 const store = useStore();
 
 const isFetching = ref(false);
@@ -48,6 +51,32 @@ const contactId = computed(() => cliente.value?.contact_id);
 const notes = computed(() =>
   contactId.value ? notesByContact.value(contactId.value) : []
 );
+
+// Reutiliza la arquitectura nativa de "ficha de contacto" de Chatwoot
+// (ContactDetails + ContactCustomAttributes) en vez de construir una
+// edicion de contacto propia - el apartado de Contactos esta oculto en
+// este despliegue, asi que esta es la unica forma de editar telefono,
+// correo, redes y atributos personalizados del contacto vinculado.
+const contactByIdGetter = useMapGetter('contacts/getContactById');
+const isFetchingContact = ref(false);
+const fullContact = computed(() =>
+  contactId.value ? contactByIdGetter.value(contactId.value) : null
+);
+
+const fetchFullContact = async id => {
+  isFetchingContact.value = true;
+  try {
+    await Promise.all([
+      store.dispatch('contacts/show', { id }),
+      store.dispatch('contacts/fetchContactableInbox', id),
+      store.dispatch('attributes/get'),
+    ]);
+  } finally {
+    isFetchingContact.value = false;
+  }
+};
+
+const goToClientesList = () => router.push({ name: 'cartera_clientes_view' });
 
 const colorTramo = tramo => {
   if (!tramo || tramo === 'vigente') return 'text-n-teal-11';
@@ -155,6 +184,7 @@ onMounted(async () => {
   await fetchFacturas();
   if (contactId.value) {
     store.dispatch('contactNotes/get', { contactId: contactId.value });
+    fetchFullContact(contactId.value);
   }
 });
 </script>
@@ -298,6 +328,28 @@ onMounted(async () => {
           </div>
         </div>
       </Panel>
+
+      <div v-if="contactId" class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Panel :title="t('CARTERA.FICHA.CONTACTO_TITLE')">
+          <div
+            v-if="isFetchingContact && !fullContact"
+            class="flex items-center justify-center py-10"
+          >
+            <Spinner />
+          </div>
+          <ContactDetails
+            v-else-if="fullContact"
+            :selected-contact="fullContact"
+            @go-to-contacts-list="goToClientesList"
+          />
+        </Panel>
+        <Panel :title="t('CARTERA.FICHA.ATRIBUTOS_TITLE')">
+          <ContactCustomAttributes
+            v-if="fullContact"
+            :selected-contact="fullContact"
+          />
+        </Panel>
+      </div>
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Panel :title="t('CARTERA.FICHA.ACCIONES_TITLE')">

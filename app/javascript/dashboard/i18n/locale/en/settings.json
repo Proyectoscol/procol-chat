@@ -1335,6 +1335,8 @@
       "TENDENCIA_6_MESES": "Late rate, last 6 months",
       "TENDENCIA_12_MESES": "Late rate, last 12 months",
       "TENDENCIA_FACTURAS_SUFFIX": "({count} invoices)",
+      "CONTACTO_TITLE": "Contact details",
+      "ATRIBUTOS_TITLE": "Custom attributes",
       "ACCIONES_TITLE": "Actions",
       "LLAMAR": "Call",
       "EXPORTAR_PDF": "Export PDF",

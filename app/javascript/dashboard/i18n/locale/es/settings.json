@@ -1259,6 +1259,8 @@
       "TENDENCIA_6_MESES": "Tasa de pago tardío, últimos 6 meses",
       "TENDENCIA_12_MESES": "Tasa de pago tardío, últimos 12 meses",
       "TENDENCIA_FACTURAS_SUFFIX": "({count} facturas)",
+      "CONTACTO_TITLE": "Datos de contacto",
+      "ATRIBUTOS_TITLE": "Atributos personalizados",
       "ACCIONES_TITLE": "Acciones",
       "LLAMAR": "Llamar",
       "EXPORTAR_PDF": "Exportar PDF",
