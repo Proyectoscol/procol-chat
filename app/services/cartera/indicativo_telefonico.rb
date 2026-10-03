@@ -32,6 +32,16 @@ module Cartera::IndicativoTelefonico
     { indicativo: indicativo, telefono_sugerido: "#{indicativo} #{clasificado[:numero_para_llamar][3..]}" }
   end
 
+  # Formato E.164 (+57 + numero nacional completo) listo para WhatsApp/
+  # llamadas - nil cuando no se puede completar con confianza (formato
+  # "desconocido": sin eso, se estaria inventando un numero de contacto).
+  def formatear_e164(telefono, departamento)
+    clasificado = clasificar_telefono(telefono, departamento)
+    return nil unless clasificado && clasificado[:tipo] != :desconocido
+
+    "+57#{clasificado[:numero_para_llamar]}"
+  end
+
   # Clasifica un telefono colombiano: celular (10 digitos, empieza en 3) y
   # fijo con indicativo (10 digitos) ya estan completos; un fijo de 7
   # digitos sin indicativo se completa por departamento cuando se conoce.

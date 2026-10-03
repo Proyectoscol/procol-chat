@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_03_120800) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_03_130000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -617,12 +617,15 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_03_120800) do
     t.datetime "fecha_primera_factura"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "tramo"
+    t.integer "dias_vencido_max"
     t.index ["account_id", "cliente_id"], name: "index_cartera_casos_on_account_id_and_cliente_id", unique: true
     t.index ["account_id"], name: "index_cartera_casos_on_account_id"
     t.index ["cliente_id"], name: "index_cartera_casos_on_cliente_id"
     t.index ["prioridad_score"], name: "index_cartera_casos_on_prioridad_score"
     t.index ["puntaje_riesgo"], name: "index_cartera_casos_on_puntaje_riesgo"
     t.index ["saldo_abierto"], name: "index_cartera_casos_on_saldo_abierto"
+    t.index ["tramo"], name: "index_cartera_casos_on_tramo"
   end
 
   create_table "cartera_clientes", force: :cascade do |t|

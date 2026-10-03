@@ -1263,6 +1263,7 @@
         "NIT": "NIT",
         "TELEFONO": "Phone",
         "SALDO_PENDIENTE": "Outstanding balance",
+        "MORA": "Aging",
         "PUNTAJE_RIESGO": "Risk score",
         "TOTAL_FACTURADO": "Total invoiced",
         "FACTURAS_ABIERTAS": "Open invoices"

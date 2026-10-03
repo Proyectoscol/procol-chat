@@ -90,7 +90,9 @@ class Cartera::PriorizacionService
       total_facturado_historico: (caso.total_facturado_historico || 0).to_f.round(2),
       facturas_abiertas_cantidad: caso.facturas_abiertas_cantidad || 0,
       fecha_primera_factura: caso.fecha_primera_factura,
-      factores_score: caso.factores_score || {}
+      factores_score: caso.factores_score || {},
+      tramo: caso.tramo,
+      dias_vencido_max: caso.dias_vencido_max
     }
   end
 
@@ -110,7 +112,7 @@ class Cartera::PriorizacionService
 
   def datos_para_priorizacion(cliente, fecha_referencia)
     facturas_abiertas = cliente.facturas.select { |f| f.saldo_pendiente.to_f.positive? }
-    dias_vencido_max = facturas_abiertas.map { |f| dias_vencido(f.fecha_vencimiento, fecha_referencia) }.max || -Float::INFINITY
+    dias_vencido_max = facturas_abiertas.map { |f| dias_vencido(f.fecha_vencimiento, fecha_referencia) }.max
 
     {
       cliente: cliente,
@@ -151,13 +153,13 @@ class Cartera::PriorizacionService
       perfil: perfil,
       factores: factores,
       prioridad_score: resultado_no_cobrar[:no_cobrar] ? 0 : calcular_score(factores),
-      nivel_escalamiento: sin_saldo_abierto ? 'persuasivo' : calcular_nivel_escalamiento(tramo_mas_antiguo(datos[:dias_vencido_max]))
+      nivel_escalamiento: sin_saldo_abierto ? 'persuasivo' : calcular_nivel_escalamiento(Cartera::AgingCalculator.tramo(datos[:dias_vencido_max]))
     }
   end
 
   def calcular_factores(datos, cliente, perfil, max_saldo_abierto)
     {
-      antiguedad: normalizar_antiguedad([0, datos[:dias_vencido_max]].max),
+      antiguedad: normalizar_antiguedad([0, datos[:dias_vencido_max] || 0].max),
       monto: normalizar_monto(datos[:saldo_abierto], max_saldo_abierto),
       probabilidad_no_pago: normalizar_probabilidad_no_pago(perfil && perfil[:porcentaje_pagadas_tarde_habil]),
       tipo_cliente: PESO_POR_TIPO_DEUDOR.fetch(cliente.tipo_deudor.to_sym)
@@ -167,6 +169,7 @@ class Cartera::PriorizacionService
   def guardar_caso(cliente, datos, resultado)
     agregados = agregados_historicos(cliente)
     perfil = resultado[:perfil]
+    dias_vencido_max = datos[:dias_vencido_max]
     caso = @account.cartera_casos.find_or_initialize_by(cliente: cliente)
     caso.assign_attributes(
       prioridad_score: resultado[:prioridad_score], factores_score: resultado[:factores], nivel_escalamiento: resultado[:nivel_escalamiento],
@@ -176,7 +179,9 @@ class Cartera::PriorizacionService
       score_credito: perfil && perfil[:score_credito],
       total_facturado_historico: agregados[:total_facturado_historico],
       facturas_abiertas_cantidad: datos[:facturas_abiertas].length,
-      fecha_primera_factura: agregados[:fecha_primera_factura]
+      fecha_primera_factura: agregados[:fecha_primera_factura],
+      dias_vencido_max: dias_vencido_max,
+      tramo: dias_vencido_max.nil? ? nil : Cartera::AgingCalculator.tramo(dias_vencido_max).to_s
     )
     caso.save!
   end
@@ -184,17 +189,6 @@ class Cartera::PriorizacionService
   def agregados_historicos(cliente)
     agregados = cliente.facturas.pick(Arel.sql('SUM(valor_total), MIN(fecha_emision)'))
     { total_facturado_historico: (agregados&.first || 0).to_f.round(2), fecha_primera_factura: agregados&.second }
-  end
-
-  def tramo_mas_antiguo(dias_vencido_max)
-    return :vigente if dias_vencido_max <= 0
-    return :d1_30 if dias_vencido_max <= 30
-    return :d31_60 if dias_vencido_max <= 60
-    return :d61_90 if dias_vencido_max <= 90
-    return :d91_180 if dias_vencido_max <= 180
-    return :d181_360 if dias_vencido_max <= 360
-
-    :mas_360
   end
 
   def dias_vencido(fecha_vencimiento, fecha_referencia)

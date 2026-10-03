@@ -4,6 +4,7 @@
 #
 #  id                         :bigint           not null, primary key
 #  descartado                 :boolean          default(FALSE), not null
+#  dias_vencido_max           :integer
 #  estado                     :string           default("abierto"), not null
 #  factores_score             :jsonb
 #  facturas_abiertas_cantidad :integer
@@ -17,6 +18,7 @@
 #  saldo_abierto              :decimal(18, 2)
 #  score_credito              :integer
 #  total_facturado_historico  :decimal(18, 2)
+#  tramo                      :string
 #  created_at                 :datetime         not null
 #  updated_at                 :datetime         not null
 #  account_id                 :bigint           not null
@@ -30,6 +32,7 @@
 #  index_cartera_casos_on_prioridad_score            (prioridad_score)
 #  index_cartera_casos_on_puntaje_riesgo             (puntaje_riesgo)
 #  index_cartera_casos_on_saldo_abierto              (saldo_abierto)
+#  index_cartera_casos_on_tramo                      (tramo)
 #
 # Foreign Keys
 #

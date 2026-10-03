@@ -17,10 +17,17 @@ const headers = [
   t('CARTERA.CLIENTES.HEADERS.NIT'),
   t('CARTERA.CLIENTES.HEADERS.TELEFONO'),
   t('CARTERA.CLIENTES.HEADERS.SALDO_PENDIENTE'),
+  t('CARTERA.CLIENTES.HEADERS.MORA'),
   t('CARTERA.CLIENTES.HEADERS.PUNTAJE_RIESGO'),
   t('CARTERA.CLIENTES.HEADERS.TOTAL_FACTURADO'),
   t('CARTERA.CLIENTES.HEADERS.FACTURAS_ABIERTAS'),
 ];
+
+const colorTramo = tramo => {
+  if (!tramo || tramo === 'vigente') return 'text-n-teal-11';
+  if (['d1_30', 'd31_60'].includes(tramo)) return 'text-n-amber-11';
+  return 'text-n-ruby-11';
+};
 
 const items = ref([]);
 const page = ref(1);
@@ -110,6 +117,18 @@ onMounted(fetchClientes);
               <BaseTableCell>
                 <span class="text-body-main text-n-slate-12 whitespace-nowrap">
                   {{ formatearCop(cliente.saldo_abierto) }}
+                </span>
+              </BaseTableCell>
+              <BaseTableCell>
+                <span
+                  class="text-body-main whitespace-nowrap"
+                  :class="colorTramo(cliente.tramo)"
+                >
+                  {{
+                    cliente.tramo
+                      ? `${t(`CARTERA.TRAMOS.${cliente.tramo.toUpperCase()}`)} (${cliente.dias_vencido_max}d)`
+                      : t('CARTERA.CLIENTES.SIN_DATO')
+                  }}
                 </span>
               </BaseTableCell>
               <BaseTableCell>

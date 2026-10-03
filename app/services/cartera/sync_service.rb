@@ -80,22 +80,57 @@ class Cartera::SyncService
   def sincronizar_clientes(clientes, cliente_id_by_external_id, errores)
     procesados = 0
     clientes.each do |cliente_externo|
-      cliente = Cartera::Cliente.find_or_initialize_by(account: @account, external_id: cliente_externo[:external_id])
-      cliente.assign_attributes(
-        tipo_deudor: cliente_externo[:tipo_deudor],
-        identificacion: cliente_externo[:identificacion],
-        nombre: cliente_externo[:nombre],
-        email: cliente_externo[:email],
-        telefono: cliente_externo[:telefono],
-        sucursal: cliente_externo[:sucursal]
-      )
-      cliente.save!
+      cliente = upsert_cliente(cliente_externo)
       cliente_id_by_external_id[cliente_externo[:external_id]] = cliente.id
+      vincular_contacto(cliente, cliente_externo, errores)
       procesados += 1
     rescue StandardError => e
       errores << "cliente #{cliente_externo[:external_id]}: #{e.message}"
     end
     procesados
+  end
+
+  def upsert_cliente(cliente_externo)
+    cliente = Cartera::Cliente.find_or_initialize_by(account: @account, external_id: cliente_externo[:external_id])
+    cliente.assign_attributes(
+      tipo_deudor: cliente_externo[:tipo_deudor],
+      identificacion: cliente_externo[:identificacion],
+      nombre: cliente_externo[:nombre],
+      email: cliente_externo[:email],
+      telefono: cliente_externo[:telefono],
+      sucursal: cliente_externo[:sucursal]
+    )
+    cliente.save!
+    cliente
+  end
+
+  # Vincula (o crea) el Contact de Chatwoot que corresponde a este cliente,
+  # para que sea alcanzable por los canales de mensajeria (WhatsApp/Email).
+  # Nunca bloquea la sincronizacion del cliente - un fallo aqui se reporta
+  # aparte, la fila Cliente ya quedo guardada de todas formas.
+  def vincular_contacto(cliente, cliente_externo, errores)
+    telefono_e164 = Cartera::IndicativoTelefonico.formatear_e164(cliente_externo[:telefono], cliente_externo[:sucursal])
+    email = cliente_externo[:email]
+    return if telefono_e164.blank? && email.blank?
+
+    contacto = buscar_contacto_existente(telefono_e164, email) || @account.contacts.new
+    actualizar_contacto(contacto, cliente_externo, telefono_e164, email)
+    cliente.update!(contact_id: contacto.id) if cliente.contact_id != contacto.id
+  rescue StandardError => e
+    errores << "contacto de cliente #{cliente_externo[:external_id]}: #{e.message}"
+  end
+
+  def buscar_contacto_existente(telefono_e164, email)
+    contacto = @account.contacts.find_by(phone_number: telefono_e164) if telefono_e164.present?
+    contacto ||= @account.contacts.from_email(email) if email.present?
+    contacto
+  end
+
+  def actualizar_contacto(contacto, cliente_externo, telefono_e164, email)
+    contacto.name = cliente_externo[:nombre] if cliente_externo[:nombre].present?
+    contacto.phone_number = telefono_e164 if telefono_e164.present?
+    contacto.email = email if email.present?
+    contacto.save!
   end
 
   def sincronizar_cupos(cupos, cliente_id_by_external_id, errores)
