@@ -1222,6 +1222,7 @@
     }
   },
   "CARTERA": {
+    "EXPORTAR_CSV": "Export CSV",
     "TRAMOS": {
       "VIGENTE": "Current",
       "D1_30": "1-30 days",
@@ -1244,6 +1245,8 @@
       "FACTURAS_COUNT": "{count} invoices",
       "SUCURSAL_ALL": "All branches",
       "AGING_TITLE": "Aging by bucket",
+      "DETALLE_RESUMEN": "{count} invoices - {valor} outstanding (showing up to the first 50)",
+      "VER_TODAS_FACTURAS": "View all in Facturas",
       "VALORES_EN_MILLONES": "Values in millions of COP",
       "TENDENCIA_TITLE": "12-month trend",
       "TENDENCIA_VIGENTE": "Current",

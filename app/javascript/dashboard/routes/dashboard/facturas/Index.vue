@@ -7,6 +7,7 @@ import Spinner from 'shared/components/Spinner.vue';
 import EmptyState from 'dashboard/components/widgets/EmptyState.vue';
 import Pagination from 'dashboard/components/table/Pagination.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 import facturaAPI from 'dashboard/api/cartera/facturas';
 import CarteraHeader from '../cartera-shared/CarteraHeader.vue';
 import TableCard from '../cartera-shared/TableCard.vue';
@@ -77,6 +78,13 @@ watch([tramoSeleccionado, estadoSeleccionado], () => {
 
 const columns = computed(() => buildFacturasColumns(t));
 
+const exportUrl = computed(() =>
+  facturaAPI.exportUrl({
+    tramo: tramoSeleccionado.value,
+    estado: estadoSeleccionado.value,
+  })
+);
+
 const paginationState = computed(() => ({
   pageIndex: pageIndex.value,
   pageSize: pageSize.value,
@@ -124,6 +132,15 @@ onMounted(fetchFacturas);
       <div class="flex items-center gap-2">
         <Select v-model="estadoSeleccionado" :options="estadoOptions" />
         <Select v-model="tramoSeleccionado" :options="tramoOptions" />
+        <a :href="exportUrl">
+          <Button
+            icon="i-lucide-download"
+            slate
+            faded
+            size="sm"
+            :label="t('CARTERA.EXPORTAR_CSV')"
+          />
+        </a>
       </div>
     </CarteraHeader>
 

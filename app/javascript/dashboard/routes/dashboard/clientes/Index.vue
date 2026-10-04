@@ -10,6 +10,7 @@ import {
 import Spinner from 'shared/components/Spinner.vue';
 import EmptyState from 'dashboard/components/widgets/EmptyState.vue';
 import Pagination from 'dashboard/components/table/Pagination.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 import clienteAPI from 'dashboard/api/cartera/clientes';
 import CarteraHeader from '../cartera-shared/CarteraHeader.vue';
 import TableCard from '../cartera-shared/TableCard.vue';
@@ -194,7 +195,17 @@ onMounted(fetchClientes);
 
 <template>
   <div>
-    <CarteraHeader :header-title="t('CARTERA.CLIENTES.TITLE')" />
+    <CarteraHeader :header-title="t('CARTERA.CLIENTES.TITLE')">
+      <a :href="clienteAPI.exportUrl()">
+        <Button
+          icon="i-lucide-download"
+          slate
+          faded
+          size="sm"
+          :label="t('CARTERA.EXPORTAR_CSV')"
+        />
+      </a>
+    </CarteraHeader>
 
     <TableCard>
       <ClickableTable :table="table" @row-click="abrirFicha" />

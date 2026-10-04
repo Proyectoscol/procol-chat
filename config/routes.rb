@@ -260,9 +260,14 @@ Rails.application.routes.draw do
             resources :clientes, only: [:index, :show] do
               collection do
                 get :search
+                get :export
               end
             end
-            resources :facturas, only: [:index, :show]
+            resources :facturas, only: [:index, :show] do
+              collection do
+                get :export
+              end
+            end
             resources :syncs, only: [:create]
           end
           resources :data_imports, only: [:index, :show, :create] do

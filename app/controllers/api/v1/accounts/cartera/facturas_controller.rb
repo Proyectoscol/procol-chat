@@ -1,7 +1,13 @@
+require 'csv'
+
 class Api::V1::Accounts::Cartera::FacturasController < Api::V1::Accounts::BaseController
   include Cartera::FeatureGated
 
   SORTABLE = %w[numero fecha_vencimiento valor_total saldo_pendiente dias_vencidos].freeze
+  CSV_HEADERS = [
+    'Numero', 'Cliente', 'NIT', 'Fecha emision', 'Fecha vencimiento', 'Valor total', 'Saldo pendiente',
+    'Estado', 'Tramo de mora', 'Dias vencidos', 'Fecha de pago', 'Dias de mora al pago', 'CUFE'
+  ].freeze
 
   def index
     items = facturas_con_tramo
@@ -13,14 +19,20 @@ class Api::V1::Accounts::Cartera::FacturasController < Api::V1::Accounts::BaseCo
     render json: { items: items, total: total, page: page, page_size: page_size }
   end
 
+  def export
+    items = facturas_con_tramo
+    items = items.select { |f| f[:tramo] == params[:tramo].to_sym } if params[:tramo].present?
+    items = ordenar(items)
+
+    send_data generar_csv(items), filename: "facturas-cartera-#{Date.current.iso8601}.csv", type: 'text/csv'
+  end
+
   def show
     factura = Current.account.cartera_facturas.includes(:cliente, :eventos_radian).find(params[:id])
     eventos = factura.eventos_radian.map { |e| { tipo_evento: e.tipo_evento, fecha: e.fecha, fuente: e.fuente } }
 
     render json: {
       **factura_item(factura),
-      cufe: factura.cufe,
-      identificacion_cliente: factura.cliente.identificacion,
       eventos_radian: eventos,
       radian: Cartera::RadianValidator.clasificar_factura(eventos, Time.current)
     }
@@ -52,7 +64,8 @@ class Api::V1::Accounts::Cartera::FacturasController < Api::V1::Accounts::BaseCo
     pagada = factura.saldo_pendiente.to_f <= 0
     base = {
       factura_id: factura.id, numero: factura.numero, cliente_id: factura.cliente_id,
-      nombre_cliente: factura.cliente.nombre, fecha_emision: factura.fecha_emision,
+      nombre_cliente: factura.cliente.nombre, identificacion_cliente: factura.cliente.identificacion,
+      cufe: factura.cufe, fecha_emision: factura.fecha_emision,
       fecha_vencimiento: factura.fecha_vencimiento, valor_total: factura.valor_total.to_f.round(2),
       saldo_pendiente: factura.saldo_pendiente.to_f.round(2), pagada: pagada,
       pronto_pago: Cartera::ProntoPagoCalculator.calcular(factura)
@@ -74,6 +87,24 @@ class Api::V1::Accounts::Cartera::FacturasController < Api::V1::Accounts::BaseCo
 
   def ultima_fecha_pago(factura)
     factura.aplicaciones_pago.includes(:pago).map { |a| a.pago.fecha }.max
+  end
+
+  def generar_csv(items)
+    CSV.generate do |csv|
+      csv << CSV_HEADERS
+      items.each do |f|
+        csv << [
+          f[:numero], f[:nombre_cliente], f[:identificacion_cliente], fecha_csv(f[:fecha_emision]),
+          fecha_csv(f[:fecha_vencimiento]), f[:valor_total], f[:saldo_pendiente],
+          f[:pagada] ? 'Pagada' : 'Abierta', f[:tramo], f[:dias_vencidos], fecha_csv(f[:fecha_pago]),
+          f[:dias_mora_pago], f[:cufe]
+        ]
+      end
+    end
+  end
+
+  def fecha_csv(fecha)
+    fecha&.to_date&.iso8601
   end
 
   def ordenar(items)

@@ -340,6 +340,7 @@ onMounted(async () => {
           <ContactDetails
             v-else-if="fullContact"
             :selected-contact="fullContact"
+            hide-social-links
             @go-to-contacts-list="goToClientesList"
           />
         </Panel>

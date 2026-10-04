@@ -1146,6 +1146,7 @@
     "STATUS_UPDATE_ERROR": "No se pudo actualizar el estado del asesor. Inténtalo de nuevo."
   },
   "CARTERA": {
+    "EXPORTAR_CSV": "Exportar CSV",
     "TRAMOS": {
       "VIGENTE": "Vigente",
       "D1_30": "1-30 días",
@@ -1168,6 +1169,8 @@
       "FACTURAS_COUNT": "{count} facturas",
       "SUCURSAL_ALL": "Todas las sucursales",
       "AGING_TITLE": "Antigüedad por tramo",
+      "DETALLE_RESUMEN": "{count} facturas - {valor} pendientes (mostrando hasta las primeras 50)",
+      "VER_TODAS_FACTURAS": "Ver todas en Facturas",
       "VALORES_EN_MILLONES": "Valores en millones de pesos (COP)",
       "TENDENCIA_TITLE": "Tendencia de 12 meses",
       "TENDENCIA_VIGENTE": "Vigente",

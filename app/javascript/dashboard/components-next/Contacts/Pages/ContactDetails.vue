@@ -17,6 +17,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  hideSocialLinks: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['goToContactsList']);
@@ -165,6 +169,7 @@ const handleAvatarDelete = async () => {
         ref="contactsFormRef"
         :contact-data="contactData"
         is-details-view
+        :hide-social-links="hideSocialLinks"
         @update="handleFormUpdate"
       />
       <Button

@@ -34,14 +34,18 @@ class Cartera::PriorizacionService
   def listar_paginado(page: 1, page_size: 20, incluir_no_cobrar: false, sort_by: nil, sort_dir: 'desc')
     page = [1, page.to_i].max
     page_size = (page_size || 20).to_i.clamp(1, 100)
-    scope = @account.cartera_casos.includes(:cliente)
-    scope = scope.where(no_cobrar: false) unless incluir_no_cobrar
-    scope = aplicar_orden(scope, sort_by, sort_dir)
+    scope = casos_scope(incluir_no_cobrar: incluir_no_cobrar, sort_by: sort_by, sort_dir: sort_dir)
 
     total = scope.count
     casos = scope.offset((page - 1) * page_size).limit(page_size)
 
     { items: casos.map { |caso| caso_resumen(caso) }, total: total, page: page, page_size: page_size }
+  end
+
+  # Sin paginar, para exportar a CSV - mismo orden/filtro que listar_paginado.
+  def listar_todos(incluir_no_cobrar: true, sort_by: nil, sort_dir: 'desc')
+    casos_scope(incluir_no_cobrar: incluir_no_cobrar, sort_by: sort_by, sort_dir: sort_dir)
+      .map { |caso| caso_resumen(caso) }
   end
 
   # Marca revisado/descartado, solo para medir adopcion.
@@ -72,6 +76,7 @@ class Cartera::PriorizacionService
       cliente_id: cliente.id,
       nombre_cliente: cliente.nombre,
       identificacion: cliente.identificacion,
+      tipo_deudor: cliente.tipo_deudor,
       email: cliente.email,
       sucursal: cliente.sucursal,
       cupo_asignado: cliente.cupo_asignado&.to_f,
@@ -82,6 +87,12 @@ class Cartera::PriorizacionService
   end
 
   private
+
+  def casos_scope(incluir_no_cobrar:, sort_by:, sort_dir:)
+    scope = @account.cartera_casos.includes(:cliente)
+    scope = scope.where(no_cobrar: false) unless incluir_no_cobrar
+    aplicar_orden(scope, sort_by, sort_dir)
+  end
 
   def aplicar_orden(scope, sort_by, sort_dir)
     dir = sort_dir == 'asc' ? :asc : :desc

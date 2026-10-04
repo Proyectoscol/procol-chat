@@ -23,6 +23,12 @@ class CarteraClienteAPI extends ApiClient {
   search(query = '') {
     return axios.get(`${this.url}/search?${buildParams({ q: query })}`);
   }
+
+  exportUrl(params = {}) {
+    const { sortBy, sortDir } = params;
+    const query = buildParams({ sort_by: sortBy, sort_dir: sortDir });
+    return `${this.url}/export${query ? `?${query}` : ''}`;
+  }
 }
 
 export default new CarteraClienteAPI();

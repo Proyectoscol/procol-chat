@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, watch, h, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
 import { BarChart, LineChart } from '@chatwoot/viz';
 import {
   useVueTable,
@@ -20,11 +19,12 @@ import TableCard from '../cartera-shared/TableCard.vue';
 import ClickableTable from '../cartera-shared/ClickableTable.vue';
 import MetricCard from '../cartera-shared/MetricCard.vue';
 import Panel from '../cartera-shared/Panel.vue';
+import FacturasDetalleDialog from '../cartera-shared/FacturasDetalleDialog.vue';
 import { formatearCop } from '../cartera-shared/format';
 
 const { t } = useI18n();
 const { isAdmin } = useAdmin();
-const router = useRouter();
+const detalleDialogRef = ref(null);
 
 const isFetching = ref(false);
 const isSyncing = ref(false);
@@ -172,8 +172,8 @@ const actualizar = async () => {
   }
 };
 
-const verFacturas = query =>
-  router.push({ name: 'cartera_facturas_view', query });
+const abrirDetalle = (filtro, label) =>
+  detalleDialogRef.value?.abrir({ ...filtro, label });
 
 const spanCell = (value, className = 'text-body-main text-n-slate-12') =>
   h('span', { class: className }, value);
@@ -214,7 +214,7 @@ const agingTable = useVueTable({
   getCoreRowModel: getCoreRowModel(),
 });
 const onAgingRowClick = row =>
-  verFacturas({ tramo: row.tramo, estado: 'abiertas' });
+  abrirDetalle({ tramo: row.tramo, estado: 'abiertas' }, tramoLabel(row.tramo));
 
 const porVencerColumns = computed(() => [
   columnHelper.accessor('tramo', {
@@ -249,7 +249,8 @@ const porVencerTable = useVueTable({
   enableSorting: false,
   getCoreRowModel: getCoreRowModel(),
 });
-const onPorVencerRowClick = () => verFacturas({ estado: 'abiertas' });
+const onPorVencerRowClick = () =>
+  abrirDetalle({ estado: 'abiertas' }, t('CARTERA.RESUMEN.POR_VENCER_TITLE'));
 
 const tendenciaColumns = [
   columnHelper.accessor('mes', {
@@ -362,7 +363,12 @@ onMounted(fetchResumen);
         <button
           type="button"
           class="text-left"
-          @click="verFacturas({ tramo: 'vigente', estado: 'abiertas' })"
+          @click="
+            abrirDetalle(
+              { tramo: 'vigente', estado: 'abiertas' },
+              t('CARTERA.RESUMEN.VALOR_VIGENTE')
+            )
+          "
         >
           <MetricCard
             :label="t('CARTERA.RESUMEN.VALOR_VIGENTE')"
@@ -378,7 +384,12 @@ onMounted(fetchResumen);
         <button
           type="button"
           class="text-left"
-          @click="verFacturas({ estado: 'abiertas' })"
+          @click="
+            abrirDetalle(
+              { estado: 'abiertas' },
+              t('CARTERA.RESUMEN.VALOR_VENCIDO')
+            )
+          "
         >
           <MetricCard
             :label="t('CARTERA.RESUMEN.VALOR_VENCIDO')"
@@ -505,5 +516,7 @@ onMounted(fetchResumen);
         </p>
       </Panel>
     </template>
+
+    <FacturasDetalleDialog ref="detalleDialogRef" />
   </div>
 </template>
