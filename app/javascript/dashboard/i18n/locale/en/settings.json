@@ -325,7 +325,9 @@
     "CARTERA_RESUMEN": "Resumen",
     "CARTERA_CLIENTES": "Clientes",
     "CARTERA_FACTURAS": "Facturas",
+    "CARTERA_CAMPANAS": "Campañas",
     "CARTERA_PLANTILLAS": "Plantillas",
+    "CARTERA_CAPITAN": "Capitán",
     "CALLS": "Calls",
     "SETTINGS": "Settings",
     "CONTACTS": "Contacts",
@@ -1402,6 +1404,7 @@
     },
     "PLANTILLAS": {
       "TITLE": "WhatsApp templates",
+      "BORRADORES_TITLE": "Drafts - not yet sent to Twilio",
       "NUEVA": "New template",
       "NUEVA_DESCRIPCION": "Saved as a draft first - review it, then request WhatsApp approval from Twilio.",
       "GUARDAR": "Save draft",
@@ -1439,6 +1442,88 @@
         "CUERPO": "Body",
         "CUERPO_PLACEHOLDER": "Hi {'{{'}1{'}}'}, invoice {'{{'}2{'}}'} is {'{{'}3{'}}'} days overdue...",
         "CUERPO_AYUDA": "Use {'{{'}1{'}}'}, {'{{'}2{'}}'}... as variable placeholders - they get filled in per client when the template is used in a campaign rule."
+      }
+    },
+    "CAMPANAS": {
+      "TITLE": "Campaigns",
+      "NUEVA": "New campaign",
+      "NOMBRE_POR_DEFECTO": "New campaign",
+      "CREAR_ERROR": "Could not create the campaign.",
+      "EMPTY_STATE": "No campaigns yet.",
+      "GUARDAR": "Save",
+      "GUARDADA_EXITOSA": "Campaign saved.",
+      "GUARDAR_ERROR": "Could not save the campaign.",
+      "ESTADOS": {
+        "BORRADOR": "Draft",
+        "ACTIVA": "Active",
+        "PAUSADA": "Paused",
+        "ARCHIVADA": "Archived"
+      },
+      "FUENTES": {
+        "POLITICA_PRIVACIDAD": "Privacy policy",
+        "TERMINOS_CONDICIONES": "Terms and conditions",
+        "CONTRATO": "Contract",
+        "OTRO": "Other"
+      },
+      "FORM": {
+        "SIN_SELECCION": "- None -",
+        "NOMBRE": "Name",
+        "ESTADO": "Status",
+        "INBOX_WHATSAPP": "WhatsApp inbox",
+        "INBOX_EMAIL": "Email inbox",
+        "CAPTAIN_ASSISTANT": "Captain assistant",
+        "HORA_INICIO": "Start time",
+        "HORA_FIN": "End time",
+        "DIAS_ENVIO": "Sending days",
+        "DIAS_AYUDA": "Sunday is never available - Ley 2300 de 2023 bars contact that day."
+      },
+      "AUTORIZACION": {
+        "TITLE": "Contact authorization",
+        "ALERTA_LEGAL": "Ley 2300 de 2023 requires a documented, specific authorization to contact this client about this debt. Keep this section accurate.",
+        "FUENTE": "Authorization source",
+        "DETALLE": "Details",
+        "CONFIRMADA": "Confirmed on {fecha}"
+      },
+      "REGLAS": {
+        "TITLE": "Rules",
+        "NUEVA": "New rule",
+        "EMPTY_STATE": "No rules yet - the campaign will not send anything until at least one rule exists.",
+        "GUARDADA_EXITOSA": "Rule saved.",
+        "GUARDAR_ERROR": "Could not save the rule.",
+        "ELIMINAR_ERROR": "Could not delete the rule.",
+        "SIN_CONDICION": "Applies to everyone",
+        "TIENE_WHATSAPP": "WhatsApp: {sid}",
+        "TIENE_EMAIL": "has email template",
+        "ACCIONES": {
+          "ENVIAR": "Send",
+          "EXCLUIR": "Exclude"
+        },
+        "FORM": {
+          "ORDEN": "Order",
+          "ACCION": "Action",
+          "SIN_CONDICION": "No condition (applies to everyone)",
+          "ATRIBUTO": "Attribute",
+          "OPERADOR": "Operator",
+          "VALOR": "Value",
+          "PLANTILLA_WHATSAPP": "WhatsApp template",
+          "SIN_PLANTILLAS_WHATSAPP": "Set the campaign's WhatsApp inbox first to pick an approved template.",
+          "PLANTILLA_EMAIL": "Email template"
+        }
+      },
+      "SIMULACION": {
+        "TITLE": "Simulation",
+        "SIMULAR": "Simulate",
+        "ERROR": "Could not run the simulation.",
+        "EVALUADOS": "cases evaluated",
+        "A_ENVIAR": "to send",
+        "COSTO": "estimated cost",
+        "CLIENTES": "clients",
+        "EXCLUIDOS": "excluded",
+        "PLANTILLA_NO_LISTA": "WhatsApp template not approved yet"
+      },
+      "BITACORA": {
+        "TITLE": "Log",
+        "EMPTY_STATE": "No sends recorded yet."
       }
     }
   },

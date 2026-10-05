@@ -1,23 +1,13 @@
 import { frontendURL } from '../../../../helper/URLHelper';
 
-import SettingsWrapper from '../SettingsWrapper.vue';
-import Index from './Index.vue';
-
+// WhatsApp template management lives under Cartera > Campañas > Plantillas
+// now (one unified page instead of two) - this route only exists so old
+// links/bookmarks to /settings/templates keep working.
 export default {
   routes: [
     {
       path: frontendURL('accounts/:accountId/settings/templates'),
-      component: SettingsWrapper,
-      children: [
-        {
-          path: '',
-          name: 'settings_templates',
-          component: Index,
-          meta: {
-            permissions: ['administrator'],
-          },
-        },
-      ],
+      redirect: to => ({ name: 'cartera_plantillas_view', params: to.params }),
     },
   ],
 };

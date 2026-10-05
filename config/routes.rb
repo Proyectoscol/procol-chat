@@ -277,6 +277,7 @@ Rails.application.routes.draw do
             resources :campanas, only: [:index, :show, :create, :update] do
               post :simulacion, on: :member
               resources :reglas, only: [:index, :create, :update, :destroy], controller: 'campana_reglas'
+              resources :envios, only: [:index]
             end
           end
           resources :data_imports, only: [:index, :show, :create] do

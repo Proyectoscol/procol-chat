@@ -407,12 +407,35 @@ const menuItems = computed(() => {
       hidden: !hasCartera.value,
     },
     {
-      name: 'CarteraPlantillas',
-      label: t('SIDEBAR.CARTERA_PLANTILLAS'),
-      icon: 'i-lucide-message-square-text',
-      to: accountScopedRoute('cartera_plantillas_view'),
-      activeOn: ['cartera_plantillas_view'],
+      name: 'CarteraCampanas',
+      label: t('SIDEBAR.CARTERA_CAMPANAS'),
+      icon: 'i-lucide-megaphone',
       hidden: !hasCartera.value,
+      children: [
+        {
+          name: 'CarteraCampanasList',
+          label: t('SIDEBAR.CARTERA_CAMPANAS'),
+          icon: 'i-lucide-megaphone',
+          activeOn: ['cartera_campanas_view', 'cartera_campana_detail_view'],
+          to: accountScopedRoute('cartera_campanas_view'),
+        },
+        {
+          name: 'CarteraPlantillas',
+          label: t('SIDEBAR.CARTERA_PLANTILLAS'),
+          icon: 'i-lucide-message-square-text',
+          activeOn: ['cartera_plantillas_view'],
+          to: accountScopedRoute('cartera_plantillas_view'),
+        },
+        {
+          name: 'CarteraCapitan',
+          label: t('SIDEBAR.CARTERA_CAPITAN'),
+          icon: 'i-woot-captain',
+          activeOn: ['captain_assistants_overview_index'],
+          to: accountScopedRoute('captain_assistants_index', {
+            navigationPath: 'captain_assistants_overview_index',
+          }),
+        },
+      ],
     },
     {
       name: 'Inbox',
@@ -937,12 +960,6 @@ const menuItems = computed(() => {
             'settings_inboxes_add_agents',
           ],
           to: accountScopedRoute('settings_inbox_list'),
-        },
-        {
-          name: 'Settings Templates',
-          label: t('SIDEBAR.WHATSAPP_TEMPLATES'),
-          icon: 'i-lucide-layout-template',
-          to: accountScopedRoute('settings_templates'),
         },
         {
           name: 'Settings Labels',

@@ -6,6 +6,8 @@ import ClientesFicha from '../clientes/Ficha.vue';
 import FacturasIndex from '../facturas/Index.vue';
 import FacturasFicha from '../facturas/Ficha.vue';
 import PlantillasIndex from '../plantillas/Index.vue';
+import CampanasIndex from '../campanas/Index.vue';
+import CampanaDetalle from '../campanas/Detalle.vue';
 
 const meta = {
   permissions: ['administrator', 'agent'],
@@ -51,6 +53,18 @@ export const routes = [
         name: 'cartera_plantillas_view',
         meta,
         component: PlantillasIndex,
+      },
+      {
+        path: 'campanas',
+        name: 'cartera_campanas_view',
+        meta,
+        component: CampanasIndex,
+      },
+      {
+        path: 'campanas/:campanaId',
+        name: 'cartera_campana_detail_view',
+        meta,
+        component: CampanaDetalle,
       },
     ],
   },
