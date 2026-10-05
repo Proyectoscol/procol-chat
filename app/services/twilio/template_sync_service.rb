@@ -1,6 +1,8 @@
 class Twilio::TemplateSyncService
   pattr_initialize [:channel!]
 
+  CATEGORIES = %w[marketing utility authentication].freeze
+
   def call
     mark_templates_updated
     fetch_templates_from_twilio
@@ -82,10 +84,18 @@ class Twilio::TemplateSyncService
     end
   end
 
+  # Meta approves (or re-categorizes) a submitted template with the real
+  # category - trust that over guessing from the name. Only unsubmitted
+  # templates fall back to the name-based guess.
   def derive_category(template)
-    # Map template friendly names or other attributes to categories
-    # For now, use utility as default
-    case template.friendly_name
+    approved_category = template.approval_requests&.dig('category')&.downcase
+    return approved_category if CATEGORIES.include?(approved_category)
+
+    guess_category_from_name(template.friendly_name)
+  end
+
+  def guess_category_from_name(friendly_name)
+    case friendly_name
     when /marketing|promo|offer|sale/i
       'marketing'
     when /auth|otp|verify|code/i

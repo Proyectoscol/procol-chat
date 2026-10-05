@@ -5,6 +5,7 @@ import ClientesIndex from '../clientes/Index.vue';
 import ClientesFicha from '../clientes/Ficha.vue';
 import FacturasIndex from '../facturas/Index.vue';
 import FacturasFicha from '../facturas/Ficha.vue';
+import PlantillasIndex from '../plantillas/Index.vue';
 
 const meta = {
   permissions: ['administrator', 'agent'],
@@ -44,6 +45,12 @@ export const routes = [
         name: 'cartera_facturas_ficha_view',
         meta,
         component: FacturasFicha,
+      },
+      {
+        path: 'plantillas',
+        name: 'cartera_plantillas_view',
+        meta,
+        component: PlantillasIndex,
       },
     ],
   },

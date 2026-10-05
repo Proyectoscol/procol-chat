@@ -51,6 +51,10 @@ class Channel::TwilioSms < ApplicationRecord
 
   enum medium: { sms: 0, whatsapp: 1 }
 
+  def self.whatsapp_for_account(account_id)
+    whatsapp.joins(:inbox).find_by(inbox: { account_id: account_id })
+  end
+
   def name
     medium == 'sms' ? 'Twilio SMS' : 'Whatsapp'
   end

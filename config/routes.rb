@@ -269,6 +269,15 @@ Rails.application.routes.draw do
               end
             end
             resources :syncs, only: [:create]
+            resources :plantillas_whatsapp, only: [:index, :create] do
+              post :solicitar_aprobacion, on: :member
+            end
+            resources :plantillas_email, only: [:index, :create, :update, :destroy]
+            resource :tarifas_mensajeria, only: [:show, :update]
+            resources :campanas, only: [:index, :show, :create, :update] do
+              post :simulacion, on: :member
+              resources :reglas, only: [:index, :create, :update, :destroy], controller: 'campana_reglas'
+            end
           end
           resources :data_imports, only: [:index, :show, :create] do
             collection do

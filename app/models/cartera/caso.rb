@@ -6,6 +6,8 @@
 #  descartado                 :boolean          default(FALSE), not null
 #  dias_vencido_max           :integer
 #  estado                     :string           default("abierto"), not null
+#  excluido_hasta             :datetime
+#  excluido_motivo            :string
 #  factores_score             :jsonb
 #  facturas_abiertas_cantidad :integer
 #  fecha_primera_factura      :datetime
@@ -23,12 +25,14 @@
 #  updated_at                 :datetime         not null
 #  account_id                 :bigint           not null
 #  cliente_id                 :bigint           not null
+#  excluido_por_user_id       :bigint
 #
 # Indexes
 #
 #  index_cartera_casos_on_account_id                 (account_id)
 #  index_cartera_casos_on_account_id_and_cliente_id  (account_id,cliente_id) UNIQUE
 #  index_cartera_casos_on_cliente_id                 (cliente_id)
+#  index_cartera_casos_on_excluido_por_user_id       (excluido_por_user_id)
 #  index_cartera_casos_on_prioridad_score            (prioridad_score)
 #  index_cartera_casos_on_puntaje_riesgo             (puntaje_riesgo)
 #  index_cartera_casos_on_saldo_abierto              (saldo_abierto)
@@ -38,12 +42,14 @@
 #
 #  fk_rails_...  (account_id => accounts.id) ON DELETE => cascade
 #  fk_rails_...  (cliente_id => cartera_clientes.id) ON DELETE => cascade
+#  fk_rails_...  (excluido_por_user_id => users.id) ON DELETE => nullify
 #
 class Cartera::Caso < ApplicationRecord
   self.table_name = 'cartera_casos'
 
   belongs_to :account
   belongs_to :cliente, class_name: 'Cartera::Cliente', inverse_of: :caso
+  belongs_to :excluido_por, class_name: 'User', foreign_key: :excluido_por_user_id, optional: true, inverse_of: false
 
   validates :estado, :nivel_escalamiento, presence: true
   validates :cliente_id, uniqueness: { scope: :account_id }

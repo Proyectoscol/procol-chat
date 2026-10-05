@@ -7,7 +7,7 @@
 #  agent_last_seen_at     :datetime
 #  ai_assignee_type       :string
 #  assignee_last_seen_at  :datetime
-#  cached_label_list      :text
+#  cached_label_list      :string
 #  contact_last_seen_at   :datetime
 #  custom_attributes      :jsonb
 #  first_reply_created_at :datetime

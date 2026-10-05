@@ -325,6 +325,7 @@
     "CARTERA_RESUMEN": "Resumen",
     "CARTERA_CLIENTES": "Clientes",
     "CARTERA_FACTURAS": "Facturas",
+    "CARTERA_PLANTILLAS": "Plantillas",
     "CALLS": "Calls",
     "SETTINGS": "Settings",
     "CONTACTS": "Contacts",
@@ -1397,6 +1398,47 @@
         "EVENTO_032": "032 - Receipt of goods or service",
         "EVENTO_033": "033 - Express acceptance",
         "EVENTO_034": "034 - Tacit acceptance"
+      }
+    },
+    "PLANTILLAS": {
+      "TITLE": "WhatsApp templates",
+      "NUEVA": "New template",
+      "NUEVA_DESCRIPCION": "Saved as a draft first - review it, then request WhatsApp approval from Twilio.",
+      "GUARDAR": "Save draft",
+      "SOLICITAR_APROBACION": "Request approval",
+      "SOLICITUD_EXITOSA": "Template sent to Twilio for WhatsApp approval.",
+      "SOLICITUD_ERROR": "Could not send the template to Twilio. Try again.",
+      "CREADA_EXITOSA": "Draft template saved.",
+      "CREADA_ERROR": "Could not save the template.",
+      "EMPTY_STATE": "No templates yet.",
+      "HEADERS": {
+        "NOMBRE": "Name",
+        "CATEGORIA": "Category",
+        "CUERPO": "Body",
+        "ESTADO": "Status",
+        "ACCIONES": "Actions"
+      },
+      "CATEGORIAS": {
+        "UTILITY": "Utility",
+        "MARKETING": "Marketing",
+        "AUTHENTICATION": "Authentication"
+      },
+      "ESTADOS": {
+        "BORRADOR": "Draft",
+        "ENVIADA": "Submitted - awaiting sync",
+        "UNSUBMITTED": "Not registered yet",
+        "PENDING": "Pending review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "FAILED": "Failed"
+      },
+      "FORM": {
+        "NOMBRE": "Name",
+        "NOMBRE_PLACEHOLDER": "e.g. recordatorio_mora_v1",
+        "CATEGORIA": "Category",
+        "CUERPO": "Body",
+        "CUERPO_PLACEHOLDER": "Hi {'{{'}1{'}}'}, invoice {'{{'}2{'}}'} is {'{{'}3{'}}'} days overdue...",
+        "CUERPO_AYUDA": "Use {'{{'}1{'}}'}, {'{{'}2{'}}'}... as variable placeholders - they get filled in per client when the template is used in a campaign rule."
       }
     }
   },

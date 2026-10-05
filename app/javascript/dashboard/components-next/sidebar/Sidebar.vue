@@ -407,6 +407,14 @@ const menuItems = computed(() => {
       hidden: !hasCartera.value,
     },
     {
+      name: 'CarteraPlantillas',
+      label: t('SIDEBAR.CARTERA_PLANTILLAS'),
+      icon: 'i-lucide-message-square-text',
+      to: accountScopedRoute('cartera_plantillas_view'),
+      activeOn: ['cartera_plantillas_view'],
+      hidden: !hasCartera.value,
+    },
+    {
       name: 'Inbox',
       label: t('SIDEBAR.INBOX'),
       icon: 'i-lucide-inbox',

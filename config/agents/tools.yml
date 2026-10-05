@@ -39,3 +39,8 @@
   title: 'Handoff to Human'
   description: 'Hand off the conversation to a human agent'
   icon: 'user-switch'
+
+- id: cartera_contexto
+  title: 'Cartera Context'
+  description: 'Get accounts-receivable context for this contact: open invoices, balance, risk score, and recent collection campaign sends with their outcomes'
+  icon: 'file-text'

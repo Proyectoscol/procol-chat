@@ -89,3 +89,38 @@ cartera_sync_job:
   cron: '*/15 * * * *'
   class: 'Cartera::SyncJob'
   queue: scheduled_jobs
+
+# executed every 30 minutes
+# evaluates the active campaign (if any) of every account with the
+# "cartera" feature flag enabled against each case, within that campaign's
+# own configured send window - every 30 minutes catches each campaign's
+# hora_inicio without hardcoding a single time of day
+cartera_campanas_corrida_job:
+  cron: '*/30 * * * *'
+  class: 'Cartera::Campanas::CorridaJob'
+  queue: scheduled_jobs
+
+# executed every 15 minutes
+# sends the real WhatsApp message for every "programado" cartera_envios -
+# split from the corrida job so retry/cadence can be tuned independently
+cartera_campanas_enviar_whatsapp_job:
+  cron: '*/15 * * * *'
+  class: 'Cartera::Campanas::EnviarWhatsappJob'
+  queue: scheduled_jobs
+
+# executed every 15 minutes
+# sends the real email for every "programado" cartera_envios - equivalent
+# of cartera_campanas_enviar_whatsapp_job for Channel::Email
+cartera_campanas_enviar_email_job:
+  cron: '*/15 * * * *'
+  class: 'Cartera::Campanas::EnviarEmailJob'
+  queue: scheduled_jobs
+
+# executed every 15 minutes
+# reflects delivered/read/failed (already updated on the Message by the
+# real Twilio webhook) onto cartera_envios, and blocks the whatsapp
+# channel for a cliente when the Twilio error code justifies it
+cartera_campanas_actualizar_estado_envios_job:
+  cron: '*/15 * * * *'
+  class: 'Cartera::Campanas::ActualizarEstadoEnviosJob'
+  queue: scheduled_jobs

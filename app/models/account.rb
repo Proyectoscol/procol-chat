@@ -74,10 +74,17 @@ class Account < ApplicationRecord
   has_many :campaigns, dependent: :destroy_async
   has_many :canned_responses, dependent: :destroy_async
   has_many :cartera_alertas, dependent: :destroy_async, class_name: 'Cartera::Alerta'
+  has_many :cartera_campanas, dependent: :destroy_async, class_name: 'Cartera::Campana'
+  has_many :cartera_campana_reglas, dependent: :destroy_async, class_name: 'Cartera::CampanaRegla'
+  has_many :cartera_canales_bloqueados, dependent: :destroy_async, class_name: 'Cartera::CanalBloqueado'
   has_many :cartera_casos, dependent: :destroy_async, class_name: 'Cartera::Caso'
   has_many :cartera_clientes, dependent: :destroy_async, class_name: 'Cartera::Cliente'
   has_many :cartera_corridas_sync, dependent: :destroy_async, class_name: 'Cartera::CorridaSync'
+  has_many :cartera_envios, dependent: :destroy_async, class_name: 'Cartera::Envio'
   has_many :cartera_facturas, dependent: :destroy_async, class_name: 'Cartera::Factura'
+  has_many :cartera_plantillas_email, dependent: :destroy_async, class_name: 'Cartera::PlantillaEmail'
+  has_many :cartera_plantillas_whatsapp, dependent: :destroy_async, class_name: 'Cartera::PlantillaWhatsapp'
+  has_many :cartera_tarifas_mensajeria, dependent: :destroy_async, class_name: 'Cartera::TarifaMensajeria'
   has_many :categories, dependent: :destroy_async, class_name: '::Category'
   has_many :contacts, dependent: :destroy_async
   has_many :conversations, dependent: :destroy_async

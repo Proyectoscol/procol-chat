@@ -16,6 +16,7 @@ Layout/LineLength:
 Metrics/ClassLength:
   Max: 175
   Exclude:
+    - 'app/models/account.rb'
     - 'app/models/message.rb'
     - 'app/models/conversation.rb'
     - 'app/models/contact.rb'
@@ -26,6 +27,7 @@ Metrics/MethodLength:
   Max: 19
   Exclude:
     - 'enterprise/lib/captain/agent.rb'
+    - 'db/migrate/20261004090400_create_cartera_envios.rb'
 
 RSpec/ExampleLength:
   Max: 50
