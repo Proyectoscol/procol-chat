@@ -175,7 +175,7 @@ const GO_TO_COMMANDS = [
     title: 'COMMAND_BAR.COMMANDS.GO_TO_SETTINGS_TEMPLATES',
     section: SECTION_SETTINGS,
     icon: ICON_LAYOUT_TEMPLATE,
-    routeName: 'settings_templates',
+    routeName: 'cartera_plantillas_view',
   },
   {
     id: 'open_label_settings',

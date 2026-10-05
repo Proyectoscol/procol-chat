@@ -212,10 +212,19 @@ const fetchTemplatesWhatsapp = async () => {
     templatesWhatsapp.value = [];
     return;
   }
-  const { data } = await InboxesAPI.getMessageTemplates(form.inbox_whatsapp_id);
-  templatesWhatsapp.value = (data.payload || []).filter(
-    template => (template.status || '').toLowerCase() === 'approved'
-  );
+  try {
+    const { data } = await InboxesAPI.getMessageTemplates(
+      form.inbox_whatsapp_id
+    );
+    templatesWhatsapp.value = (data.payload || []).filter(
+      template => (template.status || '').toLowerCase() === 'approved'
+    );
+  } catch {
+    // La bandeja elegida puede no ser un canal de WhatsApp real (ej. datos
+    // demo que simulan WhatsApp con un canal API) - sin plantillas para
+    // elegir en vez de romper la carga de toda la pagina.
+    templatesWhatsapp.value = [];
+  }
 };
 const plantillaWhatsappOptions = computed(() => [
   { value: '', label: t('CARTERA.CAMPANAS.FORM.SIN_SELECCION') },
