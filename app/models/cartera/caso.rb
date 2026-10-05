@@ -13,7 +13,6 @@
 #  fecha_primera_factura      :datetime
 #  nivel_escalamiento         :string           default("persuasivo"), not null
 #  no_cobrar                  :boolean          default(FALSE), not null
-#  prioridad_score            :decimal(10, 4)
 #  puntaje_riesgo             :integer
 #  razon_no_cobrar            :string
 #  revisado                   :boolean          default(FALSE), not null
@@ -33,7 +32,6 @@
 #  index_cartera_casos_on_account_id_and_cliente_id  (account_id,cliente_id) UNIQUE
 #  index_cartera_casos_on_cliente_id                 (cliente_id)
 #  index_cartera_casos_on_excluido_por_user_id       (excluido_por_user_id)
-#  index_cartera_casos_on_prioridad_score            (prioridad_score)
 #  index_cartera_casos_on_puntaje_riesgo             (puntaje_riesgo)
 #  index_cartera_casos_on_saldo_abierto              (saldo_abierto)
 #  index_cartera_casos_on_tramo                      (tramo)

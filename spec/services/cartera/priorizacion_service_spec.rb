@@ -38,7 +38,7 @@ RSpec.describe Cartera::PriorizacionService do
       caso = cliente.reload.caso
       expect(caso.no_cobrar).to be true
       expect(caso.razon_no_cobrar).to eq('Cliente marcado como estrategico.')
-      expect(caso.prioridad_score).to eq(0)
+      expect(caso.puntaje_riesgo).to eq(0)
     end
 
     it 'calcula el nivel de escalamiento prejuridico para mora entre 61 y 180 dias' do
@@ -64,11 +64,11 @@ RSpec.describe Cartera::PriorizacionService do
       crear_factura(cliente, fecha_vencimiento: 40.days.ago, saldo_pendiente: 300_000)
 
       service.recalcular
-      primer_score = cliente.reload.caso.prioridad_score
+      primer_score = cliente.reload.caso.puntaje_riesgo
       service.recalcular
 
       expect(Cartera::Caso.where(cliente: cliente).count).to eq(1)
-      expect(cliente.reload.caso.prioridad_score).to eq(primer_score)
+      expect(cliente.reload.caso.puntaje_riesgo).to eq(primer_score)
     end
   end
 

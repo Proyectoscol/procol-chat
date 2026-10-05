@@ -1,15 +1,12 @@
-# Calcula el perfil de pago de un cliente a partir de sus facturas y pagos.
-# Puro y explicable: cada factor de factores_riesgo se expone por separado,
-# nunca solo el puntaje final. Puerto de perfil-pago.util.ts + .service.ts.
+# Calcula el perfil de pago de un cliente a partir de sus facturas y pagos:
+# los factores explicativos en bruto (dias promedio de pago, % pagadas
+# tarde, cupo utilizado, antiguedad de la relacion...) que se muestran en la
+# ficha del cliente y que alimentan Cartera::PuntajeRiesgoService. Puerto de
+# perfil-pago.util.ts + .service.ts. No calcula el puntaje de riesgo final -
+# ese vive en PuntajeRiesgoService, que necesita contexto de toda la cuenta
+# (el saldo/facturado maximo para normalizar) que este servicio, centrado en
+# un solo cliente, no tiene.
 class Cartera::PerfilPagoService
-  PESOS_PROBABILIDAD_IMPAGO_DEFAULT = {
-    atraso_atipico: 0.3,
-    tasa_tardio_historica: 0.25,
-    tendencia: 0.15,
-    exposicion: 0.15,
-    antiguedad: 0.15
-  }.freeze
-
   def initialize(account)
     @account = account
   end
@@ -24,18 +21,6 @@ class Cartera::PerfilPagoService
     return perfil if cupo_asignado&.positive?
 
     perfil.merge(exposicion_z_score: calcular_exposicion_z_score(facturas))
-  end
-
-  # Probabilidad (0-100) de que UNA factura puntual no se pague, relativa al
-  # comportamiento historico de su propio cliente - distinto de
-  # prioridad_score (que responde "que tan urgente es gestionar este caso").
-  def calcular_probabilidad_impago(factores, pesos = PESOS_PROBABILIDAD_IMPAGO_DEFAULT)
-    score = (factores[:atraso_atipico] * pesos[:atraso_atipico]) +
-            (factores[:tasa_tardio_historica] * pesos[:tasa_tardio_historica]) +
-            (factores[:tendencia] * pesos[:tendencia]) +
-            (factores[:exposicion] * pesos[:exposicion]) +
-            (factores[:antiguedad] * pesos[:antiguedad])
-    score.clamp(0.0, 100.0).round
   end
 
   # Z-score de valor_actual contra una serie historica - "que tan atipico es
@@ -84,7 +69,7 @@ class Cartera::PerfilPagoService
     (hasta.to_time - desde.to_time) / 1.day
   end
 
-  # rubocop:disable Metrics/AbcSize, Metrics/MethodLength -- puerto fiel de calcularPerfilPago (perfil-pago.util.ts); ya esta descompuesta en los 4 helpers de arriba
+  # rubocop:disable Metrics/MethodLength -- puerto fiel de calcularPerfilPago (perfil-pago.util.ts); ya esta descompuesta en los 4 helpers de arriba
   def calcular_perfil_pago(facturas, _fechas_pagos, cupo_asignado, fecha_referencia)
     facturas_pagadas = facturas.filter_map { |f| factura_pagada(f) }
     metricas_tiempo = calcular_metricas_tiempo_pago(facturas, facturas_pagadas)
@@ -92,11 +77,6 @@ class Cartera::PerfilPagoService
     metricas_cupo = calcular_metricas_cupo(facturas, cupo_asignado)
 
     antiguedad_relacion_dias = calcular_antiguedad_relacion_dias(facturas, fecha_referencia)
-    factores_riesgo = calcular_factores_riesgo(
-      metricas_tiempo[:porcentaje_pagadas_tarde_habil], metricas_tiempo[:dias_promedio_pago_habil],
-      metricas_cupo[:cupo_utilizado_porcentaje], metricas_cupo[:facturas_abiertas], antiguedad_relacion_dias
-    )
-    puntaje_riesgo = calcular_puntaje_riesgo(factores_riesgo)
 
     {
       dias_promedio_pago: metricas_tiempo[:dias_promedio_pago],
@@ -111,13 +91,10 @@ class Cartera::PerfilPagoService
       facturas_abiertas: metricas_cupo[:facturas_abiertas],
       saldo_abierto: metricas_cupo[:saldo_abierto],
       cupo_utilizado_porcentaje: metricas_cupo[:cupo_utilizado_porcentaje],
-      puntaje_riesgo: puntaje_riesgo.clamp(0, 100),
-      score_credito: (100 - puntaje_riesgo.clamp(0, 100)).round,
-      factores_riesgo: factores_riesgo,
       exposicion_z_score: nil
     }
   end
-  # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+  # rubocop:enable Metrics/MethodLength
 
   def calcular_metricas_tiempo_pago(facturas, facturas_pagadas)
     {
@@ -161,25 +138,6 @@ class Cartera::PerfilPagoService
       dias_pago: dias_entre(factura[:fecha_vencimiento], factura[:fecha_liquidacion]),
       dias_pago_habil: Cartera::BusinessDays.dias_habiles_entre(factura[:fecha_vencimiento], factura[:fecha_liquidacion])
     )
-  end
-
-  def calcular_factores_riesgo(porcentaje_pagadas_tarde_habil, dias_promedio_pago_habil, cupo_utilizado_porcentaje, facturas_abiertas_count,
-                               antiguedad_relacion_dias)
-    {
-      pago_tardio_historico: (porcentaje_pagadas_tarde_habil || 0).round,
-      dias_promedio_mora_pago: [0, dias_promedio_pago_habil || 0].max.round,
-      cupo_utilizado: [100, cupo_utilizado_porcentaje || 0].min.round,
-      facturas_abiertas_escala: [100, facturas_abiertas_count * 10].min.round,
-      antiguedad_relacion: antiguedad_relacion_dias.nil? ? 50 : [0, 100 - (antiguedad_relacion_dias / 365.0 * 100)].max.round
-    }
-  end
-
-  def calcular_puntaje_riesgo(factores)
-    (([100, factores[:dias_promedio_mora_pago]].min * 0.25) +
-      (factores[:pago_tardio_historico] * 0.35) +
-      (factores[:cupo_utilizado] * 0.15) +
-      (factores[:facturas_abiertas_escala] * 0.1) +
-      (factores[:antiguedad_relacion] * 0.15)).round
   end
 
   def calcular_exposicion_z_score(facturas)

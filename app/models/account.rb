@@ -82,6 +82,7 @@ class Account < ApplicationRecord
   has_many :cartera_corridas_sync, dependent: :destroy_async, class_name: 'Cartera::CorridaSync'
   has_many :cartera_envios, dependent: :destroy_async, class_name: 'Cartera::Envio'
   has_many :cartera_facturas, dependent: :destroy_async, class_name: 'Cartera::Factura'
+  has_one :cartera_peso_riesgo, dependent: :destroy, class_name: 'Cartera::PesoRiesgo'
   has_many :cartera_plantillas_email, dependent: :destroy_async, class_name: 'Cartera::PlantillaEmail'
   has_many :cartera_plantillas_whatsapp, dependent: :destroy_async, class_name: 'Cartera::PlantillaWhatsapp'
   has_many :cartera_snapshots_cliente, dependent: :destroy_async, class_name: 'Cartera::SnapshotCliente'

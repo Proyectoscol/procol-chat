@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_05_210000) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_06_100100) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -657,7 +657,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_05_210000) do
     t.bigint "account_id", null: false
     t.bigint "cliente_id", null: false
     t.string "estado", default: "abierto", null: false
-    t.decimal "prioridad_score", precision: 10, scale: 4
     t.jsonb "factores_score"
     t.string "nivel_escalamiento", default: "persuasivo", null: false
     t.boolean "no_cobrar", default: false, null: false
@@ -681,7 +680,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_05_210000) do
     t.index ["account_id"], name: "index_cartera_casos_on_account_id"
     t.index ["cliente_id"], name: "index_cartera_casos_on_cliente_id"
     t.index ["excluido_por_user_id"], name: "index_cartera_casos_on_excluido_por_user_id"
-    t.index ["prioridad_score"], name: "index_cartera_casos_on_prioridad_score"
     t.index ["puntaje_riesgo"], name: "index_cartera_casos_on_puntaje_riesgo"
     t.index ["saldo_abierto"], name: "index_cartera_casos_on_saldo_abierto"
     t.index ["tramo"], name: "index_cartera_casos_on_tramo"
@@ -805,6 +803,20 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_05_210000) do
     t.index ["account_id", "external_id"], name: "index_cartera_pagos_on_account_id_and_external_id", unique: true
     t.index ["account_id"], name: "index_cartera_pagos_on_account_id"
     t.index ["cliente_id"], name: "index_cartera_pagos_on_cliente_id"
+  end
+
+  create_table "cartera_pesos_riesgo", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.decimal "mora_actual", precision: 5, scale: 4, default: "0.2", null: false
+    t.decimal "pagos_tardios", precision: 5, scale: 4, default: "0.25", null: false
+    t.decimal "saldo_abierto", precision: 5, scale: 4, default: "0.2", null: false
+    t.decimal "cupo_utilizado", precision: 5, scale: 4, default: "0.1", null: false
+    t.decimal "antiguedad_relacion", precision: 5, scale: 4, default: "0.1", null: false
+    t.decimal "cartera_vencida_pct", precision: 5, scale: 4, default: "0.1", null: false
+    t.decimal "total_facturado", precision: 5, scale: 4, default: "0.05", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_cartera_pesos_riesgo_on_account_id", unique: true
   end
 
   create_table "cartera_plantillas_email", force: :cascade do |t|
@@ -2000,6 +2012,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_05_210000) do
   add_foreign_key "cartera_notas_credito", "cartera_facturas", column: "factura_id", on_delete: :cascade
   add_foreign_key "cartera_pagos", "accounts", on_delete: :cascade
   add_foreign_key "cartera_pagos", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_pesos_riesgo", "accounts", on_delete: :cascade
   add_foreign_key "cartera_plantillas_email", "accounts", on_delete: :cascade
   add_foreign_key "cartera_plantillas_whatsapp", "accounts", on_delete: :cascade
   add_foreign_key "cartera_snapshots_cliente", "accounts", on_delete: :cascade
