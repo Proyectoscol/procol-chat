@@ -14,6 +14,7 @@ import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
+import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import CarteraHeader from '../cartera-shared/CarteraHeader.vue';
 import TableCard from '../cartera-shared/TableCard.vue';
 import campanaAPI from 'dashboard/api/cartera/campanas';
@@ -25,6 +26,30 @@ const { isAdmin } = useAdmin();
 const store = useStore();
 
 const campanaId = computed(() => route.params.campanaId);
+
+/* ---------- Pestanas ---------- */
+
+const TAB_VALUES = [
+  'datos',
+  'canales',
+  'bandas',
+  'autorizacion',
+  'simulacion',
+  'pruebas',
+  'bitacora',
+  'estadisticas',
+];
+const activeTab = ref('datos');
+const tabs = computed(() =>
+  TAB_VALUES.map(value => ({
+    value,
+    label: t(`CARTERA.CAMPANAS.TABS.${value.toUpperCase()}`),
+  }))
+);
+const activeTabIndex = computed(() => TAB_VALUES.indexOf(activeTab.value));
+const handleTabChange = tab => {
+  activeTab.value = tab.value;
+};
 
 /* ---------- Datos generales ---------- */
 
@@ -180,6 +205,61 @@ const OPERADORES = [
   'is_present',
   'is_not_present',
 ];
+// Valores enum de Cartera::AgingCalculator::TRAMOS y Cartera::Cliente#tipo_deudor
+// - los mismos que guarda el backend en condiciones.values, para que el
+// selector de valor nunca dependa de que el usuario teclee el nombre interno.
+const TRAMO_VALUES = [
+  'vigente',
+  'd1_30',
+  'd31_60',
+  'd61_90',
+  'd91_180',
+  'd181_360',
+  'mas_360',
+];
+const TIPO_DEUDOR_VALUES = ['persona_natural', 'empresa', 'mixto'];
+
+const atributoOptions = computed(() =>
+  ATRIBUTOS.map(atributo => ({
+    value: atributo,
+    label: t(
+      `CARTERA.CAMPANAS.REGLAS.FORM.ATRIBUTOS.${atributo.toUpperCase()}`
+    ),
+  }))
+);
+const operadorOptions = computed(() =>
+  OPERADORES.map(operador => ({
+    value: operador,
+    label: t(`FILTER.OPERATOR_LABELS.${operador}`),
+  }))
+);
+const tramoValorOptions = computed(() =>
+  TRAMO_VALUES.map(valor => ({
+    value: valor,
+    label: t(`CARTERA.TRAMOS.${valor.toUpperCase()}`),
+  }))
+);
+const tipoDeudorValorOptions = computed(() =>
+  TIPO_DEUDOR_VALUES.map(valor => ({
+    value: valor,
+    label: t(
+      `CARTERA.CAMPANAS.REGLAS.FORM.TIPO_DEUDOR_VALORES.${valor.toUpperCase()}`
+    ),
+  }))
+);
+
+const atributoLabel = atributo =>
+  t(`CARTERA.CAMPANAS.REGLAS.FORM.ATRIBUTOS.${atributo.toUpperCase()}`);
+const valorLabel = (atributo, valor) => {
+  if (!valor) return '';
+  if (atributo === 'tramo') return t(`CARTERA.TRAMOS.${valor.toUpperCase()}`);
+  if (atributo === 'tipo_deudor') {
+    return t(
+      `CARTERA.CAMPANAS.REGLAS.FORM.TIPO_DEUDOR_VALORES.${valor.toUpperCase()}`
+    );
+  }
+  return valor;
+};
 
 const reglas = ref([]);
 const isLoadingReglas = ref(false);
@@ -234,6 +314,55 @@ const plantillaWhatsappOptions = computed(() => [
   })),
 ]);
 
+// Una "banda de riesgo" es el caso de uso real de una regla de campana - un
+// rango del puntaje de riesgo (0-100) con su plantilla sugerida - expresado
+// como un grupo AND de dos condiciones sobre puntaje_riesgo que
+// Cartera::Campanas::ReglaMatcher ya sabe evaluar (no es un concepto nuevo
+// en el backend, solo una forma mas simple de armar el mismo JSON). El
+// modo "personalizada" deja el selector de atributo/operador/valor de
+// toda la vida para los casos que no son una banda de puntaje.
+const MODO_BANDA = 'banda';
+const MODO_PERSONALIZADA = 'personalizada';
+const BANDA_ATRIBUTO = 'puntaje_riesgo';
+
+const bandaCondiciones = (min, max) => ({
+  operator: 'and',
+  conditions: [
+    {
+      attribute_key: BANDA_ATRIBUTO,
+      filter_operator: 'is_greater_than',
+      values: [String(min - 1)],
+    },
+    {
+      attribute_key: BANDA_ATRIBUTO,
+      filter_operator: 'is_less_than',
+      values: [String(max + 1)],
+    },
+  ],
+});
+
+// null si `condiciones` no tiene exactamente esta forma - una regla creada
+// a mano con el modo "personalizada" (o con un AND que no es sobre
+// puntaje_riesgo) nunca se confunde con una banda.
+const bandaDesdeCondiciones = condiciones => {
+  const grupo = condiciones?.conditions;
+  if (!condiciones?.operator || grupo?.length !== 2) return null;
+  if (condiciones.operator.toLowerCase() !== 'and') return null;
+
+  const mayor = grupo.find(
+    c =>
+      c.attribute_key === BANDA_ATRIBUTO &&
+      c.filter_operator === 'is_greater_than'
+  );
+  const menor = grupo.find(
+    c =>
+      c.attribute_key === BANDA_ATRIBUTO && c.filter_operator === 'is_less_than'
+  );
+  if (!mayor || !menor) return null;
+
+  return { min: Number(mayor.values[0]) + 1, max: Number(menor.values[0]) - 1 };
+};
+
 const reglaDialogRef = ref(null);
 const isSavingRegla = ref(false);
 const editingReglaId = ref(null);
@@ -241,21 +370,49 @@ const reglaForm = reactive({
   orden: 1,
   accion: 'enviar',
   sinCondicion: true,
+  modoCondicion: MODO_BANDA,
+  puntajeMin: 70,
+  puntajeMax: 100,
   attribute_key: 'tramo',
   filter_operator: 'equal_to',
   value: '',
   plantilla_whatsapp_content_sid: '',
   plantilla_email_id: '',
 });
+const modoCondicionOptions = computed(() => [
+  { value: MODO_BANDA, label: t('CARTERA.CAMPANAS.REGLAS.FORM.MODO_BANDA') },
+  {
+    value: MODO_PERSONALIZADA,
+    label: t('CARTERA.CAMPANAS.REGLAS.FORM.MODO_PERSONALIZADA'),
+  },
+]);
+
+// El selector de valor es un Select (no texto libre) para tramo/tipo_deudor,
+// asi que su v-model necesita arrancar en una opcion real del enum - un '' no
+// coincide con ninguna y el Select se ve vacio aunque el backend lo trate
+// como "sin valor". Solo se reasigna cuando el usuario cambia el atributo a
+// mano (ver onAtributoChange) - abrirEditarRegla ya pone el valor guardado.
+const valorPorDefectoPara = atributo => {
+  if (atributo === 'tramo') return TRAMO_VALUES[0];
+  if (atributo === 'tipo_deudor') return TIPO_DEUDOR_VALUES[0];
+  return '';
+};
+const onAtributoChange = atributo => {
+  reglaForm.attribute_key = atributo;
+  reglaForm.value = valorPorDefectoPara(atributo);
+};
 
 const abrirNuevaRegla = () => {
   editingReglaId.value = null;
   reglaForm.orden = reglas.value.length + 1;
   reglaForm.accion = 'enviar';
   reglaForm.sinCondicion = true;
+  reglaForm.modoCondicion = MODO_BANDA;
+  reglaForm.puntajeMin = 70;
+  reglaForm.puntajeMax = 100;
   reglaForm.attribute_key = 'tramo';
   reglaForm.filter_operator = 'equal_to';
-  reglaForm.value = '';
+  reglaForm.value = valorPorDefectoPara('tramo');
   reglaForm.plantilla_whatsapp_content_sid = '';
   reglaForm.plantilla_email_id = '';
   reglaDialogRef.value?.open();
@@ -266,7 +423,11 @@ const abrirEditarRegla = regla => {
   reglaForm.orden = regla.orden;
   reglaForm.accion = regla.accion;
   const condiciones = regla.condiciones || {};
-  reglaForm.sinCondicion = !condiciones.attribute_key;
+  const banda = bandaDesdeCondiciones(condiciones);
+  reglaForm.sinCondicion = !banda && !condiciones.attribute_key;
+  reglaForm.modoCondicion = banda ? MODO_BANDA : MODO_PERSONALIZADA;
+  reglaForm.puntajeMin = banda?.min ?? 70;
+  reglaForm.puntajeMax = banda?.max ?? 100;
   reglaForm.attribute_key = condiciones.attribute_key || 'tramo';
   reglaForm.filter_operator = condiciones.filter_operator || 'equal_to';
   reglaForm.value = condiciones.values ? condiciones.values[0] : '';
@@ -280,6 +441,11 @@ const abrirEditarRegla = regla => {
 
 const condicionesPayload = () => {
   if (reglaForm.sinCondicion) return {};
+  if (reglaForm.modoCondicion === MODO_BANDA) {
+    const min = Math.min(reglaForm.puntajeMin, reglaForm.puntajeMax);
+    const max = Math.max(reglaForm.puntajeMin, reglaForm.puntajeMax);
+    return bandaCondiciones(min, max);
+  }
   const necesitaValor = !['is_present', 'is_not_present'].includes(
     reglaForm.filter_operator
   );
@@ -349,11 +515,21 @@ const resumenPlantillas = regla => {
 
 const resumenCondicion = regla => {
   const condiciones = regla.condiciones || {};
+  const banda = bandaDesdeCondiciones(condiciones);
+  if (banda) {
+    return t('CARTERA.CAMPANAS.REGLAS.RESUMEN_BANDA', banda);
+  }
   if (!condiciones.attribute_key) {
     return t('CARTERA.CAMPANAS.REGLAS.SIN_CONDICION');
   }
-  const valor = condiciones.values?.[0];
-  return `${condiciones.attribute_key} ${condiciones.filter_operator}${valor ? ` ${valor}` : ''}`;
+  const valor = valorLabel(condiciones.attribute_key, condiciones.values?.[0]);
+  return [
+    atributoLabel(condiciones.attribute_key),
+    t(`FILTER.OPERATOR_LABELS.${condiciones.filter_operator}`),
+    valor,
+  ]
+    .filter(Boolean)
+    .join(' ');
 };
 
 /* ---------- Simulacion ---------- */
@@ -473,105 +649,122 @@ onMounted(async () => {
       <Spinner />
     </div>
 
-    <div v-else class="flex flex-col gap-6">
+    <template v-else>
+      <TabBar
+        :tabs="tabs"
+        :initial-active-tab="activeTabIndex"
+        class="mb-6"
+        @tab-changed="handleTabChange"
+      />
+
       <!-- Estadisticas -->
-      <div v-if="estadisticas">
-        <h3 class="text-heading-3 text-n-slate-12 mb-2">
-          {{ t('CARTERA.CAMPANAS.ESTADISTICAS.TITLE') }}
-        </h3>
-        <TableCard>
-          <div class="flex flex-col gap-3 p-5">
-            <p
-              v-if="estadisticas.semanas_activa !== null"
-              class="text-sm text-n-slate-11 mb-0"
-            >
-              {{
-                t('CARTERA.CAMPANAS.ESTADISTICAS.ACTIVA_DESDE', {
-                  semanas: estadisticas.semanas_activa,
-                })
-              }}
-            </p>
-            <p v-else class="text-sm text-n-slate-11 mb-0">
-              {{ t('CARTERA.CAMPANAS.ESTADISTICAS.NUNCA_ACTIVADA') }}
-            </p>
-            <div class="grid grid-cols-3 sm:grid-cols-6 gap-4 text-center">
-              <div>
-                <p class="text-heading-1 text-n-teal-11 m-0">
-                  {{ estadisticas.mensajes_enviados }}
-                </p>
-                <p class="text-xs text-n-slate-10 m-0">
-                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.ENVIADOS') }}
-                </p>
-              </div>
-              <div>
-                <p class="text-heading-1 text-n-slate-12 m-0">
-                  {{ estadisticas.clientes_alcanzados }}
-                </p>
-                <p class="text-xs text-n-slate-10 m-0">
-                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.CLIENTES') }}
-                </p>
-              </div>
-              <div>
-                <p class="text-heading-1 text-n-ruby-11 m-0">
-                  {{ estadisticas.total_errores }}
-                </p>
-                <p class="text-xs text-n-slate-10 m-0">
-                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.ERRORES') }}
-                </p>
-              </div>
-              <div>
-                <p class="text-heading-1 text-n-slate-12 m-0">
-                  {{ estadisticas.conversaciones_contestadas }}
-                </p>
-                <p class="text-xs text-n-slate-10 m-0">
-                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.CONTESTARON') }}
-                </p>
-              </div>
-              <div>
-                <p class="text-heading-1 text-n-slate-12 m-0">
-                  {{ estadisticas.interacciones_ia_nuevas }}
-                </p>
-                <p class="text-xs text-n-slate-10 m-0">
-                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.INTERACCIONES_IA') }}
-                </p>
-              </div>
-              <div>
-                <p class="text-heading-1 text-n-amber-11 m-0">
-                  {{ estadisticas.escalamientos }}
-                </p>
-                <p class="text-xs text-n-slate-10 m-0">
-                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.ESCALAMIENTOS') }}
-                </p>
-              </div>
-            </div>
-            <div
-              v-if="estadisticas.errores.length"
-              class="flex flex-col gap-1 border-t border-n-weak pt-3"
-            >
+      <div v-if="activeTab === 'estadisticas'">
+        <div v-if="estadisticas">
+          <h3 class="text-heading-3 text-n-slate-12 mb-2">
+            {{ t('CARTERA.CAMPANAS.ESTADISTICAS.TITLE') }}
+          </h3>
+          <TableCard>
+            <div class="flex flex-col gap-3 p-5">
               <p
-                v-for="error in estadisticas.errores"
-                :key="error.envio_id"
-                class="text-sm text-n-ruby-11 mb-0"
+                v-if="estadisticas.semanas_activa !== null"
+                class="text-sm text-n-slate-11 mb-0"
               >
-                {{ error.nombre_cliente }} ({{ error.canal }}):
                 {{
-                  error.error ||
-                  t('CARTERA.CAMPANAS.ESTADISTICAS.ERROR_SIN_DETALLE')
+                  t('CARTERA.CAMPANAS.ESTADISTICAS.ACTIVA_DESDE', {
+                    semanas: estadisticas.semanas_activa,
+                  })
                 }}
               </p>
+              <p v-else class="text-sm text-n-slate-11 mb-0">
+                {{ t('CARTERA.CAMPANAS.ESTADISTICAS.NUNCA_ACTIVADA') }}
+              </p>
+              <div class="grid grid-cols-3 sm:grid-cols-7 gap-4 text-center">
+                <div>
+                  <p class="text-heading-1 text-n-teal-11 m-0">
+                    {{ estadisticas.mensajes_enviados }}
+                  </p>
+                  <p class="text-xs text-n-slate-10 m-0">
+                    {{ t('CARTERA.CAMPANAS.ESTADISTICAS.ENVIADOS') }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-heading-1 text-n-slate-12 m-0">
+                    {{ estadisticas.mensajes_leidos }}
+                  </p>
+                  <p class="text-xs text-n-slate-10 m-0">
+                    {{ t('CARTERA.CAMPANAS.ESTADISTICAS.LEIDOS') }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-heading-1 text-n-slate-12 m-0">
+                    {{ estadisticas.clientes_alcanzados }}
+                  </p>
+                  <p class="text-xs text-n-slate-10 m-0">
+                    {{ t('CARTERA.CAMPANAS.ESTADISTICAS.CLIENTES') }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-heading-1 text-n-ruby-11 m-0">
+                    {{ estadisticas.total_errores }}
+                  </p>
+                  <p class="text-xs text-n-slate-10 m-0">
+                    {{ t('CARTERA.CAMPANAS.ESTADISTICAS.ERRORES') }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-heading-1 text-n-slate-12 m-0">
+                    {{ estadisticas.conversaciones_contestadas }}
+                  </p>
+                  <p class="text-xs text-n-slate-10 m-0">
+                    {{ t('CARTERA.CAMPANAS.ESTADISTICAS.CONTESTARON') }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-heading-1 text-n-slate-12 m-0">
+                    {{ estadisticas.interacciones_ia_nuevas }}
+                  </p>
+                  <p class="text-xs text-n-slate-10 m-0">
+                    {{ t('CARTERA.CAMPANAS.ESTADISTICAS.INTERACCIONES_IA') }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-heading-1 text-n-amber-11 m-0">
+                    {{ estadisticas.escalamientos }}
+                  </p>
+                  <p class="text-xs text-n-slate-10 m-0">
+                    {{ t('CARTERA.CAMPANAS.ESTADISTICAS.ESCALAMIENTOS') }}
+                  </p>
+                </div>
+              </div>
+              <div
+                v-if="estadisticas.errores.length"
+                class="flex flex-col gap-1 border-t border-n-weak pt-3"
+              >
+                <p
+                  v-for="error in estadisticas.errores"
+                  :key="error.envio_id"
+                  class="text-sm text-n-ruby-11 mb-0"
+                >
+                  {{ error.nombre_cliente }} ({{ error.canal }}):
+                  {{
+                    error.error ||
+                    t('CARTERA.CAMPANAS.ESTADISTICAS.ERROR_SIN_DETALLE')
+                  }}
+                </p>
+              </div>
             </div>
-          </div>
-        </TableCard>
-      </div>
-      <div
-        v-else-if="isLoadingEstadisticas"
-        class="flex items-center justify-center py-4"
-      >
-        <Spinner />
+          </TableCard>
+        </div>
+        <div
+          v-else-if="isLoadingEstadisticas"
+          class="flex items-center justify-center py-4"
+        >
+          <Spinner />
+        </div>
       </div>
 
-      <!-- Datos generales -->
-      <TableCard>
+      <!-- Datos basicos -->
+      <TableCard v-if="activeTab === 'datos'">
         <div class="flex flex-col gap-4 p-5">
           <Input
             v-model="form.nombre"
@@ -583,38 +776,6 @@ onMounted(async () => {
               {{ t('CARTERA.CAMPANAS.FORM.ESTADO') }}
             </label>
             <Select v-model="form.estado" :options="estadoOptions" />
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="text-sm text-n-slate-12">
-                {{ t('CARTERA.CAMPANAS.FORM.INBOX_WHATSAPP') }}
-              </label>
-              <Select
-                v-model="form.inbox_whatsapp_id"
-                :options="whatsappInboxOptions"
-                @update:model-value="fetchTemplatesWhatsapp"
-              />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-sm text-n-slate-12">
-                {{ t('CARTERA.CAMPANAS.FORM.INBOX_EMAIL') }}
-              </label>
-              <Select
-                v-model="form.inbox_email_id"
-                :options="emailInboxOptions"
-              />
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <label class="text-sm text-n-slate-12">
-              {{ t('CARTERA.CAMPANAS.FORM.CAPTAIN_ASSISTANT') }}
-            </label>
-            <Select
-              v-model="form.captain_assistant_id"
-              :options="assistantOptions"
-            />
           </div>
 
           <div class="grid grid-cols-2 gap-4">
@@ -654,8 +815,69 @@ onMounted(async () => {
         </div>
       </TableCard>
 
+      <!-- Canales -->
+      <TableCard v-if="activeTab === 'canales'">
+        <div class="flex flex-col gap-4 p-5">
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center justify-between gap-2">
+              <label class="text-sm text-n-slate-12">
+                {{ t('CARTERA.CAMPANAS.FORM.INBOX_WHATSAPP') }}
+              </label>
+              <router-link
+                :to="{ name: 'settings_inbox_new' }"
+                target="_blank"
+                class="text-xs text-n-blue-text hover:underline shrink-0"
+              >
+                {{ t('CARTERA.CAMPANAS.FORM.CREAR_INBOX') }}
+              </router-link>
+            </div>
+            <Select
+              v-model="form.inbox_whatsapp_id"
+              :options="whatsappInboxOptions"
+              @update:model-value="fetchTemplatesWhatsapp"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center justify-between gap-2">
+              <label class="text-sm text-n-slate-12">
+                {{ t('CARTERA.CAMPANAS.FORM.INBOX_EMAIL') }}
+              </label>
+              <router-link
+                :to="{ name: 'settings_inbox_new' }"
+                target="_blank"
+                class="text-xs text-n-blue-text hover:underline shrink-0"
+              >
+                {{ t('CARTERA.CAMPANAS.FORM.CREAR_INBOX') }}
+              </router-link>
+            </div>
+            <Select
+              v-model="form.inbox_email_id"
+              :options="emailInboxOptions"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center justify-between gap-2">
+              <label class="text-sm text-n-slate-12">
+                {{ t('CARTERA.CAMPANAS.FORM.CAPTAIN_ASSISTANT') }}
+              </label>
+              <router-link
+                :to="{ name: 'captain_assistants_create_index' }"
+                target="_blank"
+                class="text-xs text-n-blue-text hover:underline shrink-0"
+              >
+                {{ t('CARTERA.CAMPANAS.FORM.CREAR_ASISTENTE') }}
+              </router-link>
+            </div>
+            <Select
+              v-model="form.captain_assistant_id"
+              :options="assistantOptions"
+            />
+          </div>
+        </div>
+      </TableCard>
+
       <!-- Autorizacion -->
-      <TableCard>
+      <TableCard v-if="activeTab === 'autorizacion'">
         <div class="flex flex-col gap-4 p-5">
           <h3 class="text-heading-3 text-n-slate-12 m-0">
             {{ t('CARTERA.CAMPANAS.AUTORIZACION.TITLE') }}
@@ -694,8 +916,8 @@ onMounted(async () => {
         </div>
       </TableCard>
 
-      <!-- Reglas -->
-      <div>
+      <!-- Reglas (Bandas de riesgo) -->
+      <div v-if="activeTab === 'bandas'">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-heading-3 text-n-slate-12 m-0">
             {{ t('CARTERA.CAMPANAS.REGLAS.TITLE') }}
@@ -769,7 +991,7 @@ onMounted(async () => {
       </div>
 
       <!-- Simulacion -->
-      <div>
+      <div v-if="activeTab === 'simulacion'">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-heading-3 text-n-slate-12 m-0">
             {{ t('CARTERA.CAMPANAS.SIMULACION.TITLE') }}
@@ -838,7 +1060,7 @@ onMounted(async () => {
       </div>
 
       <!-- Entorno de pruebas -->
-      <div>
+      <div v-if="activeTab === 'pruebas'">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-heading-3 text-n-slate-12 m-0">
             {{ t('CARTERA.CAMPANAS.PRUEBA.TITLE') }}
@@ -893,7 +1115,7 @@ onMounted(async () => {
       </div>
 
       <!-- Bitacora -->
-      <div>
+      <div v-if="activeTab === 'bitacora'">
         <h3 class="text-heading-3 text-n-slate-12 mb-2">
           {{ t('CARTERA.CAMPANAS.BITACORA.TITLE') }}
         </h3>
@@ -938,7 +1160,7 @@ onMounted(async () => {
           {{ t('CARTERA.CAMPANAS.BITACORA.EMPTY_STATE') }}
         </p>
       </div>
-    </div>
+    </template>
 
     <Dialog
       ref="reglaDialogRef"
@@ -983,31 +1205,83 @@ onMounted(async () => {
         >
           <div class="flex flex-col gap-1">
             <label class="text-sm text-n-slate-12">
-              {{ t('CARTERA.CAMPANAS.REGLAS.FORM.ATRIBUTO') }}
+              {{ t('CARTERA.CAMPANAS.REGLAS.FORM.MODO_CONDICION') }}
             </label>
             <Select
-              v-model="reglaForm.attribute_key"
-              :options="ATRIBUTOS.map(a => ({ value: a, label: a }))"
+              v-model="reglaForm.modoCondicion"
+              :options="modoCondicionOptions"
             />
           </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-sm text-n-slate-12">
-              {{ t('CARTERA.CAMPANAS.REGLAS.FORM.OPERADOR') }}
-            </label>
-            <Select
-              v-model="reglaForm.filter_operator"
-              :options="OPERADORES.map(o => ({ value: o, label: o }))"
-            />
+
+          <div
+            v-if="reglaForm.modoCondicion === 'banda'"
+            class="flex flex-col gap-2"
+          >
+            <p class="text-body-main text-n-slate-11 mb-0">
+              {{ t('CARTERA.CAMPANAS.REGLAS.FORM.MODO_BANDA_AYUDA') }}
+            </p>
+            <div class="flex items-center gap-3">
+              <Input
+                v-model.number="reglaForm.puntajeMin"
+                type="number"
+                min="0"
+                max="100"
+                :label="t('CARTERA.CAMPANAS.REGLAS.FORM.PUNTAJE_MIN')"
+              />
+              <Input
+                v-model.number="reglaForm.puntajeMax"
+                type="number"
+                min="0"
+                max="100"
+                :label="t('CARTERA.CAMPANAS.REGLAS.FORM.PUNTAJE_MAX')"
+              />
+            </div>
           </div>
-          <Input
-            v-if="
-              !['is_present', 'is_not_present'].includes(
-                reglaForm.filter_operator
-              )
-            "
-            v-model="reglaForm.value"
-            :label="t('CARTERA.CAMPANAS.REGLAS.FORM.VALOR')"
-          />
+
+          <template v-else>
+            <div class="flex flex-col gap-1">
+              <label class="text-sm text-n-slate-12">
+                {{ t('CARTERA.CAMPANAS.REGLAS.FORM.ATRIBUTO') }}
+              </label>
+              <Select
+                :model-value="reglaForm.attribute_key"
+                :options="atributoOptions"
+                @update:model-value="onAtributoChange"
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-sm text-n-slate-12">
+                {{ t('CARTERA.CAMPANAS.REGLAS.FORM.OPERADOR') }}
+              </label>
+              <Select
+                v-model="reglaForm.filter_operator"
+                :options="operadorOptions"
+              />
+            </div>
+            <div
+              v-if="
+                !['is_present', 'is_not_present'].includes(
+                  reglaForm.filter_operator
+                )
+              "
+              class="flex flex-col gap-1"
+            >
+              <label class="text-sm text-n-slate-12">
+                {{ t('CARTERA.CAMPANAS.REGLAS.FORM.VALOR') }}
+              </label>
+              <Select
+                v-if="reglaForm.attribute_key === 'tramo'"
+                v-model="reglaForm.value"
+                :options="tramoValorOptions"
+              />
+              <Select
+                v-else-if="reglaForm.attribute_key === 'tipo_deudor'"
+                v-model="reglaForm.value"
+                :options="tipoDeudorValorOptions"
+              />
+              <Input v-else v-model="reglaForm.value" type="number" />
+            </div>
+          </template>
         </div>
 
         <div class="flex flex-col gap-1">

@@ -17,6 +17,7 @@ class Cartera::Campanas::EstadisticasService
       activada_en: campana.activada_en,
       semanas_activa: semanas_activa,
       mensajes_enviados: envios_enviados.count,
+      mensajes_leidos: mensajes_leidos_count,
       clientes_alcanzados: envios_enviados.distinct.count(:cliente_id),
       errores: errores,
       total_errores: errores.size,
@@ -34,6 +35,13 @@ class Cartera::Campanas::EstadisticasService
 
   def envios_enviados
     envios_reales.where(estado: 'enviado')
+  end
+
+  # "Leido" solo existe para WhatsApp (recibos azules) - Twilio::
+  # DeliveryStatusService ya marca Message#status via el webhook de
+  # entrega, esto solo cuenta lo que ya esta en la base de datos.
+  def mensajes_leidos_count
+    envios_enviados.joins(:message).where(messages: { status: 'read' }).count
   end
 
   def semanas_activa

@@ -435,6 +435,13 @@ const menuItems = computed(() => {
             navigationPath: 'captain_assistants_overview_index',
           }),
         },
+        {
+          name: 'CarteraAjustes',
+          label: t('SIDEBAR.CARTERA_AJUSTES'),
+          icon: 'i-lucide-settings-2',
+          activeOn: ['cartera_ajustes_view'],
+          to: accountScopedRoute('cartera_ajustes_view'),
+        },
       ],
     },
     {

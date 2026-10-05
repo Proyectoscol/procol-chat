@@ -328,6 +328,7 @@
     "CARTERA_CAMPANAS": "Campañas",
     "CARTERA_PLANTILLAS": "Plantillas",
     "CARTERA_CAPITAN": "AI Agent",
+    "CARTERA_AJUSTES": "Algorithm weights",
     "CALLS": "Calls",
     "SETTINGS": "Settings",
     "CONTACTS": "Contacts",
@@ -1238,8 +1239,8 @@
     "RESUMEN": {
       "TITLE": "Portfolio summary",
       "LOADING": "Loading overview...",
-      "VALOR_VIGENTE": "Current balance",
-      "VALOR_VENCIDO": "Overdue balance",
+      "VALOR_VIGENTE": "Current portfolio balance",
+      "VALOR_VENCIDO": "Overdue portfolio balance",
       "VALOR_TOTAL": "Total balance",
       "AGING_EMPTY": "Total balance: {value}",
       "CUPO_TOTAL": "Total credit limit",
@@ -1330,6 +1331,8 @@
       "SIN_CONTACTO": "Not linked to a Chatwoot contact yet - the next sync links it automatically once the phone or email matches.",
       "PERFIL_TITLE": "Payment profile",
       "SALDO_ABIERTO": "Outstanding balance",
+      "TOTAL_FACTURADO_HISTORICO": "Total historical invoiced",
+      "TOTAL_PAGADO_HISTORICO": "Total historical paid",
       "PUNTAJE_RIESGO": "Risk score",
       "SCORE_CREDITO": "Credit score",
       "MORA": "Aging",
@@ -1472,6 +1475,16 @@
       "GUARDAR": "Save",
       "GUARDADA_EXITOSA": "Campaign saved.",
       "GUARDAR_ERROR": "Could not save the campaign.",
+      "TABS": {
+        "DATOS": "Basic info",
+        "CANALES": "Channels",
+        "BANDAS": "Risk bands",
+        "AUTORIZACION": "Authorization",
+        "SIMULACION": "Simulation",
+        "PRUEBAS": "Testing",
+        "BITACORA": "Log",
+        "ESTADISTICAS": "Statistics"
+      },
       "ESTADOS": {
         "BORRADOR": "Draft",
         "ACTIVA": "Active",
@@ -1488,6 +1501,8 @@
         "SIN_SELECCION": "- None -",
         "NOMBRE": "Name",
         "ESTADO": "Status",
+        "CREAR_INBOX": "+ Create new inbox",
+        "CREAR_ASISTENTE": "+ Create new assistant",
         "INBOX_WHATSAPP": "WhatsApp inbox",
         "INBOX_EMAIL": "Email inbox",
         "CAPTAIN_ASSISTANT": "AI Agent assistant",
@@ -1511,6 +1526,7 @@
         "GUARDAR_ERROR": "Could not save the rule.",
         "ELIMINAR_ERROR": "Could not delete the rule.",
         "SIN_CONDICION": "Applies to everyone",
+        "RESUMEN_BANDA": "Risk score between {min} and {max}",
         "TIENE_WHATSAPP": "WhatsApp: {sid}",
         "TIENE_EMAIL": "has email template",
         "ACCIONES": {
@@ -1521,9 +1537,29 @@
           "ORDEN": "Order",
           "ACCION": "Action",
           "SIN_CONDICION": "No condition (applies to everyone)",
+          "MODO_CONDICION": "Condition type",
+          "MODO_BANDA": "Risk band (score 0-100)",
+          "MODO_BANDA_AYUDA": "The client must be in this risk score range at send time to receive this template.",
+          "MODO_PERSONALIZADA": "Custom condition",
+          "PUNTAJE_MIN": "Minimum score",
+          "PUNTAJE_MAX": "Maximum score",
           "ATRIBUTO": "Attribute",
           "OPERADOR": "Operator",
           "VALOR": "Value",
+          "ATRIBUTOS": {
+            "TRAMO": "Overdue bucket",
+            "DIAS_VENCIDO_MAX": "Days overdue",
+            "PUNTAJE_RIESGO": "Risk score",
+            "SCORE_CREDITO": "Credit score",
+            "SALDO_ABIERTO": "Open balance",
+            "ANTIGUEDAD_RELACION_DIAS": "Relationship tenure (days)",
+            "TIPO_DEUDOR": "Debtor type"
+          },
+          "TIPO_DEUDOR_VALORES": {
+            "PERSONA_NATURAL": "Individual",
+            "EMPRESA": "Company",
+            "MIXTO": "Mixed"
+          },
           "PLANTILLA_WHATSAPP": "WhatsApp template",
           "SIN_PLANTILLAS_WHATSAPP": "Set the campaign's WhatsApp inbox first to pick an approved template.",
           "PLANTILLA_EMAIL": "Email template"
@@ -1559,12 +1595,42 @@
         "ACTIVA_DESDE": "Active for {semanas} week(s)",
         "NUNCA_ACTIVADA": "Never activated yet.",
         "ENVIADOS": "sent",
+        "LEIDOS": "read",
         "CLIENTES": "clients reached",
         "ERRORES": "errors",
         "CONTESTARON": "replied",
         "INTERACCIONES_IA": "new AI notes",
         "ESCALAMIENTOS": "escalated",
         "ERROR_SIN_DETALLE": "unknown error"
+      }
+    },
+    "AJUSTES": {
+      "TITLE": "Algorithm weights",
+      "DESCRIPCION": "Define how much each factor weighs in every client's risk score (0-100). The 7 weights must add up to 100% - moving one proportionally adjusts the rest.",
+      "GUARDAR": "Save",
+      "GUARDADO_EXITOSO": "Weights saved - every client's risk score was recalculated.",
+      "GUARDAR_ERROR": "Could not save the weights.",
+      "CARGAR_ERROR": "Could not load the weights.",
+      "SUMA_LABEL": "Total {porcentaje}%",
+      "SUMA_INVALIDA": "The weights must add up to 100%.",
+      "RESTABLECER": "Reset to suggested values",
+      "FACTORES": {
+        "MORA_ACTUAL": "Current days overdue",
+        "PAGOS_TARDIOS": "% of invoices paid late",
+        "SALDO_ABIERTO": "Open balance",
+        "CUPO_UTILIZADO": "Credit limit used",
+        "ANTIGUEDAD_RELACION": "Relationship tenure",
+        "CARTERA_VENCIDA_PCT": "% of balance overdue",
+        "TOTAL_FACTURADO": "Total historical invoiced"
+      },
+      "FACTORES_AYUDA": {
+        "MORA_ACTUAL": "The more days the oldest open invoice has been overdue, the higher the risk.",
+        "PAGOS_TARDIOS": "The more invoices this client has paid late, the higher the risk.",
+        "SALDO_ABIERTO": "The larger the open balance, the higher the risk.",
+        "CUPO_UTILIZADO": "The closer to the assigned credit limit, the higher the risk.",
+        "ANTIGUEDAD_RELACION": "More years of relationship lowers the risk - a long-standing client weighs less than a new one.",
+        "CARTERA_VENCIDA_PCT": "The larger the share of the open balance that is overdue, the higher the risk.",
+        "TOTAL_FACTURADO": "The larger the historical invoicing with this client, the higher the risk."
       }
     }
   },

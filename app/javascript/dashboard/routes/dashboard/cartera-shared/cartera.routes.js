@@ -8,6 +8,7 @@ import FacturasFicha from '../facturas/Ficha.vue';
 import PlantillasIndex from '../plantillas/Index.vue';
 import CampanasIndex from '../campanas/Index.vue';
 import CampanaDetalle from '../campanas/Detalle.vue';
+import AjustesIndex from '../cartera-ajustes/Index.vue';
 
 const meta = {
   permissions: ['administrator', 'agent'],
@@ -65,6 +66,12 @@ export const routes = [
         name: 'cartera_campana_detail_view',
         meta,
         component: CampanaDetalle,
+      },
+      {
+        path: 'ajustes',
+        name: 'cartera_ajustes_view',
+        meta,
+        component: AjustesIndex,
       },
     ],
   },

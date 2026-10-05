@@ -226,6 +226,15 @@ onMounted(async () => {
       <Panel :title="t('CARTERA.FICHA.PERFIL_TITLE')">
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <MetricCard
+            :label="t('CARTERA.FICHA.TOTAL_FACTURADO_HISTORICO')"
+            :value="formatearCop(cliente.total_facturado_historico)"
+          />
+          <MetricCard
+            :label="t('CARTERA.FICHA.TOTAL_PAGADO_HISTORICO')"
+            :value="formatearCop(cliente.total_pagado_historico)"
+            value-class="text-n-teal-11"
+          />
+          <MetricCard
             :label="t('CARTERA.FICHA.SALDO_ABIERTO')"
             :value="formatearCop(cliente.saldo_abierto)"
           />

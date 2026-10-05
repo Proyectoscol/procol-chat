@@ -274,6 +274,7 @@ Rails.application.routes.draw do
             end
             resources :plantillas_email, only: [:index, :create, :update, :destroy]
             resource :tarifas_mensajeria, only: [:show, :update]
+            resource :pesos_riesgo, only: [:show, :update]
             resources :campanas, only: [:index, :show, :create, :update] do
               post :simulacion, on: :member
               post :prueba, on: :member
