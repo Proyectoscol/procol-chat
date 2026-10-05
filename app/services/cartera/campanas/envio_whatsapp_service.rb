@@ -1,13 +1,18 @@
-# Ejecuta el envio real (WhatsApp) de un cartera_envios "programado":
-# encuentra o crea la conversacion de Chatwoot para el cliente y construye
-# un mensaje de plantilla. El pipeline existente de Chatwoot (Message
-# after_create -> SendReplyJob -> Twilio::SendOnTwilioService) hace la
-# llamada real a Twilio de forma asincrona - no se reimplementa aqui.
+# Ejecuta el envio (WhatsApp) de un cartera_envios "programado": encuentra o
+# crea la conversacion de Chatwoot para el cliente y construye un mensaje de
+# plantilla. El pipeline existente de Chatwoot (Message after_create ->
+# SendReplyJob -> Twilio::SendOnTwilioService) hace la llamada real a
+# Twilio de forma asincrona - no se reimplementa aqui.
 #
 # El resultado (entregado/leido/fallido) se refleja despues en
 # cartera_envios via Cartera::Campanas::ActualizarEstadoEnviosJob, que lee
 # el status del Message (actualizado por el webhook real de Twilio via
 # Twilio::DeliveryStatusService).
+#
+# Si envio.modo_prueba? (Cartera::Campanas::PruebaService), nada de esto
+# llega a Twilio: la conversacion se crea contra la bandeja de pruebas
+# (Channel::Api, ver InboxPruebasResolver) y SendReplyJob no hace ninguna
+# llamada externa real para ese tipo de canal.
 class Cartera::Campanas::EnvioWhatsappService
   pattr_initialize [:envio!]
 
@@ -43,7 +48,11 @@ class Cartera::Campanas::EnvioWhatsappService
   end
 
   def inbox
-    @inbox ||= campana.inbox_whatsapp || raise('La campana activa no tiene un inbox de WhatsApp configurado.')
+    @inbox ||= if envio.modo_prueba?
+                 Cartera::Campanas::InboxPruebasResolver.new(account: campana.account).resolver!
+               else
+                 campana.inbox_whatsapp || raise('La campana activa no tiene un inbox de WhatsApp configurado.')
+               end
   end
 
   def plantilla_whatsapp
@@ -77,15 +86,27 @@ class Cartera::Campanas::EnvioWhatsappService
     )
   end
 
+  # En modo prueba el mensaje es texto plano, sin la maquinaria de plantilla
+  # de Twilio (content_sid, template_params): la bandeja de pruebas es un
+  # Channel::Api generico, no entiende plantillas de WhatsApp - lo unico que
+  # se esta probando aqui es la elegibilidad y la conversacion con el
+  # Agente IA, no la entrega real.
   def construir_mensaje(conversacion, plantilla)
     variables = Cartera::Campanas::VariableResolver.new(envio: envio).resolve_todas(plantilla.variables)
+    contenido = contenido_legible(plantilla.cuerpo, variables)
 
-    conversacion.messages.build(
-      account: campana.account, inbox: inbox, sender: campana.captain_assistant,
-      message_type: :template,
-      content: contenido_legible(plantilla.cuerpo, variables),
-      additional_attributes: { 'template_params' => template_params(plantilla, variables) }
-    )
+    if envio.modo_prueba?
+      conversacion.messages.build(
+        account: campana.account, inbox: inbox, sender: campana.captain_assistant,
+        message_type: :outgoing, content: contenido
+      )
+    else
+      conversacion.messages.build(
+        account: campana.account, inbox: inbox, sender: campana.captain_assistant,
+        message_type: :template, content: contenido,
+        additional_attributes: { 'template_params' => template_params(plantilla, variables) }
+      )
+    end
   end
 
   def template_params(plantilla, variables)

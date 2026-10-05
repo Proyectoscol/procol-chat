@@ -327,14 +327,14 @@
     "CARTERA_FACTURAS": "Facturas",
     "CARTERA_CAMPANAS": "Campañas",
     "CARTERA_PLANTILLAS": "Plantillas",
-    "CARTERA_CAPITAN": "Capitán",
+    "CARTERA_CAPITAN": "AI Agent",
     "CALLS": "Calls",
     "SETTINGS": "Settings",
     "CONTACTS": "Contacts",
     "ACTIVE": "Active",
     "COMPANIES": "Companies",
     "ALL_COMPANIES": "All Companies",
-    "CAPTAIN": "Captain",
+    "CAPTAIN": "AI Agent",
     "CALLS": "Calls",
     "CAPTAIN_ASSISTANTS": "Assistants",
     "CAPTAIN_OVERVIEW": "Overview",
@@ -423,7 +423,7 @@
     },
     "DOCS": "Read docs",
     "SECURITY": "Security",
-    "CAPTAIN_AI": "Captain",
+    "CAPTAIN_AI": "AI Agent",
     "CONVERSATION_WORKFLOW": "Conversation Workflow"
   },
   "DATA_IMPORTS": {
@@ -538,11 +538,11 @@
     }
   },
   "CAPTAIN_SETTINGS": {
-    "TITLE": "Captain Settings",
-    "DESCRIPTION": "Configure your AI models and features for Captain. Captain follows a credit based billing, you will be charged credits for every action Captain takes based on the model selected.",
-    "LOADING": "Loading Captain configuration...",
-    "LINK_TEXT": "Learn more about Captain Credits",
-    "NOT_ENABLED": "Captain is not enabled for your account. Please upgrade your plan to access Captain features.",
+    "TITLE": "AI Agent Settings",
+    "DESCRIPTION": "Configure your AI models and features for AI Agent. AI Agent follows a credit based billing, you will be charged credits for every action AI Agent takes based on the model selected.",
+    "LOADING": "Loading AI Agent configuration...",
+    "LINK_TEXT": "Learn more about AI Agent Credits",
+    "NOT_ENABLED": "AI Agent is not enabled for your account. Please upgrade your plan to access AI Agent features.",
     "MODEL_CONFIG": {
       "TITLE": "Model Configuration",
       "DESCRIPTION": "Select AI models for different features.",
@@ -583,8 +583,8 @@
       }
     },
     "API": {
-      "SUCCESS": "Captain settings updated successfully.",
-      "ERROR": "Failed to update Captain settings. Please try again."
+      "SUCCESS": "AI Agent settings updated successfully.",
+      "ERROR": "Failed to update AI Agent settings. Please try again."
     }
   },
   "BILLING_SETTINGS": {
@@ -614,12 +614,12 @@
       "BUTTON_TXT": "Go to the billing portal"
     },
     "CAPTAIN": {
-      "TITLE": "Captain",
-      "DESCRIPTION": "Manage usage and credits for Captain AI.",
+      "TITLE": "AI Agent",
+      "DESCRIPTION": "Manage usage and credits for AI Agent.",
       "BUTTON_TXT": "Buy more credits",
       "DOCUMENTS": "Documents",
       "RESPONSES": "Credits",
-      "UPGRADE": "Captain is not available on the free plan, upgrade now to get access to assistants, copilot and more.",
+      "UPGRADE": "AI Agent is not available on the free plan, upgrade now to get access to assistants, copilot and more.",
       "REFRESH_CREDITS": "Refresh"
     },
     "CHAT_WITH_US": {
@@ -631,7 +631,7 @@
     "TOPUP": {
       "BUY_CREDITS": "Buy more credits",
       "MODAL_TITLE": "Buy AI Credits",
-      "MODAL_DESCRIPTION": "Purchase additional credits for Captain AI.",
+      "MODAL_DESCRIPTION": "Purchase additional credits for AI Agent.",
       "CREDITS": "CREDITS",
       "ONE_TIME": "one-time",
       "POPULAR": "Most Popular",
@@ -1357,7 +1357,13 @@
         "FECHA": "Date",
         "VALOR": "Amount",
         "MEDIO_PAGO": "Payment method"
-      }
+      },
+      "SNAPSHOTS_TITLE": "Portfolio snapshot comparison",
+      "SNAPSHOTS_PERIODO": "{desde} to {hasta}",
+      "SNAPSHOTS_CAMBIO_SALDO": "Balance change",
+      "SNAPSHOTS_PAGOS": "Payments in period",
+      "SNAPSHOTS_FACTURAS_NUEVAS": "New invoices",
+      "SNAPSHOTS_TRAMO": "Aging bucket"
     },
     "FACTURA_FICHA": {
       "LOADING": "Loading invoice...",
@@ -1441,7 +1447,20 @@
         "CATEGORIA": "Category",
         "CUERPO": "Body",
         "CUERPO_PLACEHOLDER": "Hi {'{{'}1{'}}'}, invoice {'{{'}2{'}}'} is {'{{'}3{'}}'} days overdue...",
-        "CUERPO_AYUDA": "Use {'{{'}1{'}}'}, {'{{'}2{'}}'}... as variable placeholders - they get filled in per client when the template is used in a campaign rule."
+        "CUERPO_AYUDA": "Use {'{{'}1{'}}'}, {'{{'}2{'}}'}... as variable placeholders - they get filled in per client when the template is used in a campaign rule.",
+        "VARIABLES": {
+          "TITLE": "What does each variable mean?",
+          "PREVIEW_TITLE": "Preview with example data",
+          "SIN_MAPEAR": "- Not mapped -",
+          "CAMPOS": {
+            "NOMBRE_CLIENTE": "Client name",
+            "SALDO_ABIERTO": "Outstanding balance",
+            "DIAS_VENCIDO": "Days overdue",
+            "TRAMO": "Aging bucket",
+            "NUMERO_FACTURA": "Invoice number",
+            "FECHA_VENCIMIENTO": "Due date"
+          }
+        }
       }
     },
     "CAMPANAS": {
@@ -1471,7 +1490,7 @@
         "ESTADO": "Status",
         "INBOX_WHATSAPP": "WhatsApp inbox",
         "INBOX_EMAIL": "Email inbox",
-        "CAPTAIN_ASSISTANT": "Captain assistant",
+        "CAPTAIN_ASSISTANT": "AI Agent assistant",
         "HORA_INICIO": "Start time",
         "HORA_FIN": "End time",
         "DIAS_ENVIO": "Sending days",
@@ -1523,7 +1542,29 @@
       },
       "BITACORA": {
         "TITLE": "Log",
-        "EMPTY_STATE": "No sends recorded yet."
+        "EMPTY_STATE": "No sends recorded yet.",
+        "VER_CONVERSACION": "View conversation"
+      },
+      "PRUEBA": {
+        "TITLE": "Test environment",
+        "PROBAR": "Test in sandbox",
+        "DESCRIPCION": "Runs the same eligibility rules against your real clients, but routes every message to the private test inbox instead of real WhatsApp/email - nothing reaches a real customer.",
+        "ENVIADOS": "sent to sandbox",
+        "OMITIDOS": "skipped",
+        "BADGE": "Test",
+        "ERROR": "Could not run the test."
+      },
+      "ESTADISTICAS": {
+        "TITLE": "Statistics",
+        "ACTIVA_DESDE": "Active for {semanas} week(s)",
+        "NUNCA_ACTIVADA": "Never activated yet.",
+        "ENVIADOS": "sent",
+        "CLIENTES": "clients reached",
+        "ERRORES": "errors",
+        "CONTESTARON": "replied",
+        "INTERACCIONES_IA": "new AI notes",
+        "ESCALAMIENTOS": "escalated",
+        "ERROR_SIN_DETALLE": "unknown error"
       }
     }
   },

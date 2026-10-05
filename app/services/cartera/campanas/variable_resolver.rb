@@ -16,7 +16,7 @@ class Cartera::Campanas::VariableResolver
     when 'nombre_cliente' then cliente.nombre.to_s
     when 'saldo_abierto' then formatear_cop(envio.saldo_al_enviar)
     when 'dias_vencido' then envio.dias_vencido_max_al_enviar.to_s
-    when 'tramo' then I18n.t("cartera.tramos.#{envio.tramo_al_enviar}", default: envio.tramo_al_enviar.to_s)
+    when 'tramo' then tramo_legible
     when 'numero_factura' then numeros_factura
     when 'fecha_vencimiento' then fecha_vencimiento_mas_proxima
     else ''
@@ -35,6 +35,18 @@ class Cartera::Campanas::VariableResolver
 
   def numeros_factura
     facturas.pluck(:numero).join(', ')
+  end
+
+  # Siempre en espanol: este producto le escribe a clientes colombianos, sin
+  # importar que Account#locale (pensado para el idioma del dashboard) diga
+  # otra cosa - un job en background tampoco tiene request de donde heredar
+  # un locale.
+  def tramo_legible
+    I18n.t(
+      "cartera.tramos.#{envio.tramo_al_enviar}",
+      locale: :es,
+      default: envio.tramo_al_enviar.to_s
+    )
   end
 
   def fecha_vencimiento_mas_proxima

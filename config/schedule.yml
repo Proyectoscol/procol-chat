@@ -124,3 +124,12 @@ cartera_campanas_actualizar_estado_envios_job:
   cron: '*/15 * * * *'
   class: 'Cartera::Campanas::ActualizarEstadoEnviosJob'
   queue: scheduled_jobs
+
+# executed on the 1st and 15th of every month at 06:00 - "every two weeks",
+# approximated with calendar days since cron has no native biweekly
+# interval; the job is idempotent per calendar day so this never
+# double-snapshots
+cartera_snapshot_job:
+  cron: '0 6 1,15 * *'
+  class: 'Cartera::SnapshotJob'
+  queue: scheduled_jobs

@@ -129,7 +129,7 @@ class Captain::Llm::SystemPromptsService
 
         Return decision "future_work_promise" when the assistant response says or clearly implies that work has already
         started, is happening now, or will definitely happen later outside the current reply because of this assistant
-        message. This includes promises that the assistant, bot, Captain, or system will check, verify, investigate,
+        message. This includes promises that the assistant, bot, AI Agent, or system will check, verify, investigate,
         review, monitor, notify, update, email, call back, follow up, get back later, process, refund, cancel, book,
         order, reserve, file, escalate/forward something in the background, or claim that the current conversation has
         been or will be transferred, connected, or handed off to a human.
@@ -197,7 +197,7 @@ class Captain::Llm::SystemPromptsService
 
       <<~SYSTEM_PROMPT_MESSAGE
         [Identity]
-        You are Captain, a helpful and friendly copilot assistant for support agents using the product #{product_name}. Your primary role is to assist support agents by retrieving information, compiling accurate responses, and guiding them through customer interactions.
+        You are the AI Agent, a helpful and friendly copilot assistant for support agents using the product #{product_name}. Your primary role is to assist support agents by retrieving information, compiling accurate responses, and guiding them through customer interactions.
         You should only provide information related to #{product_name} and must not address queries about other products or external events.
 
         [Context]
@@ -262,7 +262,7 @@ class Captain::Llm::SystemPromptsService
 
       <<~SYSTEM_PROMPT_MESSAGE
         [Identity]
-        Your name is #{assistant_name || 'Captain'}, a helpful, friendly, and knowledgeable assistant for the product #{product_name}. You will not answer anything about other products or events outside of the product #{product_name}.
+        Your name is #{assistant_name || 'AI Agent'}, a helpful, friendly, and knowledgeable assistant for the product #{product_name}. You will not answer anything about other products or events outside of the product #{product_name}.
 
         [Current Time]
         Current time: #{format_current_time(config['timezone'])}.

@@ -120,8 +120,11 @@ class Cartera::Campanas::CorridaService
   # El job corre cada 30 minutos (ver config/schedule.yml): esto evita
   # re-evaluar (y duplicar en la bitacora) un caso ya procesado hoy, sea
   # cual sea el resultado - no solo cuando se llego a enviar/programar.
+  # modo_prueba: false - un envio de Cartera::Campanas::PruebaService (quien
+  # pueda correr varias veces el mismo dia mientras se ajusta una campana)
+  # nunca debe bloquear el envio real de ese mismo dia.
   def ya_contactado_hoy?(caso)
-    account.cartera_envios.exists?(cliente_id: caso.cliente_id, created_at: Time.current.all_day)
+    account.cartera_envios.exists?(cliente_id: caso.cliente_id, created_at: Time.current.all_day, modo_prueba: false)
   end
 
   # Si ya se eligio un canal esta semana, se respeta ese mismo canal
@@ -140,8 +143,11 @@ class Cartera::Campanas::CorridaService
     nil
   end
 
+  # modo_prueba: false - ver ya_contactado_hoy?, misma razon: un envio de
+  # prueba no debe contar como "el canal ya usado esta semana" para la
+  # corrida real.
   def envios_del_cliente(caso)
-    account.cartera_envios.where(cliente_id: caso.cliente_id, estado: %w[programado enviado])
+    account.cartera_envios.where(cliente_id: caso.cliente_id, estado: %w[programado enviado], modo_prueba: false)
   end
 
   def canal_disponible?(caso, regla, canal)

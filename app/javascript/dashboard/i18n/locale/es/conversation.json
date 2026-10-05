@@ -1,5 +1,11 @@
 {
   "CONVERSATION": {
+    "CARTERA_PRUEBA": {
+      "TITLE": "Entorno de pruebas - responde como el cliente para ver qué hace el Agente IA",
+      "PLACEHOLDER": "Escribe lo que diría el cliente...",
+      "ENVIAR": "Enviar como cliente",
+      "ENVIAR_ERROR": "No se pudo enviar el mensaje."
+    },
     "SELECT_A_CONVERSATION": "Por favor, selecciona una conversación del panel izquierdo",
     "CSAT_REPLY_MESSAGE": "Por favor, valora la conversación",
     "404": "Lo sentimos, no podemos encontrar la conversación. Por favor, inténtalo de nuevo",
@@ -76,7 +82,7 @@
     "REPLY_MESSAGE_NOT_FOUND": "Mensaje no disponible",
     "CAPTAIN_GENERATION": {
       "TITLE": "¿Cómo se generó esta respuesta?",
-      "GENERATED_BY": "Generado por Captain",
+      "GENERATED_BY": "Generado por Agente IA",
       "LOADING": "Cargando detalles…",
       "EMPTY": "No hay detalles de generación disponibles para este mensaje.",
       "TIMELINE": "Pasos de generación",
@@ -327,8 +333,8 @@
       },
       "REPORT_MESSAGE": {
         "LABEL": "Reportar mensaje",
-        "TITLE": "Reportar mensaje de Capitán",
-        "DESCRIPTION": "¿Ha encontrado un problema con esta respuesta de IA? Háganos saber qué salió mal y nuestro equipo lo revisará para ayudar a mejorar la precisión del Capitán.",
+        "TITLE": "Reportar mensaje de Agente IA",
+        "DESCRIPTION": "¿Ha encontrado un problema con esta respuesta de IA? Háganos saber qué salió mal y nuestro equipo lo revisará para ayudar a mejorar la precisión del Agente IA.",
         "PROBLEM_TYPE": "Tipo de problema",
         "PROBLEM_TYPE_PLACEHOLDER": "Seleccione un tipo de problema",
         "DESCRIPTION_LABEL": "Descripción",

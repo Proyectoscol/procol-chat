@@ -325,13 +325,16 @@
     "CARTERA_RESUMEN": "Resumen",
     "CARTERA_CLIENTES": "Clientes",
     "CARTERA_FACTURAS": "Facturas",
+    "CARTERA_CAMPANAS": "Campañas",
+    "CARTERA_PLANTILLAS": "Plantillas",
+    "CARTERA_CAPITAN": "Agente IA",
     "CALLS": "Llamadas",
     "SETTINGS": "Ajustes",
     "CONTACTS": "Contactos",
     "ACTIVE": "Activo",
     "COMPANIES": "Empresas",
     "ALL_COMPANIES": "All Companies",
-    "CAPTAIN": "Capitán",
+    "CAPTAIN": "Agente IA",
     "CAPTAIN_ASSISTANTS": "Asistentes",
     "CAPTAIN_OVERVIEW": "Resumen",
     "CAPTAIN_DOCUMENTS": "Documentos",
@@ -419,7 +422,7 @@
     },
     "DOCS": "Leer documentos",
     "SECURITY": "Security",
-    "CAPTAIN_AI": "Capitán",
+    "CAPTAIN_AI": "Agente IA",
     "CONVERSATION_WORKFLOW": "Conversation Workflow"
   },
   "DATA_IMPORTS": {
@@ -534,11 +537,11 @@
     }
   },
   "CAPTAIN_SETTINGS": {
-    "TITLE": "Captain Settings",
-    "DESCRIPTION": "Configure your AI models and features for Captain. Captain follows a credit based billing, you will be charged credits for every action Captain takes based on the model selected.",
-    "LOADING": "Loading Captain configuration...",
-    "LINK_TEXT": "Learn more about Captain Credits",
-    "NOT_ENABLED": "Captain is not enabled for your account. Please upgrade your plan to access Captain features.",
+    "TITLE": "Agente IA Settings",
+    "DESCRIPTION": "Configure your AI models and features for Agente IA. Agente IA follows a credit based billing, you will be charged credits for every action Agente IA takes based on the model selected.",
+    "LOADING": "Loading Agente IA configuration...",
+    "LINK_TEXT": "Learn more about Agente IA Credits",
+    "NOT_ENABLED": "Agente IA is not enabled for your account. Please upgrade your plan to access Agente IA features.",
     "MODEL_CONFIG": {
       "TITLE": "Model Configuration",
       "DESCRIPTION": "Select AI models for different features.",
@@ -579,8 +582,8 @@
       }
     },
     "API": {
-      "SUCCESS": "Captain settings updated successfully.",
-      "ERROR": "Failed to update Captain settings. Please try again."
+      "SUCCESS": "Agente IA settings updated successfully.",
+      "ERROR": "Failed to update Agente IA settings. Please try again."
     }
   },
   "BILLING_SETTINGS": {
@@ -610,12 +613,12 @@
       "BUTTON_TXT": "Ir al portal de facturación"
     },
     "CAPTAIN": {
-      "TITLE": "Capitán",
-      "DESCRIPTION": "Gestione el uso y los créditos para Captain AI.",
+      "TITLE": "Agente IA",
+      "DESCRIPTION": "Gestione el uso y los créditos para Agente IA.",
       "BUTTON_TXT": "Comprar más créditos",
       "DOCUMENTS": "Documentos",
       "RESPONSES": "Respuestas",
-      "UPGRADE": "Captain no está disponible en el plan gratuito, actualice su suscripción ahora para tener acceso a asistentes, copilot y más.",
+      "UPGRADE": "Agente IA no está disponible en el plan gratuito, actualice su suscripción ahora para tener acceso a asistentes, copilot y más.",
       "REFRESH_CREDITS": "Actualizar"
     },
     "CHAT_WITH_US": {
@@ -627,7 +630,7 @@
     "TOPUP": {
       "BUY_CREDITS": "Comprar más créditos",
       "MODAL_TITLE": "Buy AI Credits",
-      "MODAL_DESCRIPTION": "Purchase additional credits for Captain AI.",
+      "MODAL_DESCRIPTION": "Purchase additional credits for Agente IA.",
       "CREDITS": "CREDITS",
       "ONE_TIME": "one-time",
       "POPULAR": "Most Popular",
@@ -1278,7 +1281,13 @@
         "FECHA": "Fecha",
         "VALOR": "Valor",
         "MEDIO_PAGO": "Medio de pago"
-      }
+      },
+      "SNAPSHOTS_TITLE": "Comparación de cartera (fotografías)",
+      "SNAPSHOTS_PERIODO": "Del {desde} al {hasta}",
+      "SNAPSHOTS_CAMBIO_SALDO": "Cambio de saldo",
+      "SNAPSHOTS_PAGOS": "Pagos en el período",
+      "SNAPSHOTS_FACTURAS_NUEVAS": "Facturas nuevas",
+      "SNAPSHOTS_TRAMO": "Tramo de mora"
     },
     "FACTURA_FICHA": {
       "LOADING": "Cargando factura...",
@@ -1321,6 +1330,165 @@
         "EVENTO_032": "032 - Recibo del bien o servicio",
         "EVENTO_033": "033 - Aceptación expresa",
         "EVENTO_034": "034 - Aceptación tácita"
+      }
+    },
+    "PLANTILLAS": {
+      "TITLE": "Plantillas de WhatsApp",
+      "BORRADORES_TITLE": "Borradores - aún no enviados a Twilio",
+      "NUEVA": "Nueva plantilla",
+      "NUEVA_DESCRIPCION": "Se guarda primero como borrador - revísala y luego solicita la aprobación de WhatsApp a Twilio.",
+      "GUARDAR": "Guardar borrador",
+      "SOLICITAR_APROBACION": "Solicitar aprobación",
+      "SOLICITUD_EXITOSA": "Plantilla enviada a Twilio para aprobación de WhatsApp.",
+      "SOLICITUD_ERROR": "No se pudo enviar la plantilla a Twilio. Intenta de nuevo.",
+      "CREADA_EXITOSA": "Borrador de plantilla guardado.",
+      "CREADA_ERROR": "No se pudo guardar la plantilla.",
+      "EMPTY_STATE": "Aún no hay plantillas.",
+      "HEADERS": {
+        "NOMBRE": "Nombre",
+        "CATEGORIA": "Categoría",
+        "CUERPO": "Cuerpo",
+        "ESTADO": "Estado",
+        "ACCIONES": "Acciones"
+      },
+      "CATEGORIAS": {
+        "UTILITY": "Utilidad",
+        "MARKETING": "Marketing",
+        "AUTHENTICATION": "Autenticación"
+      },
+      "ESTADOS": {
+        "BORRADOR": "Borrador",
+        "ENVIADA": "Enviada - esperando sincronización",
+        "UNSUBMITTED": "Aún no registrada",
+        "PENDING": "En revisión",
+        "APPROVED": "Aprobada",
+        "REJECTED": "Rechazada",
+        "FAILED": "Fallida"
+      },
+      "FORM": {
+        "NOMBRE": "Nombre",
+        "NOMBRE_PLACEHOLDER": "ej. recordatorio_mora_v1",
+        "CATEGORIA": "Categoría",
+        "CUERPO": "Cuerpo",
+        "CUERPO_PLACEHOLDER": "Hola {'{{'}1{'}}'}, la factura {'{{'}2{'}}'} lleva {'{{'}3{'}}'} días vencida...",
+        "CUERPO_AYUDA": "Usa {'{{'}1{'}}'}, {'{{'}2{'}}'}... como marcadores de variable - se completan por cliente cuando la plantilla se usa en una regla de campaña.",
+        "VARIABLES": {
+          "TITLE": "¿Qué significa cada variable?",
+          "PREVIEW_TITLE": "Vista previa con datos de ejemplo",
+          "SIN_MAPEAR": "- Sin mapear -",
+          "CAMPOS": {
+            "NOMBRE_CLIENTE": "Nombre del cliente",
+            "SALDO_ABIERTO": "Saldo pendiente",
+            "DIAS_VENCIDO": "Días vencido",
+            "TRAMO": "Tramo de mora",
+            "NUMERO_FACTURA": "Número de factura",
+            "FECHA_VENCIMIENTO": "Fecha de vencimiento"
+          }
+        }
+      }
+    },
+    "CAMPANAS": {
+      "TITLE": "Campañas",
+      "NUEVA": "Nueva campaña",
+      "NOMBRE_POR_DEFECTO": "Nueva campaña",
+      "CREAR_ERROR": "No se pudo crear la campaña.",
+      "EMPTY_STATE": "Aún no hay campañas.",
+      "GUARDAR": "Guardar",
+      "GUARDADA_EXITOSA": "Campaña guardada.",
+      "GUARDAR_ERROR": "No se pudo guardar la campaña.",
+      "ESTADOS": {
+        "BORRADOR": "Borrador",
+        "ACTIVA": "Activa",
+        "PAUSADA": "Pausada",
+        "ARCHIVADA": "Archivada"
+      },
+      "FUENTES": {
+        "POLITICA_PRIVACIDAD": "Política de privacidad",
+        "TERMINOS_CONDICIONES": "Términos y condiciones",
+        "CONTRATO": "Contrato",
+        "OTRO": "Otro"
+      },
+      "FORM": {
+        "SIN_SELECCION": "- Ninguno -",
+        "NOMBRE": "Nombre",
+        "ESTADO": "Estado",
+        "INBOX_WHATSAPP": "Bandeja de WhatsApp",
+        "INBOX_EMAIL": "Bandeja de correo",
+        "CAPTAIN_ASSISTANT": "Agente IA",
+        "HORA_INICIO": "Hora de inicio",
+        "HORA_FIN": "Hora de fin",
+        "DIAS_ENVIO": "Días de envío",
+        "DIAS_AYUDA": "El domingo nunca está disponible - la Ley 2300 de 2023 prohíbe el contacto ese día."
+      },
+      "AUTORIZACION": {
+        "TITLE": "Autorización de contacto",
+        "ALERTA_LEGAL": "La Ley 2300 de 2023 exige una autorización documentada y específica para contactar a este cliente sobre esta deuda. Mantén esta sección al día.",
+        "FUENTE": "Fuente de la autorización",
+        "DETALLE": "Detalle",
+        "CONFIRMADA": "Confirmada el {fecha}"
+      },
+      "REGLAS": {
+        "TITLE": "Reglas",
+        "NUEVA": "Nueva regla",
+        "EMPTY_STATE": "Aún no hay reglas - la campaña no enviará nada hasta que exista al menos una.",
+        "GUARDADA_EXITOSA": "Regla guardada.",
+        "GUARDAR_ERROR": "No se pudo guardar la regla.",
+        "ELIMINAR_ERROR": "No se pudo eliminar la regla.",
+        "SIN_CONDICION": "Aplica a todos",
+        "TIENE_WHATSAPP": "WhatsApp: {sid}",
+        "TIENE_EMAIL": "tiene plantilla de correo",
+        "ACCIONES": {
+          "ENVIAR": "Enviar",
+          "EXCLUIR": "Excluir"
+        },
+        "FORM": {
+          "ORDEN": "Orden",
+          "ACCION": "Acción",
+          "SIN_CONDICION": "Sin condición (aplica a todos)",
+          "ATRIBUTO": "Atributo",
+          "OPERADOR": "Operador",
+          "VALOR": "Valor",
+          "PLANTILLA_WHATSAPP": "Plantilla de WhatsApp",
+          "SIN_PLANTILLAS_WHATSAPP": "Primero configura la bandeja de WhatsApp de la campaña para elegir una plantilla aprobada.",
+          "PLANTILLA_EMAIL": "Plantilla de correo"
+        }
+      },
+      "SIMULACION": {
+        "TITLE": "Simulación",
+        "SIMULAR": "Simular",
+        "ERROR": "No se pudo correr la simulación.",
+        "EVALUADOS": "casos evaluados",
+        "A_ENVIAR": "por enviar",
+        "COSTO": "costo estimado",
+        "CLIENTES": "clientes",
+        "EXCLUIDOS": "excluidos",
+        "PLANTILLA_NO_LISTA": "Plantilla de WhatsApp aún no aprobada"
+      },
+      "BITACORA": {
+        "TITLE": "Bitácora",
+        "EMPTY_STATE": "Aún no hay envíos registrados.",
+        "VER_CONVERSACION": "Ver conversación"
+      },
+      "PRUEBA": {
+        "TITLE": "Entorno de pruebas",
+        "PROBAR": "Probar en entorno de pruebas",
+        "DESCRIPCION": "Corre las mismas reglas de elegibilidad contra tus clientes reales, pero enruta cada mensaje a la bandeja privada de pruebas en vez de WhatsApp/correo real - nada le llega a un cliente real.",
+        "ENVIADOS": "enviados a pruebas",
+        "OMITIDOS": "omitidos",
+        "BADGE": "Prueba",
+        "ERROR": "No se pudo correr la prueba."
+      },
+      "ESTADISTICAS": {
+        "TITLE": "Estadísticas",
+        "ACTIVA_DESDE": "Activa hace {semanas} semana(s)",
+        "NUNCA_ACTIVADA": "Aún no se ha activado.",
+        "ENVIADOS": "enviados",
+        "CLIENTES": "clientes alcanzados",
+        "ERRORES": "errores",
+        "CONTESTARON": "contestaron",
+        "INTERACCIONES_IA": "notas nuevas de la IA",
+        "ESCALAMIENTOS": "escalados",
+        "ERROR_SIN_DETALLE": "error desconocido"
       }
     }
   },

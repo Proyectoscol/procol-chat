@@ -1,8 +1,8 @@
 class Api::V1::Accounts::Cartera::CampanasController < Api::V1::Accounts::BaseController
   include Cartera::FeatureGated
 
-  before_action :ensure_administrator, only: [:create, :update]
-  before_action :set_campana, only: [:show, :update, :simulacion]
+  before_action :ensure_administrator, only: [:create, :update, :prueba]
+  before_action :set_campana, only: [:show, :update, :simulacion, :prueba, :estadisticas]
 
   def index
     render json: Current.account.cartera_campanas.order(created_at: :desc)
@@ -28,6 +28,19 @@ class Api::V1::Accounts::Cartera::CampanasController < Api::V1::Accounts::BaseCo
   # es de solo lectura.
   def simulacion
     render json: Cartera::Campanas::SimulacionService.new(campana: @campana).call
+  end
+
+  # A diferencia de simulacion, esto SI envia (a la bandeja de pruebas) y SI
+  # escribe cartera_envios - solo administradores, mismo criterio que
+  # create/update de campana.
+  def prueba
+    render json: Cartera::Campanas::PruebaService.new(campana: @campana).call
+  end
+
+  # Solo lectura - cualquier agente con acceso a cartera puede verla, mismo
+  # criterio que simulacion.
+  def estadisticas
+    render json: Cartera::Campanas::EstadisticasService.new(campana: @campana).call
   end
 
   private

@@ -7,6 +7,7 @@
 # Table name: cartera_campanas
 #
 #  id                                  :bigint           not null, primary key
+#  activada_en                         :datetime
 #  autorizacion_confirmada_at          :datetime
 #  autorizacion_detalle                :text
 #  autorizacion_fuente                 :string
@@ -62,7 +63,18 @@ class Cartera::Campana < ApplicationRecord
   validate :autorizacion_completa_si_activa
   validate :una_sola_campana_activa, if: -> { estado == 'activa' }
 
+  before_save :marcar_primera_activacion
+
   private
+
+  # Solo la PRIMERA vez que pasa a activa - una campana puede pausarse y
+  # reactivarse varias veces, pero "cuantas semanas lleva activa" (panel de
+  # estadisticas) cuenta desde su primer arranque, no se reinicia cada vez.
+  def marcar_primera_activacion
+    return unless estado == 'activa' && estado_changed? && activada_en.nil?
+
+    self.activada_en = Time.current
+  end
 
   def dias_envio_validos
     return if Array(dias_envio).all? { |dia| Cartera::Campanas::LeyCobranza.dia_permitido?(dia) }

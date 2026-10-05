@@ -28,7 +28,8 @@ class Api::V1::Accounts::Cartera::ClientesController < Api::V1::Accounts::BaseCo
     render json: {
       cliente: priorizacion.ficha(cliente),
       perfil_pago: Cartera::PerfilPagoService.new(Current.account).calcular_perfil_deudor(cliente),
-      pagos_recientes: pagos_recientes(cliente)
+      pagos_recientes: pagos_recientes(cliente),
+      comparacion_snapshots: Cartera::ComparacionSnapshotsService.new(cliente: cliente).call
     }
   end
 

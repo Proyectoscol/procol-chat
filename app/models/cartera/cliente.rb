@@ -41,6 +41,7 @@ class Cartera::Cliente < ApplicationRecord
   has_many :pagos, class_name: 'Cartera::Pago', dependent: :destroy, inverse_of: :cliente
   has_many :alertas, class_name: 'Cartera::Alerta', dependent: :destroy, inverse_of: :cliente
   has_one :caso, class_name: 'Cartera::Caso', dependent: :destroy, inverse_of: :cliente
+  has_many :snapshots, -> { order(fecha_snapshot: :desc) }, class_name: 'Cartera::SnapshotCliente', dependent: :destroy, inverse_of: :cliente
 
   validates :external_id, :identificacion, :nombre, presence: true
   validates :external_id, uniqueness: { scope: :account_id }

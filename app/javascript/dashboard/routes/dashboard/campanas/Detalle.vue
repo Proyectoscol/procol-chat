@@ -390,6 +390,41 @@ const fetchEnvios = async () => {
   }
 };
 
+/* ---------- Entorno de pruebas ---------- */
+
+const isProbando = ref(false);
+const resultadoPrueba = ref(null);
+
+const probar = async () => {
+  isProbando.value = true;
+  resultadoPrueba.value = null;
+  try {
+    const { data } = await campanaAPI.probar(campanaId.value);
+    resultadoPrueba.value = data;
+    await fetchEnvios();
+  } catch (error) {
+    useAlert(
+      error?.response?.data?.message || t('CARTERA.CAMPANAS.PRUEBA.ERROR')
+    );
+  } finally {
+    isProbando.value = false;
+  }
+};
+
+/* ---------- Estadisticas ---------- */
+
+const estadisticas = ref(null);
+const isLoadingEstadisticas = ref(false);
+const fetchEstadisticas = async () => {
+  isLoadingEstadisticas.value = true;
+  try {
+    const { data } = await campanaAPI.getEstadisticas(campanaId.value);
+    estadisticas.value = data;
+  } finally {
+    isLoadingEstadisticas.value = false;
+  }
+};
+
 onMounted(async () => {
   isLoading.value = true;
   try {
@@ -400,6 +435,7 @@ onMounted(async () => {
       fetchPlantillasEmail(),
       fetchReglas(),
       fetchEnvios(),
+      fetchEstadisticas(),
     ]);
     await fetchTemplatesWhatsapp();
   } finally {
@@ -429,6 +465,102 @@ onMounted(async () => {
     </div>
 
     <div v-else class="flex flex-col gap-6">
+      <!-- Estadisticas -->
+      <div v-if="estadisticas">
+        <h3 class="text-heading-3 text-n-slate-12 mb-2">
+          {{ t('CARTERA.CAMPANAS.ESTADISTICAS.TITLE') }}
+        </h3>
+        <TableCard>
+          <div class="flex flex-col gap-3 p-5">
+            <p
+              v-if="estadisticas.semanas_activa !== null"
+              class="text-sm text-n-slate-11 mb-0"
+            >
+              {{
+                t('CARTERA.CAMPANAS.ESTADISTICAS.ACTIVA_DESDE', {
+                  semanas: estadisticas.semanas_activa,
+                })
+              }}
+            </p>
+            <p v-else class="text-sm text-n-slate-11 mb-0">
+              {{ t('CARTERA.CAMPANAS.ESTADISTICAS.NUNCA_ACTIVADA') }}
+            </p>
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-4 text-center">
+              <div>
+                <p class="text-heading-1 text-n-teal-11 m-0">
+                  {{ estadisticas.mensajes_enviados }}
+                </p>
+                <p class="text-xs text-n-slate-10 m-0">
+                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.ENVIADOS') }}
+                </p>
+              </div>
+              <div>
+                <p class="text-heading-1 text-n-slate-12 m-0">
+                  {{ estadisticas.clientes_alcanzados }}
+                </p>
+                <p class="text-xs text-n-slate-10 m-0">
+                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.CLIENTES') }}
+                </p>
+              </div>
+              <div>
+                <p class="text-heading-1 text-n-ruby-11 m-0">
+                  {{ estadisticas.total_errores }}
+                </p>
+                <p class="text-xs text-n-slate-10 m-0">
+                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.ERRORES') }}
+                </p>
+              </div>
+              <div>
+                <p class="text-heading-1 text-n-slate-12 m-0">
+                  {{ estadisticas.conversaciones_contestadas }}
+                </p>
+                <p class="text-xs text-n-slate-10 m-0">
+                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.CONTESTARON') }}
+                </p>
+              </div>
+              <div>
+                <p class="text-heading-1 text-n-slate-12 m-0">
+                  {{ estadisticas.interacciones_ia_nuevas }}
+                </p>
+                <p class="text-xs text-n-slate-10 m-0">
+                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.INTERACCIONES_IA') }}
+                </p>
+              </div>
+              <div>
+                <p class="text-heading-1 text-n-amber-11 m-0">
+                  {{ estadisticas.escalamientos }}
+                </p>
+                <p class="text-xs text-n-slate-10 m-0">
+                  {{ t('CARTERA.CAMPANAS.ESTADISTICAS.ESCALAMIENTOS') }}
+                </p>
+              </div>
+            </div>
+            <div
+              v-if="estadisticas.errores.length"
+              class="flex flex-col gap-1 border-t border-n-weak pt-3"
+            >
+              <p
+                v-for="error in estadisticas.errores"
+                :key="error.envio_id"
+                class="text-sm text-n-ruby-11 mb-0"
+              >
+                {{ error.nombre_cliente }} ({{ error.canal }}):
+                {{
+                  error.error ||
+                  t('CARTERA.CAMPANAS.ESTADISTICAS.ERROR_SIN_DETALLE')
+                }}
+              </p>
+            </div>
+          </div>
+        </TableCard>
+      </div>
+      <div
+        v-else-if="isLoadingEstadisticas"
+        class="flex items-center justify-center py-4"
+      >
+        <Spinner />
+      </div>
+
       <!-- Datos generales -->
       <TableCard>
         <div class="flex flex-col gap-4 p-5">
@@ -696,6 +828,61 @@ onMounted(async () => {
         </TableCard>
       </div>
 
+      <!-- Entorno de pruebas -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-heading-3 text-n-slate-12 m-0">
+            {{ t('CARTERA.CAMPANAS.PRUEBA.TITLE') }}
+          </h3>
+          <Button
+            icon="i-lucide-flask-conical"
+            size="sm"
+            slate
+            faded
+            :label="t('CARTERA.CAMPANAS.PRUEBA.PROBAR')"
+            :is-loading="isProbando"
+            @click="probar"
+          />
+        </div>
+        <p class="text-body-main text-n-slate-11">
+          {{ t('CARTERA.CAMPANAS.PRUEBA.DESCRIPCION') }}
+        </p>
+        <TableCard v-if="resultadoPrueba">
+          <div class="flex flex-col gap-3 p-5">
+            <div class="grid grid-cols-2 gap-4 text-center">
+              <div>
+                <p class="text-heading-1 text-n-teal-11 m-0">
+                  {{ resultadoPrueba.casos_enviados }}
+                </p>
+                <p class="text-xs text-n-slate-10 m-0">
+                  {{ t('CARTERA.CAMPANAS.PRUEBA.ENVIADOS') }}
+                </p>
+              </div>
+              <div>
+                <p class="text-heading-1 text-n-slate-12 m-0">
+                  {{ resultadoPrueba.casos_omitidos }}
+                </p>
+                <p class="text-xs text-n-slate-10 m-0">
+                  {{ t('CARTERA.CAMPANAS.PRUEBA.OMITIDOS') }}
+                </p>
+              </div>
+            </div>
+            <div
+              v-if="resultadoPrueba.errores.length"
+              class="flex flex-col gap-1 border-t border-n-weak pt-3"
+            >
+              <p
+                v-for="(error, index) in resultadoPrueba.errores"
+                :key="index"
+                class="text-sm text-n-ruby-11 mb-0"
+              >
+                {{ error }}
+              </p>
+            </div>
+          </div>
+        </TableCard>
+      </div>
+
       <!-- Bitacora -->
       <div>
         <h3 class="text-heading-3 text-n-slate-12 mb-2">
@@ -711,6 +898,12 @@ onMounted(async () => {
               <span class="text-n-slate-12 truncate">{{
                 envio.nombre_cliente
               }}</span>
+              <span
+                v-if="envio.modo_prueba"
+                class="inline-block shrink-0 rounded-full border border-n-amber-6 bg-n-amber-3 text-n-amber-11 px-2 py-0.5 text-xs"
+              >
+                {{ t('CARTERA.CAMPANAS.PRUEBA.BADGE') }}
+              </span>
               <span class="text-n-slate-11">{{ envio.canal || '—' }}</span>
               <span class="text-n-slate-11">{{ envio.estado }}</span>
               <span class="text-n-slate-10 truncate max-w-xs">{{
@@ -719,6 +912,16 @@ onMounted(async () => {
               <span class="text-n-slate-10 shrink-0">{{
                 new Date(envio.created_at).toLocaleString()
               }}</span>
+              <router-link
+                v-if="envio.conversation_id"
+                :to="{
+                  name: 'inbox_conversation',
+                  params: { conversation_id: envio.conversation_id },
+                }"
+                class="text-n-blue-text shrink-0 hover:underline"
+              >
+                {{ t('CARTERA.CAMPANAS.BITACORA.VER_CONVERSACION') }}
+              </router-link>
             </div>
           </div>
         </TableCard>

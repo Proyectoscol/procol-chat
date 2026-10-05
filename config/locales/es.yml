@@ -277,7 +277,7 @@ es:
     no_content: 'Sin contenido'
   conversations:
     captain:
-      handoff: 'Transferring to another agent for further assistance.'
+      handoff: 'Transfiriendo a otro agente para continuar la atención.'
     messages:
       instagram_story_content: '%{story_sender} te mencionó en la historia: '
       instagram_deleted_story_content: Esta historia ya no está disponible.
@@ -406,8 +406,8 @@ es:
       attachment_link_title: 'Conversación (%{conversation_id}) con %{name}'
     notion:
       name: 'Notion'
-      short_description: 'Integrate databases, documents and pages directly with Captain.'
-      description: 'Connect your Notion workspace to enable Captain to access and generate intelligent responses using content from your databases, documents, and pages to provide more contextual customer support.'
+      short_description: 'Integra bases de datos, documentos y páginas directamente con tu Agente IA.'
+      description: 'Conecta tu espacio de Notion para que tu Agente IA pueda acceder y generar respuestas inteligentes usando el contenido de tus bases de datos, documentos y páginas, y así ofrecer una atención más contextual a tus clientes.'
     shopify:
       name: 'Shopify'
       short_description: 'Access order details and customer data from your Shopify store.'
@@ -420,9 +420,9 @@ es:
     copilot_message_required: El mensaje es obligatorio
     copilot_error: 'Conecte un asistente a esta bandeja de entrada para utilizar Copilot'
     copilot_limit: 'Te quedaste sin créditos de Copilot. Puedes comprar más créditos desde la sección de facturación.'
-    upgrade: 'Actualiza tu plan para habilitar Captain AI'
-    disabled: 'Captain AI está deshabilitado para esta cuenta.'
-    api_key_missing: 'La clave API de Captain AI no está configurada.'
+    upgrade: 'Actualiza tu plan para habilitar el Agente IA'
+    disabled: 'El Agente IA está deshabilitado para esta cuenta.'
+    api_key_missing: 'La clave API del Agente IA no está configurada.'
     copilot:
       using_tool: 'Usando la herramienta %{function_name}'
       completed_tool_call: 'Se completó la llamada a la herramienta %{function_name}'
@@ -641,3 +641,12 @@ es:
       no_subscriptions_to_test: 'Seleccione al menos una suscripción para probar.'
       no_subscriptions_to_delete: 'Seleccione al menos una suscripción a eliminar.'
       subscriptions_deleted: "Suscripción(es) %{count} eliminada(s). El dispositivo(s) del usuario volverá a registrarse en el próximo lanzamiento de la aplicación."
+  cartera:
+    tramos:
+      vigente: 'Vigente'
+      d1_30: '1-30 días'
+      d31_60: '31-60 días'
+      d61_90: '61-90 días'
+      d91_180: '91-180 días'
+      d181_360: '181-360 días'
+      mas_360: '360+ días'

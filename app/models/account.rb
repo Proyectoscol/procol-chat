@@ -84,6 +84,7 @@ class Account < ApplicationRecord
   has_many :cartera_facturas, dependent: :destroy_async, class_name: 'Cartera::Factura'
   has_many :cartera_plantillas_email, dependent: :destroy_async, class_name: 'Cartera::PlantillaEmail'
   has_many :cartera_plantillas_whatsapp, dependent: :destroy_async, class_name: 'Cartera::PlantillaWhatsapp'
+  has_many :cartera_snapshots_cliente, dependent: :destroy_async, class_name: 'Cartera::SnapshotCliente'
   has_many :cartera_tarifas_mensajeria, dependent: :destroy_async, class_name: 'Cartera::TarifaMensajeria'
   has_many :categories, dependent: :destroy_async, class_name: '::Category'
   has_many :contacts, dependent: :destroy_async

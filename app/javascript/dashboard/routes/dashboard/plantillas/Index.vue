@@ -362,19 +362,28 @@ const solicitarAprobacion = async plantilla => {
 
 const dialogRef = ref(null);
 const isSaving = ref(false);
-const form = reactive({ nombre: '', categoria: 'utility', cuerpo: '' });
+const form = reactive({
+  nombre: '',
+  categoria: 'utility',
+  cuerpo: '',
+  variables: {},
+});
 
 const abrirDialogo = () => {
   form.nombre = '';
   form.categoria = 'utility';
   form.cuerpo = '';
+  form.variables = {};
   dialogRef.value?.open();
 };
 
 const crearPlantilla = async () => {
   isSaving.value = true;
   try {
-    await plantillaAPI.create({ ...form });
+    const variables = Object.fromEntries(
+      Object.entries(form.variables).filter(([, value]) => value)
+    );
+    await plantillaAPI.create({ ...form, variables });
     useAlert(t('CARTERA.PLANTILLAS.CREADA_EXITOSA'));
     dialogRef.value?.close();
     await fetchBorradores();
@@ -386,6 +395,52 @@ const crearPlantilla = async () => {
     isSaving.value = false;
   }
 };
+
+/* ---------- Variables semanticas del borrador: {{1}}, {{2}}... mapeadas a
+un campo real (nombre_cliente, saldo_abierto...) que Cartera::Campanas::
+VariableResolver ya sabe resolver al momento del envio. ---------- */
+
+const VARIABLE_SEMANTICA_KEYS = [
+  'nombre_cliente',
+  'saldo_abierto',
+  'dias_vencido',
+  'tramo',
+  'numero_factura',
+  'fecha_vencimiento',
+];
+
+const EJEMPLOS_VARIABLE = {
+  nombre_cliente: 'Juan Pérez',
+  saldo_abierto: '$450.000',
+  dias_vencido: '32',
+  tramo: '31-60 días',
+  numero_factura: 'FE-1023',
+  fecha_vencimiento: '15/11/2026',
+};
+
+const variableSemanticaOptions = computed(() => [
+  { value: '', label: t('CARTERA.PLANTILLAS.FORM.VARIABLES.SIN_MAPEAR') },
+  ...VARIABLE_SEMANTICA_KEYS.map(key => ({
+    value: key,
+    label: t(`CARTERA.PLANTILLAS.FORM.VARIABLES.CAMPOS.${key.toUpperCase()}`),
+  })),
+]);
+
+const detectedVariableNumbers = computed(() => {
+  const matches = [...form.cuerpo.matchAll(/\{\{\s*(\d+)\s*\}\}/g)];
+  const numbers = [...new Set(matches.map(match => match[1]))];
+  return numbers.sort((first, second) => Number(first) - Number(second));
+});
+
+const nombrePlaceholder = numero => ['{', '{', numero, '}', '}'].join('');
+
+const cuerpoConEjemplos = computed(() =>
+  detectedVariableNumbers.value.reduce((texto, numero) => {
+    const semantica = form.variables[numero];
+    const ejemplo = EJEMPLOS_VARIABLE[semantica] || `[${numero}]`;
+    return texto.replaceAll(nombrePlaceholder(numero), ejemplo);
+  }, form.cuerpo)
+);
 
 onMounted(() => {
   fetchBorradores();
@@ -552,6 +607,39 @@ onUnmounted(abortTemplateRequest);
         <p class="text-n-slate-11 text-sm mb-0">
           {{ t('CARTERA.PLANTILLAS.FORM.CUERPO_AYUDA') }}
         </p>
+
+        <div v-if="detectedVariableNumbers.length" class="flex flex-col gap-2">
+          <label class="text-sm text-n-slate-12">
+            {{ t('CARTERA.PLANTILLAS.FORM.VARIABLES.TITLE') }}
+          </label>
+          <div
+            v-for="numero in detectedVariableNumbers"
+            :key="numero"
+            class="flex items-center gap-2"
+          >
+            <span
+              class="shrink-0 text-xs font-medium text-n-slate-11 bg-n-slate-3 rounded px-2 py-1"
+            >
+              {{ nombrePlaceholder(numero) }}
+            </span>
+            <Select
+              v-model="form.variables[numero]"
+              class="w-full"
+              :options="variableSemanticaOptions"
+            />
+          </div>
+        </div>
+
+        <div v-if="detectedVariableNumbers.length" class="flex flex-col gap-1">
+          <label class="text-sm text-n-slate-12">
+            {{ t('CARTERA.PLANTILLAS.FORM.VARIABLES.PREVIEW_TITLE') }}
+          </label>
+          <p
+            class="text-sm text-n-slate-12 bg-n-slate-2 dark:bg-n-solid-3 rounded-lg p-3 mb-0 whitespace-pre-wrap"
+          >
+            {{ cuerpoConEjemplos }}
+          </p>
+        </div>
       </div>
     </Dialog>
   </div>

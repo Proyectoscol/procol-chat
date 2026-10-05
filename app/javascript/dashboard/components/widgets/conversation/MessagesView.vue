@@ -7,6 +7,7 @@ import { useSnakeCase } from 'dashboard/composables/useTransformKeys';
 
 // components
 import ReplyBox from './ReplyBox.vue';
+import ResponderComoClienteBox from './ResponderComoClienteBox.vue';
 import MessageList from 'next/message/MessageList.vue';
 import ConversationLabelSuggestion from './conversation/LabelSuggestion.vue';
 import Banner from 'dashboard/components/ui/Banner.vue';
@@ -44,6 +45,7 @@ export default {
   components: {
     MessageList,
     ReplyBox,
+    ResponderComoClienteBox,
     Banner,
     ConversationLabelSuggestion,
     Spinner,
@@ -554,6 +556,7 @@ export default {
       >
         <ReplyBox @toggle-editor-size="toggleReplyEditorSize" />
       </ResizableEditorWrapper>
+      <ResponderComoClienteBox />
     </div>
   </div>
 </template>

@@ -34,6 +34,7 @@ const isFetching = ref(false);
 const cliente = ref(null);
 const perfilPago = ref(null);
 const pagosRecientes = ref([]);
+const comparacionSnapshots = ref(null);
 
 const facturasAbiertas = ref([]);
 const facturasPagadas = ref([]);
@@ -100,6 +101,7 @@ const fetchFicha = async () => {
     cliente.value = data.cliente;
     perfilPago.value = data.perfil_pago;
     pagosRecientes.value = data.pagos_recientes;
+    comparacionSnapshots.value = data.comparacion_snapshots;
   } finally {
     isFetching.value = false;
   }
@@ -459,6 +461,49 @@ onMounted(async () => {
           :loading="isFetchingFacturas"
           :empty-message="t('CARTERA.FACTURAS.EMPTY_STATE')"
         />
+      </Panel>
+
+      <Panel
+        v-if="comparacionSnapshots?.disponible"
+        :title="t('CARTERA.FICHA.SNAPSHOTS_TITLE')"
+      >
+        <p class="text-sm text-n-slate-11 mb-3">
+          {{
+            t('CARTERA.FICHA.SNAPSHOTS_PERIODO', {
+              desde: formatearFecha(comparacionSnapshots.fecha_anterior),
+              hasta: formatearFecha(comparacionSnapshots.fecha_actual),
+            })
+          }}
+        </p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <MetricCard
+            :label="t('CARTERA.FICHA.SNAPSHOTS_CAMBIO_SALDO')"
+            :value="formatearCop(comparacionSnapshots.cambio_saldo)"
+            :value-class="
+              comparacionSnapshots.cambio_saldo < 0
+                ? 'text-n-teal-11'
+                : 'text-n-slate-12'
+            "
+          />
+          <MetricCard
+            :label="t('CARTERA.FICHA.SNAPSHOTS_PAGOS')"
+            :value="formatearCop(comparacionSnapshots.pagos_en_periodo)"
+            value-class="text-n-teal-11"
+          />
+          <MetricCard
+            :label="t('CARTERA.FICHA.SNAPSHOTS_FACTURAS_NUEVAS')"
+            :value="comparacionSnapshots.facturas_nuevas_en_periodo"
+          />
+          <MetricCard
+            :label="t('CARTERA.FICHA.SNAPSHOTS_TRAMO')"
+            :value="`${comparacionSnapshots.tramo_anterior} → ${comparacionSnapshots.tramo_actual}`"
+            :value-class="
+              comparacionSnapshots.cambio_tramo
+                ? 'text-n-amber-11'
+                : 'text-n-slate-12'
+            "
+          />
+        </div>
       </Panel>
 
       <Panel :title="t('CARTERA.FICHA.PAGOS_TITLE')">

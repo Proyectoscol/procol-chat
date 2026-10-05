@@ -9,6 +9,10 @@
 # app/views/mailers/conversation_reply_mailer/*.erb), que permite HTML
 # embebido - por eso Cartera::PlantillaEmail#cuerpo_html puede escribirse
 # con etiquetas simples (<p>, <strong>, <br>) y llega intacto al correo.
+#
+# Si envio.modo_prueba? (Cartera::Campanas::PruebaService), la conversacion
+# se crea contra la bandeja de pruebas (Channel::Api, ver
+# InboxPruebasResolver) y no sale ningun correo real.
 class Cartera::Campanas::EnvioEmailService
   pattr_initialize [:envio!]
 
@@ -40,7 +44,11 @@ class Cartera::Campanas::EnvioEmailService
   end
 
   def inbox
-    @inbox ||= campana.inbox_email || raise('La campana activa no tiene un inbox de correo configurado.')
+    @inbox ||= if envio.modo_prueba?
+                 Cartera::Campanas::InboxPruebasResolver.new(account: campana.account).resolver!
+               else
+                 campana.inbox_email || raise('La campana activa no tiene un inbox de correo configurado.')
+               end
   end
 
   def plantilla_email

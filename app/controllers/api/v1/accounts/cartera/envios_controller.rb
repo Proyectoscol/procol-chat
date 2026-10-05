@@ -1,12 +1,12 @@
 # Bitacora de una campana: que hizo el motor con cada caso y por que. Solo
 # lectura - los envios los crea Cartera::Campanas::CorridaService/EnvioWhatsappService/
-# EnvioEmailService, nunca este controller.
+# EnvioEmailService/PruebaService, nunca este controller.
 class Api::V1::Accounts::Cartera::EnviosController < Api::V1::Accounts::BaseController
   include Cartera::FeatureGated
 
   def index
     campana = Current.account.cartera_campanas.find(params[:campana_id])
-    envios = campana.envios.includes(:cliente).order(created_at: :desc).limit(200)
+    envios = campana.envios.includes(:cliente, :message).order(created_at: :desc).limit(200)
     render json: envios.map { |envio| envio_json(envio) }
   end
 
@@ -23,6 +23,8 @@ class Api::V1::Accounts::Cartera::EnviosController < Api::V1::Accounts::BaseCont
       resultado: envio.resultado,
       factura_ids: envio.factura_ids,
       costo_estimado: envio.costo_estimado&.to_f,
+      modo_prueba: envio.modo_prueba,
+      conversation_id: envio.message&.conversation_id,
       created_at: envio.created_at
     }
   end

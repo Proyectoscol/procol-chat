@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_04_090700) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_05_210000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -630,6 +630,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_04_090700) do
     t.datetime "autorizacion_confirmada_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "activada_en"
     t.index ["account_id"], name: "idx_cartera_campanas_una_activa_por_cuenta", unique: true, where: "((estado)::text = 'activa'::text)"
     t.index ["account_id"], name: "index_cartera_campanas_on_account_id"
     t.index ["captain_assistant_id"], name: "index_cartera_campanas_on_captain_assistant_id"
@@ -737,6 +738,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_04_090700) do
     t.decimal "costo_estimado", precision: 10, scale: 4
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "modo_prueba", default: false, null: false
     t.index ["account_id", "cliente_id", "created_at"], name: "idx_on_account_id_cliente_id_created_at_4dba3b5ef9"
     t.index ["account_id"], name: "index_cartera_envios_on_account_id"
     t.index ["campana_id"], name: "index_cartera_envios_on_campana_id"
@@ -832,6 +834,26 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_04_090700) do
     t.index ["account_id", "nombre"], name: "index_cartera_plantillas_whatsapp_on_account_id_and_nombre", unique: true
     t.index ["account_id"], name: "index_cartera_plantillas_whatsapp_on_account_id"
     t.index ["content_sid"], name: "index_cartera_plantillas_whatsapp_on_content_sid"
+  end
+
+  create_table "cartera_snapshots_cliente", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "cliente_id", null: false
+    t.datetime "fecha_snapshot", null: false
+    t.decimal "saldo_abierto", precision: 18, scale: 2
+    t.string "tramo"
+    t.integer "dias_vencido_max"
+    t.integer "puntaje_riesgo"
+    t.integer "score_credito"
+    t.integer "facturas_abiertas_cantidad"
+    t.decimal "total_facturado_historico", precision: 18, scale: 2
+    t.boolean "no_cobrar", default: false, null: false
+    t.string "nivel_escalamiento"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "cliente_id", "fecha_snapshot"], name: "idx_snapshots_cliente_unico_por_fecha", unique: true
+    t.index ["account_id"], name: "index_cartera_snapshots_cliente_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_snapshots_cliente_on_cliente_id"
   end
 
   create_table "cartera_tarifas_mensajeria", force: :cascade do |t|
@@ -1980,6 +2002,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_04_090700) do
   add_foreign_key "cartera_pagos", "cartera_clientes", column: "cliente_id", on_delete: :cascade
   add_foreign_key "cartera_plantillas_email", "accounts", on_delete: :cascade
   add_foreign_key "cartera_plantillas_whatsapp", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_snapshots_cliente", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_snapshots_cliente", "cartera_clientes", column: "cliente_id", on_delete: :cascade
   add_foreign_key "cartera_tarifas_mensajeria", "accounts", on_delete: :cascade
   add_foreign_key "inboxes", "portals"
   add_foreign_key "user_sessions", "users"

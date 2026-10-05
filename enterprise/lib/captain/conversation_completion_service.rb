@@ -75,7 +75,7 @@ class Captain::ConversationCompletionService < Captain::BaseTaskService
 
   def message_sender_label(message)
     return 'Customer' if message.incoming?
-    return 'Captain' if captain_reply?(message)
+    return 'AI Agent' if captain_reply?(message)
     return 'Bot' if bot_reply?(message)
 
     'Assistant'

@@ -276,6 +276,8 @@ Rails.application.routes.draw do
             resource :tarifas_mensajeria, only: [:show, :update]
             resources :campanas, only: [:index, :show, :create, :update] do
               post :simulacion, on: :member
+              post :prueba, on: :member
+              get :estadisticas, on: :member
               resources :reglas, only: [:index, :create, :update, :destroy], controller: 'campana_reglas'
               resources :envios, only: [:index]
             end

@@ -18,6 +18,14 @@ class CarteraCampanaAPI extends ApiClient {
     return axios.post(`${this.url}/${id}/simulacion`);
   }
 
+  probar(id) {
+    return axios.post(`${this.url}/${id}/prueba`);
+  }
+
+  getEstadisticas(id) {
+    return axios.get(`${this.url}/${id}/estadisticas`);
+  }
+
   // --- reglas, anidadas bajo una campana ---
 
   getReglas(campanaId) {

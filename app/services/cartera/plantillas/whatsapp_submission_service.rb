@@ -38,8 +38,25 @@ class Cartera::Plantillas::WhatsappSubmissionService
     {
       friendly_name: plantilla.nombre,
       language: plantilla.idioma,
+      variables: ejemplos_de_variables,
       types: { 'twilio/text' => { body: plantilla.cuerpo } }
     }
+  end
+
+  # Valores de ejemplo para que el revisor de Meta vea el mensaje con datos
+  # reales en vez de {{1}}, {{2}}... - no afecta el envio real, que usa
+  # Cartera::Campanas::VariableResolver contra cada cliente.
+  EJEMPLOS = {
+    'nombre_cliente' => 'Juan Pérez',
+    'saldo_abierto' => '$450.000',
+    'dias_vencido' => '32',
+    'tramo' => '31-60 días',
+    'numero_factura' => 'FE-1023',
+    'fecha_vencimiento' => '15/11/2026'
+  }.freeze
+
+  def ejemplos_de_variables
+    Hash(plantilla.variables).transform_values { |nombre_semantico| EJEMPLOS[nombre_semantico] || '' }
   end
 
   def api_client

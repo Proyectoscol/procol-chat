@@ -14,6 +14,7 @@
 #  dias_vencido_max_al_enviar :integer
 #  estado                     :string           default("programado"), not null
 #  factura_ids                :bigint           default([]), not null, is an Array
+#  modo_prueba                :boolean          default(FALSE), not null
 #  razon_omision              :text
 #  resultado                  :string
 #  saldo_al_enviar            :decimal(18, 2)
