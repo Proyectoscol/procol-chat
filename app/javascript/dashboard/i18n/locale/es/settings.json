@@ -1445,14 +1445,18 @@
       "REGLAS": {
         "TITLE": "Reglas",
         "NUEVA": "Nueva regla",
+        "EDITAR": "Editar regla",
         "EMPTY_STATE": "Aún no hay reglas - la campaña no enviará nada hasta que exista al menos una.",
         "GUARDADA_EXITOSA": "Regla guardada.",
         "GUARDAR_ERROR": "No se pudo guardar la regla.",
         "ELIMINAR_ERROR": "No se pudo eliminar la regla.",
         "SIN_CONDICION": "Aplica a todos",
-        "RESUMEN_BANDA": "Puntaje de riesgo entre {min} y {max}",
+        "RESUMEN_BANDA": "Puntaje de riesgo entre {min} y {max} ({severidad})",
         "TIENE_WHATSAPP": "WhatsApp: {sid}",
         "TIENE_EMAIL": "tiene plantilla de correo",
+        "BANDAS_ARRANQUE": "Sugerir 4 bandas de arranque",
+        "BANDAS_ARRANQUE_EXITOSA": "Bandas de arranque creadas - revísalas y ajusta los rangos y plantillas si lo necesitas.",
+        "BANDAS_ARRANQUE_ERROR": "No se pudieron crear las bandas de arranque.",
         "ACCIONES": {
           "ENVIAR": "Enviar",
           "EXCLUIR": "Excluir"
@@ -1467,6 +1471,12 @@
           "MODO_PERSONALIZADA": "Condición personalizada",
           "PUNTAJE_MIN": "Puntaje mínimo",
           "PUNTAJE_MAX": "Puntaje máximo",
+          "SEVERIDAD": {
+            "MUY_ALTO": "Riesgo muy alto",
+            "ALTO": "Riesgo alto",
+            "MEDIO": "Riesgo medio",
+            "BAJO": "Riesgo bajo"
+          },
           "ATRIBUTO": "Atributo",
           "OPERADOR": "Operador",
           "VALOR": "Valor",

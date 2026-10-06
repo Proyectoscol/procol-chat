@@ -363,6 +363,50 @@ const bandaDesdeCondiciones = condiciones => {
   return { min: Number(mayor.values[0]) + 1, max: Number(menor.values[0]) - 1 };
 };
 
+// Etiqueta automatica ("Riesgo alto"...) a partir del punto medio del rango -
+// los 4 cortes de BANDAS_ARRANQUE son el punto de partida sugerido, pero una
+// banda puede tener cualquier rango, asi que la etiqueta usa el punto medio
+// en vez de exigir que el rango calce exacto con un corte predefinido.
+const severidadBanda = (min, max) => {
+  const medio = (min + max) / 2;
+  if (medio >= 90) return 'muy_alto';
+  if (medio >= 70) return 'alto';
+  if (medio >= 40) return 'medio';
+  return 'bajo';
+};
+const severidadLabel = (min, max) =>
+  t(
+    `CARTERA.CAMPANAS.REGLAS.FORM.SEVERIDAD.${severidadBanda(min, max).toUpperCase()}`
+  );
+const SEVERIDAD_CLASES = {
+  muy_alto: 'border-n-ruby-6 bg-n-ruby-3 text-n-ruby-11',
+  alto: 'border-n-amber-6 bg-n-amber-3 text-n-amber-11',
+  medio: 'border-n-slate-6 bg-n-slate-3 text-n-slate-11',
+  bajo: 'border-n-teal-6 bg-n-teal-3 text-n-teal-11',
+};
+const severidadClase = severidad => SEVERIDAD_CLASES[severidad];
+
+// Las 4 bandas de arranque sugeridas (ver seccion 3.2 del plan): cada una
+// busca su plantilla de WhatsApp aprobada por coincidencia de nombre contra
+// las plantillas de arranque sembradas por db/seeds/
+// cartera_plantillas_arranque_seed.rb (prefijo "arranque_") - si la cuenta
+// nunca corrio ese seed, o la plantilla aun no fue aprobada por Twilio,
+// simplemente no aparece en `templatesWhatsapp` y la banda queda sin
+// plantilla preasignada (el usuario la completa a mano).
+const BANDAS_ARRANQUE = [
+  { min: 90, max: 100, nombrePlantilla: 'prejuridico' },
+  { min: 70, max: 89, nombrePlantilla: 'mora_media' },
+  { min: 40, max: 69, nombrePlantilla: 'mora_corta' },
+  { min: 0, max: 39, nombrePlantilla: null },
+];
+const buscarPlantillaPorNombre = nombre => {
+  if (!nombre) return '';
+  const match = templatesWhatsapp.value.find(template =>
+    (template.name || '').toLowerCase().includes(nombre)
+  );
+  return match?.content_sid || '';
+};
+
 const reglaDialogRef = ref(null);
 const isSavingRegla = ref(false);
 const editingReglaId = ref(null);
@@ -456,6 +500,39 @@ const condicionesPayload = () => {
   };
 };
 
+const isCreandoBandasArranque = ref(false);
+// El orden debe quedar 1,2,3,4 segun se crean - encadena las 4 llamadas en
+// vez de dispararlas en paralelo con Promise.all.
+const crearRegla = (banda, orden) =>
+  campanaAPI.createRegla(campanaId.value, {
+    orden,
+    accion: 'enviar',
+    condiciones: bandaCondiciones(banda.min, banda.max),
+    plantilla_whatsapp_content_sid:
+      buscarPlantillaPorNombre(banda.nombrePlantilla) || null,
+    plantilla_email_id: null,
+  });
+const crearBandasArranque = async () => {
+  isCreandoBandasArranque.value = true;
+  try {
+    await BANDAS_ARRANQUE.reduce(
+      (promesa, banda, index) =>
+        promesa.then(() => crearRegla(banda, index + 1)),
+      Promise.resolve()
+    );
+    useAlert(t('CARTERA.CAMPANAS.REGLAS.BANDAS_ARRANQUE_EXITOSA'));
+    await fetchReglas();
+  } catch (error) {
+    useAlert(
+      error?.response?.data?.message ||
+        t('CARTERA.CAMPANAS.REGLAS.BANDAS_ARRANQUE_ERROR')
+    );
+    await fetchReglas();
+  } finally {
+    isCreandoBandasArranque.value = false;
+  }
+};
+
 const guardarRegla = async () => {
   isSavingRegla.value = true;
   const payload = {
@@ -517,7 +594,10 @@ const resumenCondicion = regla => {
   const condiciones = regla.condiciones || {};
   const banda = bandaDesdeCondiciones(condiciones);
   if (banda) {
-    return t('CARTERA.CAMPANAS.REGLAS.RESUMEN_BANDA', banda);
+    return t('CARTERA.CAMPANAS.REGLAS.RESUMEN_BANDA', {
+      ...banda,
+      severidad: severidadLabel(banda.min, banda.max),
+    });
   }
   if (!condiciones.attribute_key) {
     return t('CARTERA.CAMPANAS.REGLAS.SIN_CONDICION');
@@ -922,15 +1002,27 @@ onMounted(async () => {
           <h3 class="text-heading-3 text-n-slate-12 m-0">
             {{ t('CARTERA.CAMPANAS.REGLAS.TITLE') }}
           </h3>
-          <Button
-            v-if="isAdmin"
-            icon="i-lucide-plus"
-            size="sm"
-            slate
-            faded
-            :label="t('CARTERA.CAMPANAS.REGLAS.NUEVA')"
-            @click="abrirNuevaRegla"
-          />
+          <div class="flex items-center gap-2">
+            <Button
+              v-if="isAdmin && !reglas.length && !isLoadingReglas"
+              icon="i-lucide-sparkles"
+              size="sm"
+              slate
+              faded
+              :label="t('CARTERA.CAMPANAS.REGLAS.BANDAS_ARRANQUE')"
+              :is-loading="isCreandoBandasArranque"
+              @click="crearBandasArranque"
+            />
+            <Button
+              v-if="isAdmin"
+              icon="i-lucide-plus"
+              size="sm"
+              slate
+              faded
+              :label="t('CARTERA.CAMPANAS.REGLAS.NUEVA')"
+              @click="abrirNuevaRegla"
+            />
+          </div>
         </div>
         <TableCard v-if="reglas.length">
           <div class="divide-y divide-n-weak">
@@ -1164,7 +1256,11 @@ onMounted(async () => {
 
     <Dialog
       ref="reglaDialogRef"
-      :title="t('CARTERA.CAMPANAS.REGLAS.NUEVA')"
+      :title="
+        editingReglaId
+          ? t('CARTERA.CAMPANAS.REGLAS.EDITAR')
+          : t('CARTERA.CAMPANAS.REGLAS.NUEVA')
+      "
       :confirm-button-label="t('CARTERA.CAMPANAS.GUARDAR')"
       :is-loading="isSavingRegla"
       @confirm="guardarRegla"
@@ -1235,6 +1331,16 @@ onMounted(async () => {
                 max="100"
                 :label="t('CARTERA.CAMPANAS.REGLAS.FORM.PUNTAJE_MAX')"
               />
+              <span
+                class="inline-block shrink-0 rounded-full border px-2 py-0.5 text-xs whitespace-nowrap self-end mb-1.5"
+                :class="
+                  severidadClase(
+                    severidadBanda(reglaForm.puntajeMin, reglaForm.puntajeMax)
+                  )
+                "
+              >
+                {{ severidadLabel(reglaForm.puntajeMin, reglaForm.puntajeMax) }}
+              </span>
             </div>
           </div>
 

@@ -1521,14 +1521,18 @@
       "REGLAS": {
         "TITLE": "Rules",
         "NUEVA": "New rule",
+        "EDITAR": "Edit rule",
         "EMPTY_STATE": "No rules yet - the campaign will not send anything until at least one rule exists.",
         "GUARDADA_EXITOSA": "Rule saved.",
         "GUARDAR_ERROR": "Could not save the rule.",
         "ELIMINAR_ERROR": "Could not delete the rule.",
         "SIN_CONDICION": "Applies to everyone",
-        "RESUMEN_BANDA": "Risk score between {min} and {max}",
+        "RESUMEN_BANDA": "Risk score between {min} and {max} ({severidad})",
         "TIENE_WHATSAPP": "WhatsApp: {sid}",
         "TIENE_EMAIL": "has email template",
+        "BANDAS_ARRANQUE": "Suggest 4 starter bands",
+        "BANDAS_ARRANQUE_EXITOSA": "Starter bands created - review and adjust the ranges and templates as needed.",
+        "BANDAS_ARRANQUE_ERROR": "Could not create the starter bands.",
         "ACCIONES": {
           "ENVIAR": "Send",
           "EXCLUIR": "Exclude"
@@ -1543,6 +1547,12 @@
           "MODO_PERSONALIZADA": "Custom condition",
           "PUNTAJE_MIN": "Minimum score",
           "PUNTAJE_MAX": "Maximum score",
+          "SEVERIDAD": {
+            "MUY_ALTO": "Very high risk",
+            "ALTO": "High risk",
+            "MEDIO": "Medium risk",
+            "BAJO": "Low risk"
+          },
           "ATRIBUTO": "Attribute",
           "OPERADOR": "Operator",
           "VALOR": "Value",
