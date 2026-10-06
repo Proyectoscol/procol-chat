@@ -5,6 +5,7 @@ CsatTable.vue; esto lo generaliza como componente compartido en vez de
 duplicar el fork en Clientes y en Facturas. -->
 <script setup>
 import { FlexRender } from '@tanstack/vue-table';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
 
 const props = defineProps({
   table: {
@@ -22,6 +23,12 @@ const emit = defineEmits(['rowClick']);
 const onRowClick = row => {
   if (props.clickable) emit('rowClick', row.original);
 };
+
+const sortIcon = sorted => {
+  if (sorted === 'asc') return 'i-lucide-arrow-up';
+  if (sorted === 'desc') return 'i-lucide-arrow-down';
+  return 'i-lucide-chevrons-up-down';
+};
 </script>
 
 <template>
@@ -38,7 +45,28 @@ const onRowClick = row => {
             v-if="!header.isPlaceholder"
             class="flex place-items-center gap-1"
           >
+            <button
+              v-if="header.column.getCanSort()"
+              type="button"
+              class="flex items-center gap-1 hover:text-n-blue-text"
+              @click="header.column.getToggleSortingHandler()?.($event)"
+            >
+              <FlexRender
+                :render="header.column.columnDef.header"
+                :props="header.getContext()"
+              />
+              <Icon
+                :icon="sortIcon(header.column.getIsSorted())"
+                class="shrink-0 size-3.5"
+                :class="
+                  header.column.getIsSorted()
+                    ? 'text-n-blue-text'
+                    : 'text-n-slate-9'
+                "
+              />
+            </button>
             <FlexRender
+              v-else
               :render="header.column.columnDef.header"
               :props="header.getContext()"
             />

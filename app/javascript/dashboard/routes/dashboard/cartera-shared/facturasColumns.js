@@ -15,6 +15,7 @@ export const buildFacturasColumns = (t, hideClienteColumn = false) =>
     columnHelper.accessor('numero', {
       header: t('CARTERA.FACTURAS.HEADERS.NUMERO'),
       size: 150,
+      enableSorting: true,
       cell: cellProps =>
         spanCell(
           cellProps.getValue(),
@@ -34,6 +35,7 @@ export const buildFacturasColumns = (t, hideClienteColumn = false) =>
     columnHelper.accessor('fecha_vencimiento', {
       header: t('CARTERA.FACTURAS.HEADERS.FECHA_VENCIMIENTO'),
       size: 130,
+      enableSorting: true,
       cell: cellProps =>
         spanCell(
           formatearFecha(cellProps.getValue()),
@@ -43,6 +45,7 @@ export const buildFacturasColumns = (t, hideClienteColumn = false) =>
     columnHelper.accessor('dias_vencidos', {
       header: t('CARTERA.FACTURAS.HEADERS.DIAS_VENCIDOS'),
       size: 90,
+      enableSorting: true,
       // Una factura pagada no tiene "dias vencidos" (ese concepto solo
       // aplica a saldo pendiente en vivo) - se muestra si se pagó a
       // tiempo o con cuantos dias de mora en su lugar.
@@ -70,6 +73,7 @@ export const buildFacturasColumns = (t, hideClienteColumn = false) =>
     columnHelper.accessor('valor_total', {
       header: t('CARTERA.FACTURAS.HEADERS.VALOR_TOTAL'),
       size: 140,
+      enableSorting: true,
       cell: cellProps =>
         spanCell(
           formatearCop(cellProps.getValue()),
@@ -79,6 +83,7 @@ export const buildFacturasColumns = (t, hideClienteColumn = false) =>
     columnHelper.accessor('saldo_pendiente', {
       header: t('CARTERA.FACTURAS.HEADERS.SALDO_PENDIENTE'),
       size: 140,
+      enableSorting: true,
       cell: cellProps =>
         spanCell(
           formatearCop(cellProps.getValue()),

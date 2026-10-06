@@ -106,13 +106,18 @@ class Cartera::PriorizacionService
     aplicar_orden(scope, sort_by, sort_dir)
   end
 
+  # Columnas propias de cartera_casos que se ordenan directo; nombre_deudor e
+  # identificacion viven en Cliente y necesitan el join aparte (ver abajo).
+  COLUMNAS_ORDEN_CASO = %w[saldo_abierto dias_vencido_max total_facturado_historico facturas_abiertas_cantidad].freeze
+
   def aplicar_orden(scope, sort_by, sort_dir)
     dir = sort_dir == 'asc' ? :asc : :desc
-    case sort_by
-    when 'nombre_deudor' then scope.joins(:cliente).order(Cartera::Cliente.arel_table[:nombre] => dir)
-    when 'saldo_abierto' then scope.order(saldo_abierto: dir)
-    else scope.order(puntaje_riesgo: dir)
-    end
+    return scope.joins(:cliente).order(Cartera::Cliente.arel_table[:nombre] => dir) if sort_by == 'nombre_deudor'
+    return scope.joins(:cliente).order(Cartera::Cliente.arel_table[:identificacion] => dir) if sort_by == 'identificacion'
+    return scope.joins(:cliente).order(Cartera::Cliente.arel_table[:telefono] => dir) if sort_by == 'telefono'
+    return scope.order(sort_by => dir) if COLUMNAS_ORDEN_CASO.include?(sort_by)
+
+    scope.order(puntaje_riesgo: dir)
   end
 
   def metricas_caso(caso)

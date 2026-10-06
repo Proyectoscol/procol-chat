@@ -49,6 +49,7 @@ class Api::V1::Accounts::Cartera::FacturasController < Api::V1::Accounts::BaseCo
   def facturas_filtradas
     scope = Current.account.cartera_facturas.includes(:cliente)
     scope = scope.where(cliente_id: params[:cliente_id]) if params[:cliente_id].present?
+    scope = scope.where('numero ILIKE :q', q: "%#{params[:numero]}%") if params[:numero].present?
     case params[:estado]
     when 'abiertas' then scope.where('saldo_pendiente > 0')
     when 'pagadas' then scope.where('saldo_pendiente <= 0')
