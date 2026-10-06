@@ -73,12 +73,15 @@ const form = reactive({
   inbox_whatsapp_id: null,
   inbox_email_id: null,
   captain_assistant_id: null,
-  hora_inicio: '07:00',
-  hora_fin: '19:00',
   dias_envio: [],
+  // Hora exacta de envio por dia de la semana (clave = dia, '1'..'6') -
+  // reemplaza el viejo rango unico hora_inicio/hora_fin, que no dejaba
+  // claro a que momento se mandaba el mensaje.
+  horas_envio: {},
   autorizacion_fuente: '',
   autorizacion_detalle: '',
 });
+const HORA_POR_DEFECTO = '08:00';
 
 const inboxes = useMapGetter('inboxes/getInboxes');
 const whatsappInboxOptions = computed(() => [
@@ -98,6 +101,19 @@ const emailInboxOptions = computed(() => [
     .filter(inbox => inbox.channel_type === INBOX_TYPES.EMAIL)
     .map(inbox => ({ value: String(inbox.id), label: inbox.name })),
 ]);
+
+// Que canales explicar en Autorizacion - nunca se usan los dos a la vez
+// (ver Cartera::Campanas::CorridaService#resolver_canal): WhatsApp primero,
+// correo solo si el cliente no tiene WhatsApp clasificable o esta
+// bloqueado.
+const resumenCanalesKey = computed(() => {
+  const tieneWhatsapp = Boolean(form.inbox_whatsapp_id);
+  const tieneEmail = Boolean(form.inbox_email_id);
+  if (tieneWhatsapp && tieneEmail) return 'CON_FALLBACK';
+  if (tieneWhatsapp) return 'SOLO_WHATSAPP';
+  if (tieneEmail) return 'SOLO_EMAIL';
+  return 'SIN_CANALES';
+});
 
 const assistants = useMapGetter('captainAssistants/getRecords');
 const assistantOptions = computed(() => [
@@ -131,6 +147,9 @@ const estadoOptions = computed(() => [
 
 const diaChecked = dia => form.dias_envio.includes(dia);
 const toggleDia = dia => {
+  if (!diaChecked(dia) && !form.horas_envio[dia]) {
+    form.horas_envio[dia] = HORA_POR_DEFECTO;
+  }
   form.dias_envio = diaChecked(dia)
     ? form.dias_envio.filter(d => d !== dia)
     : [...form.dias_envio, dia].sort();
@@ -148,12 +167,8 @@ const loadForm = () => {
   form.captain_assistant_id = campana.value.captain_assistant_id
     ? String(campana.value.captain_assistant_id)
     : '';
-  form.hora_inicio =
-    (campana.value.hora_inicio || '').slice(11, 16) ||
-    campana.value.hora_inicio;
-  form.hora_fin =
-    (campana.value.hora_fin || '').slice(11, 16) || campana.value.hora_fin;
   form.dias_envio = [...(campana.value.dias_envio || [])];
+  form.horas_envio = { ...(campana.value.horas_envio || {}) };
   form.autorizacion_fuente = campana.value.autorizacion_fuente || '';
   form.autorizacion_detalle = campana.value.autorizacion_detalle || '';
 };
@@ -172,6 +187,14 @@ const guardar = async () => {
       inbox_whatsapp_id: form.inbox_whatsapp_id || null,
       inbox_email_id: form.inbox_email_id || null,
       captain_assistant_id: form.captain_assistant_id || null,
+      // Solo los dias activos - una hora que quedo guardada de un dia que
+      // el usuario desmarco (por si lo reactiva sin perder lo que escribio)
+      // nunca debe llegar al backend como si siguiera activa.
+      horas_envio: Object.fromEntries(
+        form.dias_envio
+          .filter(dia => form.horas_envio[dia])
+          .map(dia => [dia, form.horas_envio[dia]])
+      ),
     };
     const { data } = await campanaAPI.update(campanaId.value, payload);
     campana.value = data;
@@ -430,6 +453,33 @@ const modoCondicionOptions = computed(() => [
     label: t('CARTERA.CAMPANAS.REGLAS.FORM.MODO_PERSONALIZADA'),
   },
 ]);
+
+// Aviso (no bloqueo) cuando el rango que se esta editando se solapa con una
+// banda de orden MENOR ya guardada - ReglaMatcher.primera_coincidencia solo
+// usa la primera regla que hace match por orden, asi que una banda
+// solapada con una de orden menor nunca va a aplicar (ver seccion 2 del
+// plan "Claridad de campanas y Agente IA").
+const bandaQueBloquea = computed(() => {
+  if (reglaForm.modoCondicion !== MODO_BANDA || reglaForm.sinCondicion)
+    return null;
+
+  const min = Math.min(reglaForm.puntajeMin, reglaForm.puntajeMax);
+  const max = Math.max(reglaForm.puntajeMin, reglaForm.puntajeMax);
+
+  return (
+    reglas.value
+      .filter(
+        regla =>
+          regla.id !== editingReglaId.value && regla.orden < reglaForm.orden
+      )
+      .map(regla => ({
+        regla,
+        banda: bandaDesdeCondiciones(regla.condiciones || {}),
+      }))
+      .find(({ banda }) => banda && banda.min <= max && min <= banda.max) ||
+    null
+  );
+});
 
 // El selector de valor es un Select (no texto libre) para tramo/tipo_deudor,
 // asi que su v-model necesita arrancar en una opcion real del enum - un '' no
@@ -858,39 +908,40 @@ onMounted(async () => {
             <Select v-model="form.estado" :options="estadoOptions" />
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <Input
-              v-model="form.hora_inicio"
-              type="time"
-              :label="t('CARTERA.CAMPANAS.FORM.HORA_INICIO')"
-            />
-            <Input
-              v-model="form.hora_fin"
-              type="time"
-              :label="t('CARTERA.CAMPANAS.FORM.HORA_FIN')"
-            />
-          </div>
-
           <div class="flex flex-col gap-2">
             <label class="text-sm text-n-slate-12">
               {{ t('CARTERA.CAMPANAS.FORM.DIAS_ENVIO') }}
             </label>
-            <div class="flex items-center gap-4 flex-wrap">
-              <label
-                v-for="dia in DIAS"
-                :key="dia"
-                class="flex items-center gap-1.5 text-sm text-n-slate-12"
-              >
-                <Checkbox
-                  :model-value="diaChecked(dia)"
-                  @change="toggleDia(dia)"
-                />
-                {{ DIA_LABELS[dia] }}
-              </label>
-            </div>
             <p class="text-xs text-n-slate-10 mb-0">
               {{ t('CARTERA.CAMPANAS.FORM.DIAS_AYUDA') }}
             </p>
+            <div class="flex flex-col gap-2">
+              <div
+                v-for="dia in DIAS"
+                :key="dia"
+                class="flex items-center gap-3"
+              >
+                <label
+                  class="flex items-center gap-1.5 text-sm text-n-slate-12 w-14 shrink-0"
+                >
+                  <Checkbox
+                    :model-value="diaChecked(dia)"
+                    @change="toggleDia(dia)"
+                  />
+                  {{ DIA_LABELS[dia] }}
+                </label>
+                <input
+                  v-if="diaChecked(dia)"
+                  type="time"
+                  :value="form.horas_envio[dia]"
+                  class="rounded-lg border border-n-weak bg-n-alpha-black2 px-2.5 py-1.5 text-sm text-n-slate-12"
+                  @input="form.horas_envio[dia] = $event.target.value"
+                />
+                <span v-else class="text-xs text-n-slate-10">
+                  {{ t('CARTERA.CAMPANAS.FORM.DIA_INACTIVO') }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </TableCard>
@@ -967,6 +1018,13 @@ onMounted(async () => {
           >
             {{ t('CARTERA.CAMPANAS.AUTORIZACION.ALERTA_LEGAL') }}
           </div>
+          <div
+            class="rounded-lg border border-n-blue-6 bg-n-blue-3 p-3 text-sm text-n-blue-11"
+          >
+            {{
+              t(`CARTERA.CAMPANAS.AUTORIZACION.CANALES.${resumenCanalesKey}`)
+            }}
+          </div>
           <div class="flex flex-col gap-1">
             <label class="text-sm text-n-slate-12">
               {{ t('CARTERA.CAMPANAS.AUTORIZACION.FUENTE') }}
@@ -979,6 +1037,9 @@ onMounted(async () => {
           <TextArea
             v-model="form.autorizacion_detalle"
             :label="t('CARTERA.CAMPANAS.AUTORIZACION.DETALLE')"
+            :placeholder="
+              t('CARTERA.CAMPANAS.AUTORIZACION.DETALLE_PLACEHOLDER')
+            "
             auto-height
           />
           <p
@@ -1098,7 +1159,13 @@ onMounted(async () => {
             @click="simular"
           />
         </div>
+        <p class="text-body-main text-n-slate-11">
+          {{ t('CARTERA.CAMPANAS.SIMULACION.DESCRIPCION') }}
+        </p>
         <TableCard v-if="simulacion">
+          <p class="text-xs text-n-slate-10 px-5 pt-4 mb-0">
+            {{ t('CARTERA.CAMPANAS.SIMULACION.COSTO_CERO_AYUDA') }}
+          </p>
           <div class="flex flex-col gap-3 p-5">
             <p
               v-if="simulacion.advertencia_frecuencia"
@@ -1342,6 +1409,16 @@ onMounted(async () => {
                 {{ severidadLabel(reglaForm.puntajeMin, reglaForm.puntajeMax) }}
               </span>
             </div>
+            <p
+              v-if="bandaQueBloquea"
+              class="text-body-main text-n-amber-11 mb-0"
+            >
+              {{
+                t('CARTERA.CAMPANAS.REGLAS.FORM.BANDA_SOLAPADA', {
+                  orden: bandaQueBloquea.regla.orden,
+                })
+              }}
+            </p>
           </div>
 
           <template v-else>

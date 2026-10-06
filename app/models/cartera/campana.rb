@@ -13,8 +13,7 @@
 #  autorizacion_fuente                 :string
 #  dias_envio                          :integer          default([]), not null, is an Array
 #  estado                              :string           default("borrador"), not null
-#  hora_fin                            :time             not null
-#  hora_inicio                         :time             not null
+#  horas_envio                         :jsonb            not null
 #  nombre                              :string           not null
 #  created_at                          :datetime         not null
 #  updated_at                          :datetime         not null
@@ -54,16 +53,29 @@ class Cartera::Campana < ApplicationRecord
   has_many :reglas, -> { order(:orden) }, class_name: 'Cartera::CampanaRegla', dependent: :destroy, inverse_of: :campana
   has_many :envios, class_name: 'Cartera::Envio', dependent: :destroy, inverse_of: :campana
 
-  validates :nombre, :estado, :hora_inicio, :hora_fin, presence: true
+  validates :nombre, :estado, presence: true
   validates :estado, inclusion: { in: ESTADOS }
   validates :autorizacion_fuente, inclusion: { in: FUENTES_AUTORIZACION }, allow_nil: true
   validate :dias_envio_validos
-  validate :horario_valido
-  validate :horario_dentro_de_ley
+  validate :horas_envio_validas
   validate :autorizacion_completa_si_activa
   validate :una_sola_campana_activa, if: -> { estado == 'activa' }
 
   before_save :marcar_primera_activacion
+
+  # Hora exacta de envio para un dia de la semana (Date#wday, 0=domingo),
+  # o nil si ese dia no tiene una hora configurada - usado por
+  # Cartera::Campanas::CorridaService para decidir si "ahora" es el
+  # momento de procesar casos. Mismo "dia ficticio" 2000-01-01 que usaban
+  # hora_inicio/hora_fin, para poder comparar con .seconds_since_midnight.
+  def hora_envio_para(wday)
+    valor = horas_envio[wday.to_s]
+    return nil if valor.blank?
+
+    Time.zone.parse(valor)
+  rescue ArgumentError
+    nil
+  end
 
   private
 
@@ -82,36 +94,40 @@ class Cartera::Campana < ApplicationRecord
     errors.add(:dias_envio, 'solo puede incluir lunes a sabado (Ley 2300 de 2023, art. 3 prohibe domingo)')
   end
 
-  # Comparar columnas :time directamente con > no es confiable: Rails les
-  # asigna una fecha ficticia (2000-01-01) que puede terminar distinta entre
-  # dos atributos segun el path de lectura/escritura, igual que
-  # AgentAvailabilitySchedule#in_window? - seconds_since_midnight evita eso.
-  def horario_valido
-    return if hora_inicio.blank? || hora_fin.blank?
-    return if hora_fin.seconds_since_midnight > hora_inicio.seconds_since_midnight
-
-    errors.add(:hora_fin, 'debe ser posterior a hora_inicio')
+  # Cada dia activo en dias_envio debe tener su propia hora exacta de envio
+  # en horas_envio, y esa hora debe caer dentro de la ventana legal de ESE
+  # dia especifico (Ley 2300 de 2023, art. 3: lun-vie 7-19, sab 8-15).
+  # dias_envio_validos ya rechazo dias fuera de 1-6, asi que un dia sin
+  # ventana aqui ya quedo reportado por esa otra validacion.
+  def horas_envio_validas
+    Array(dias_envio).each { |dia| validar_hora_del_dia(dia) }
   end
 
-  # Lun-vie 7-19, sabado 8-15 (Ley 2300 de 2023, art. 3). dias_envio_validos
-  # ya rechazo domingo/valores fuera de rango, asi que solo faltan las horas.
-  def horario_dentro_de_ley
-    return if hora_inicio.blank? || hora_fin.blank?
-
-    Array(dias_envio).each { |dia| validar_ventana_del_dia(dia) }
-  end
-
-  def validar_ventana_del_dia(dia)
+  def validar_hora_del_dia(dia)
     ventana = Cartera::Campanas::LeyCobranza.ventana_segundos(dia)
-    return if ventana.nil? # dia invalido, ya reportado por dias_envio_validos
+    return if ventana.nil?
 
     nombre_dia = I18n.t('date.day_names')[dia]
-    if hora_inicio.seconds_since_midnight < ventana.first
-      errors.add(:hora_inicio, "para el dia #{nombre_dia} debe ser desde las #{ventana.first / 3600}:00 (Ley 2300 de 2023, art. 3)")
-    end
-    return unless hora_fin.seconds_since_midnight > ventana.last
+    valor = horas_envio[dia.to_s]
+    return errors.add(:horas_envio, "falta la hora de envio para el dia #{nombre_dia}") if valor.blank?
 
-    errors.add(:hora_fin, "para el dia #{nombre_dia} debe ser hasta las #{ventana.last / 3600}:00 (Ley 2300 de 2023, art. 3)")
+    segundos = segundos_desde_medianoche(valor)
+    return errors.add(:horas_envio, "la hora de envio del dia #{nombre_dia} no es valida") if segundos.nil?
+    return if ventana.cover?(segundos)
+
+    errors.add(:horas_envio,
+               "para el dia #{nombre_dia} debe estar entre las #{ventana.first / 3600}:00 y las #{ventana.last / 3600}:00 (Ley 2300 de 2023, art. 3)")
+  end
+
+  # base: 10 explicito - Integer("09", exception: false) da nil (no false,
+  # nil) porque el 0 inicial se interpreta como prefijo octal y 9 no es un
+  # digito octal valido; sin forzar base 10, cualquier hora "08:xx"/"09:xx"
+  # se habria rechazado como invalida.
+  def segundos_desde_medianoche(valor_hhmm)
+    horas, minutos = valor_hhmm.split(':').map { |n| Integer(n, 10, exception: false) }
+    return nil if horas.nil? || minutos.nil?
+
+    (horas * 3600) + (minutos * 60)
   end
 
   # No se puede activar una campana sin declarar donde consta la

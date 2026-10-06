@@ -52,8 +52,8 @@ class Api::V1::Accounts::Cartera::CampanasController < Api::V1::Accounts::BaseCo
   def campana_params
     params.require(:campana).permit(
       :nombre, :estado, :inbox_whatsapp_id, :inbox_email_id, :captain_assistant_id,
-      :hora_inicio, :hora_fin, :autorizacion_fuente, :autorizacion_detalle,
-      dias_envio: []
+      :autorizacion_fuente, :autorizacion_detalle,
+      dias_envio: [], horas_envio: {}
     ).tap { |p| confirmar_autorizacion(p) }
   end
 

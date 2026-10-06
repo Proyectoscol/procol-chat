@@ -313,7 +313,7 @@
     "SWITCH": "Cambiar",
     "INBOX_VIEW": "Vista del buzón",
     "CONVERSATIONS": "Conversaciones",
-    "INBOX": "Mi bandeja de entrada",
+    "INBOX": "Alertas",
     "ALL_CONVERSATIONS": "Todas las conversaciones",
     "MENTIONED_CONVERSATIONS": "Menciones",
     "PARTICIPATING_CONVERSATIONS": "Participar",
@@ -1218,6 +1218,7 @@
       "EMPTY_STATE": "No se encontraron clientes.",
       "NO_COBRAR": "No cobrar",
       "SIN_DATO": "—",
+      "BUSCAR_PLACEHOLDER": "Buscar por nombre o NIT...",
       "HEADERS": {
         "CLIENTE": "Cliente",
         "NIT": "NIT",
@@ -1232,6 +1233,8 @@
     "FACTURAS": {
       "TITLE": "Facturas",
       "EMPTY_STATE": "No se encontraron facturas.",
+      "BUSCAR_CLIENTE_PLACEHOLDER": "Buscar cliente...",
+      "BUSCAR_NUMERO_PLACEHOLDER": "Buscar número de factura...",
       "FILTER_TRAMO_ALL": "Todos los tramos",
       "FILTER_ESTADO_ALL": "Todas (abiertas y pagadas)",
       "FILTER_ESTADO_ABIERTAS": "Solo abiertas",
@@ -1430,16 +1433,22 @@
         "INBOX_WHATSAPP": "Bandeja de WhatsApp",
         "INBOX_EMAIL": "Bandeja de correo",
         "CAPTAIN_ASSISTANT": "Agente IA",
-        "HORA_INICIO": "Hora de inicio",
-        "HORA_FIN": "Hora de fin",
-        "DIAS_ENVIO": "Días de envío",
-        "DIAS_AYUDA": "El domingo nunca está disponible - la Ley 2300 de 2023 prohíbe el contacto ese día."
+        "DIAS_ENVIO": "Días y hora de envío",
+        "DIAS_AYUDA": "Marca los días activos y define la hora exacta de envío de cada uno - el domingo nunca está disponible (Ley 2300 de 2023). Cada hora se valida contra el horario legal de ese día al guardar.",
+        "DIA_INACTIVO": "Inactivo"
       },
       "AUTORIZACION": {
         "TITLE": "Autorización de contacto",
-        "ALERTA_LEGAL": "La Ley 2300 de 2023 exige una autorización documentada y específica para contactar a este cliente sobre esta deuda. Mantén esta sección al día.",
+        "ALERTA_LEGAL": "El artículo 3 de la Ley 2300 de 2023 exige una autorización documentada y específica del consumidor para contactarlo sobre esta deuda - indicando dónde consta esa autorización y, si la tienes, el texto exacto. Mantén esta sección al día.",
+        "CANALES": {
+          "CON_FALLBACK": "Esta campaña usa WhatsApp y correo, pero nunca los dos a la vez: cada cliente recibe el mensaje primero por WhatsApp; solo si no tiene WhatsApp clasificable o ese número está bloqueado, se le escribe por correo en su lugar.",
+          "SOLO_WHATSAPP": "Esta campaña solo usa WhatsApp. Los clientes sin WhatsApp clasificable o con el número bloqueado no recibirán ningún mensaje.",
+          "SOLO_EMAIL": "Esta campaña solo usa correo.",
+          "SIN_CANALES": "Todavía no configuraste ningún canal en la pestaña Canales - sin eso, la campaña no podrá enviar nada."
+        },
         "FUENTE": "Fuente de la autorización",
         "DETALLE": "Detalle",
+        "DETALLE_PLACEHOLDER": "Ej. Cláusula 4.2 de la Política de Tratamiento de Datos, aceptada en el formulario de registro.",
         "CONFIRMADA": "Confirmada el {fecha}"
       },
       "REGLAS": {
@@ -1468,6 +1477,7 @@
           "MODO_CONDICION": "Tipo de condición",
           "MODO_BANDA": "Banda de riesgo (puntaje 0-100)",
           "MODO_BANDA_AYUDA": "El cliente debe estar en este rango de puntaje de riesgo al momento del envío para recibir esta plantilla.",
+          "BANDA_SOLAPADA": "Esta banda nunca va a aplicar: el rango ya lo cubre la regla #{orden}, que va primero.",
           "MODO_PERSONALIZADA": "Condición personalizada",
           "PUNTAJE_MIN": "Puntaje mínimo",
           "PUNTAJE_MAX": "Puntaje máximo",
@@ -1502,6 +1512,8 @@
       "SIMULACION": {
         "TITLE": "Simulación",
         "SIMULAR": "Simular",
+        "DESCRIPCION": "Corre tus reglas contra todos los clientes sin enviar nada - solo para contar a cuántos le llegaría cada plantilla y a qué costo.",
+        "COSTO_CERO_AYUDA": "¿Costo en $0? Es normal mientras armas la campaña: pasa cuando la regla todavía no tiene una plantilla de WhatsApp asignada, o cuando el tarifario de mensajería (Ajustes de la cuenta) no tiene tarifa cargada para esa categoría.",
         "ERROR": "No se pudo correr la simulación.",
         "EVALUADOS": "casos evaluados",
         "A_ENVIAR": "por enviar",
@@ -1518,7 +1530,7 @@
       "PRUEBA": {
         "TITLE": "Entorno de pruebas",
         "PROBAR": "Probar en entorno de pruebas",
-        "DESCRIPCION": "Corre las mismas reglas de elegibilidad contra tus clientes reales, pero enruta cada mensaje a la bandeja privada de pruebas en vez de WhatsApp/correo real - nada le llega a un cliente real.",
+        "DESCRIPCION": "Corre las mismas reglas de elegibilidad contra tus clientes reales, pero enruta cada mensaje a la bandeja privada de pruebas en vez de WhatsApp/correo real - nada le llega a un cliente real. No necesitas tener plantillas de WhatsApp aprobadas por Meta todavía: la bandeja de pruebas no llama a Twilio, así que puedes probar la campaña completa antes de pedir esa aprobación.",
         "ENVIADOS": "enviados a pruebas",
         "OMITIDOS": "omitidos",
         "BADGE": "Prueba",
@@ -1540,13 +1552,15 @@
     },
     "AJUSTES": {
       "TITLE": "Pesos del algoritmo",
-      "DESCRIPCION": "Define cuánto pesa cada factor en el puntaje de riesgo (0-100) de cada cliente. Los 7 pesos deben sumar 100% - al mover uno, los demás se reajustan proporcionalmente.",
+      "DESCRIPCION": "Define cuánto pesa cada factor en el puntaje de riesgo (0-100) de cada cliente. Los 7 pesos deben sumar 100% - se valida al hacer clic en Guardar.",
       "GUARDAR": "Guardar",
       "GUARDADO_EXITOSO": "Pesos guardados - los puntajes de riesgo de todos los clientes se recalcularon.",
       "GUARDAR_ERROR": "No se pudieron guardar los pesos.",
       "CARGAR_ERROR": "No se pudieron cargar los pesos.",
       "SUMA_LABEL": "Suman {porcentaje}%",
       "SUMA_INVALIDA": "Los pesos deben sumar 100%.",
+      "SUMA_SOBRA": "Baja {exceso} puntos entre los demás factores para llegar a 100%.",
+      "SUMA_FALTA": "Sube {faltante} puntos entre los demás factores para llegar a 100%.",
       "RESTABLECER": "Restablecer a los valores sugeridos",
       "FACTORES": {
         "MORA_ACTUAL": "Días en mora actual",

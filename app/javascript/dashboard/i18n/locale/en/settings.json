@@ -313,7 +313,7 @@
     "SWITCH": "Switch",
     "INBOX_VIEW": "Inbox View",
     "CONVERSATIONS": "Conversations",
-    "INBOX": "My Inbox",
+    "INBOX": "Alerts",
     "ALL_CONVERSATIONS": "All Conversations",
     "MENTIONED_CONVERSATIONS": "Mentions",
     "PARTICIPATING_CONVERSATIONS": "Participating",
@@ -1294,6 +1294,7 @@
       "EMPTY_STATE": "No clients found.",
       "NO_COBRAR": "No cobrar",
       "SIN_DATO": "—",
+      "BUSCAR_PLACEHOLDER": "Search by name or tax ID...",
       "HEADERS": {
         "CLIENTE": "Client",
         "NIT": "NIT",
@@ -1308,6 +1309,8 @@
     "FACTURAS": {
       "TITLE": "Facturas",
       "EMPTY_STATE": "No invoices found.",
+      "BUSCAR_CLIENTE_PLACEHOLDER": "Search client...",
+      "BUSCAR_NUMERO_PLACEHOLDER": "Search invoice number...",
       "FILTER_TRAMO_ALL": "All buckets",
       "FILTER_ESTADO_ALL": "All (open + paid)",
       "FILTER_ESTADO_ABIERTAS": "Open only",
@@ -1506,16 +1509,22 @@
         "INBOX_WHATSAPP": "WhatsApp inbox",
         "INBOX_EMAIL": "Email inbox",
         "CAPTAIN_ASSISTANT": "AI Agent assistant",
-        "HORA_INICIO": "Start time",
-        "HORA_FIN": "End time",
-        "DIAS_ENVIO": "Sending days",
-        "DIAS_AYUDA": "Sunday is never available - Ley 2300 de 2023 bars contact that day."
+        "DIAS_ENVIO": "Sending days and time",
+        "DIAS_AYUDA": "Check the active days and set the exact send time for each one - Sunday is never available (Ley 2300 de 2023). Each time is validated against that day's legal window when you save.",
+        "DIA_INACTIVO": "Inactive"
       },
       "AUTORIZACION": {
         "TITLE": "Contact authorization",
-        "ALERTA_LEGAL": "Ley 2300 de 2023 requires a documented, specific authorization to contact this client about this debt. Keep this section accurate.",
+        "ALERTA_LEGAL": "Article 3 of Ley 2300 de 2023 requires a documented, specific consumer authorization to contact them about this debt - state where that authorization lives and, if you have it, the exact wording. Keep this section accurate.",
+        "CANALES": {
+          "CON_FALLBACK": "This campaign uses WhatsApp and email, but never both at once: every client gets the message on WhatsApp first; only if they have no classifiable WhatsApp number or it's blocked, they get it by email instead.",
+          "SOLO_WHATSAPP": "This campaign only uses WhatsApp. Clients without a classifiable WhatsApp number, or with that number blocked, won't receive anything.",
+          "SOLO_EMAIL": "This campaign only uses email.",
+          "SIN_CANALES": "No channel is configured yet in the Channels tab - without one, this campaign can't send anything."
+        },
         "FUENTE": "Authorization source",
         "DETALLE": "Details",
+        "DETALLE_PLACEHOLDER": "E.g. Clause 4.2 of the Data Processing Policy, accepted at registration.",
         "CONFIRMADA": "Confirmed on {fecha}"
       },
       "REGLAS": {
@@ -1544,6 +1553,7 @@
           "MODO_CONDICION": "Condition type",
           "MODO_BANDA": "Risk band (score 0-100)",
           "MODO_BANDA_AYUDA": "The client must be in this risk score range at send time to receive this template.",
+          "BANDA_SOLAPADA": "This band will never apply: the range is already covered by rule #{orden}, which runs first.",
           "MODO_PERSONALIZADA": "Custom condition",
           "PUNTAJE_MIN": "Minimum score",
           "PUNTAJE_MAX": "Maximum score",
@@ -1578,6 +1588,8 @@
       "SIMULACION": {
         "TITLE": "Simulation",
         "SIMULAR": "Simulate",
+        "DESCRIPCION": "Runs your rules against every client without sending anything - just to count who each template would reach, and at what cost.",
+        "COSTO_CERO_AYUDA": "Cost showing $0? That's normal while you're still building the campaign: it happens when the rule has no WhatsApp template assigned yet, or when the messaging rate card (account Settings) has no rate loaded for that category.",
         "ERROR": "Could not run the simulation.",
         "EVALUADOS": "cases evaluated",
         "A_ENVIAR": "to send",
@@ -1594,7 +1606,7 @@
       "PRUEBA": {
         "TITLE": "Test environment",
         "PROBAR": "Test in sandbox",
-        "DESCRIPCION": "Runs the same eligibility rules against your real clients, but routes every message to the private test inbox instead of real WhatsApp/email - nothing reaches a real customer.",
+        "DESCRIPCION": "Runs the same eligibility rules against your real clients, but routes every message to the private test inbox instead of real WhatsApp/email - nothing reaches a real customer. You don't need Meta-approved WhatsApp templates yet: the test inbox never calls Twilio, so you can test the whole campaign before requesting that approval.",
         "ENVIADOS": "sent to sandbox",
         "OMITIDOS": "skipped",
         "BADGE": "Test",
@@ -1616,13 +1628,15 @@
     },
     "AJUSTES": {
       "TITLE": "Algorithm weights",
-      "DESCRIPCION": "Define how much each factor weighs in every client's risk score (0-100). The 7 weights must add up to 100% - moving one proportionally adjusts the rest.",
+      "DESCRIPCION": "Define how much each factor weighs in every client's risk score (0-100). The 7 weights must add up to 100% - validated when you click Save.",
       "GUARDAR": "Save",
       "GUARDADO_EXITOSO": "Weights saved - every client's risk score was recalculated.",
       "GUARDAR_ERROR": "Could not save the weights.",
       "CARGAR_ERROR": "Could not load the weights.",
       "SUMA_LABEL": "Total {porcentaje}%",
       "SUMA_INVALIDA": "The weights must add up to 100%.",
+      "SUMA_SOBRA": "Lower other factors by {exceso} points to reach 100%.",
+      "SUMA_FALTA": "Raise other factors by {faltante} points to reach 100%.",
       "RESTABLECER": "Reset to suggested values",
       "FACTORES": {
         "MORA_ACTUAL": "Current days overdue",

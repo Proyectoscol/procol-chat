@@ -31,15 +31,24 @@ class Cartera::Campanas::CorridaService
     { casos_evaluados: evaluados, casos_programados: programados }
   end
 
-  # La ventana legal del dia (Ley 2300) Y la ventana propia de la campana
-  # (subconjunto de la legal, ya validado en el modelo) deben cumplirse
-  # ambas en el momento exacto en que corre el job.
+  # Ventana de 30 minutos (mismo intervalo que config/schedule.yml) que
+  # arranca en la hora exacta que el usuario configuro para ESE dia -
+  # ancha para que el job (que corre cada 30 min) siempre la alcance en su
+  # proximo tick, sin disparar otra vez en el tick de despues gracias a la
+  # compuerta ya_contactado_hoy? (ver evaluar_caso). La ventana legal del
+  # dia (Ley 2300) tambien debe cumplirse.
+  VENTANA_ENVIO_SEGUNDOS = 1800
+
   def dentro_de_ventana_de_la_campana?(campana)
     ahora = Time.current
     return false unless Cartera::Campanas::LeyCobranza.dentro_de_ventana_legal?(ahora)
 
+    hora_envio = campana.hora_envio_para(ahora.wday)
+    return false if hora_envio.nil?
+
     segundos = ahora.seconds_since_midnight
-    segundos.between?(campana.hora_inicio.seconds_since_midnight, campana.hora_fin.seconds_since_midnight)
+    inicio = hora_envio.seconds_since_midnight
+    segundos.between?(inicio, inicio + VENTANA_ENVIO_SEGUNDOS)
   end
 
   # Compuertas 4-8. Devuelve true si el caso quedo "programado".

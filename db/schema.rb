@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_06_100100) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_06_173300) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -622,8 +622,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_06_100100) do
     t.bigint "inbox_email_id"
     t.bigint "captain_assistant_id"
     t.integer "dias_envio", default: [], null: false, array: true
-    t.time "hora_inicio", null: false
-    t.time "hora_fin", null: false
     t.string "autorizacion_fuente"
     t.text "autorizacion_detalle"
     t.bigint "autorizacion_confirmada_por_user_id"
@@ -631,6 +629,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_06_100100) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "activada_en"
+    t.jsonb "horas_envio", default: {}, null: false
     t.index ["account_id"], name: "idx_cartera_campanas_una_activa_por_cuenta", unique: true, where: "((estado)::text = 'activa'::text)"
     t.index ["account_id"], name: "index_cartera_campanas_on_account_id"
     t.index ["captain_assistant_id"], name: "index_cartera_campanas_on_captain_assistant_id"

@@ -48,14 +48,13 @@ const estadoBadgeClass = estado => {
   return 'border-n-blue-6 bg-n-blue-3 text-n-blue-11';
 };
 
-const diasResumen = dias =>
-  [...(dias || [])]
-    .sort()
-    .map(dia => DIA_LABELS[dia])
-    .join(' ');
-
+// Un "LUN 08:00" por cada dia activo, ya no un rango unico igual para
+// todos los dias - cada dia puede tener su propia hora exacta de envio.
 const resumenHorario = campana =>
-  `${campana.hora_inicio} - ${campana.hora_fin} · ${diasResumen(campana.dias_envio)}`;
+  [...(campana.dias_envio || [])]
+    .sort()
+    .map(dia => `${DIA_LABELS[dia]} ${campana.horas_envio?.[dia] || '--:--'}`)
+    .join(' · ');
 
 const abrirDetalle = campana => {
   router.push({
@@ -69,9 +68,14 @@ const crearCampana = async () => {
   try {
     const { data } = await campanaAPI.create({
       nombre: t('CARTERA.CAMPANAS.NOMBRE_POR_DEFECTO'),
-      hora_inicio: '07:00',
-      hora_fin: '19:00',
       dias_envio: [1, 2, 3, 4, 5],
+      horas_envio: {
+        1: '08:00',
+        2: '08:00',
+        3: '08:00',
+        4: '08:00',
+        5: '08:00',
+      },
     });
     router.push({
       name: 'cartera_campana_detail_view',

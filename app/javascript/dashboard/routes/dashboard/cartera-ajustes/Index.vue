@@ -1,9 +1,10 @@
 <!-- Pesos del algoritmo de puntaje de riesgo (Cartera::PesoRiesgo /
-Cartera::PuntajeRiesgoService). Los 7 controles se manejan en puntos
-porcentuales enteros (0-100) que siempre suman exactamente 100 - mover uno
-reajusta los demas proporcionalmente - y solo se convierten a decimal
-(/100) al guardar, evitando que el redondeo de punto flotante rompa la
-validacion del backend de que los pesos sumen 1.0. -->
+Cartera::PuntajeRiesgoService). Los 7 campos son independientes - escribir
+en uno NO reajusta los demas (el deslizador con reajuste automatico que
+tenia esta pantalla resultó confuso: "no se ve", "no es intuitivo"). La
+suma se valida solo al hacer clic en Guardar, con el detalle exacto de
+cuanto falta o sobra - mientras tanto el usuario puede pasarse o quedarse
+corto sin que la pantalla se lo impida. -->
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -12,6 +13,7 @@ import { useAlert } from 'dashboard/composables';
 import { useAdmin } from 'dashboard/composables/useAdmin';
 import pesosRiesgoAPI from 'dashboard/api/cartera/pesosRiesgo';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Input from 'dashboard/components-next/input/Input.vue';
 import Spinner from 'shared/components/Spinner.vue';
 import CarteraHeader from '../cartera-shared/CarteraHeader.vue';
 import TableCard from '../cartera-shared/TableCard.vue';
@@ -27,6 +29,7 @@ const DEFAULTS = {
 };
 
 const FACTORES = Object.keys(DEFAULTS);
+const SUMA_ESPERADA = 100;
 
 const { t } = useI18n();
 const { isAdmin } = useAdmin();
@@ -40,45 +43,20 @@ const factorRows = computed(() =>
     key: factor,
     label: t(`CARTERA.AJUSTES.FACTORES.${factor.toUpperCase()}`),
     ayuda: t(`CARTERA.AJUSTES.FACTORES_AYUDA.${factor.toUpperCase()}`),
-    valor: porcentajes[factor],
   }))
 );
 
 const suma = computed(() =>
-  FACTORES.reduce((total, factor) => total + porcentajes[factor], 0)
+  FACTORES.reduce((total, factor) => total + (porcentajes[factor] || 0), 0)
 );
+const diferencia = computed(() => suma.value - SUMA_ESPERADA);
+const sumaValida = computed(() => diferencia.value === 0);
 
-// Redistribuye lo que le resta a `remaining` entre `claves` en proporcion a
-// su peso actual (o en partes iguales si todas pesan 0 hoy) - el ultimo
-// factor se lleva el residuo del redondeo para que la suma final sea exacta.
-const redistribuir = (claves, remaining) => {
-  const pesoActual = claves.reduce((total, key) => total + porcentajes[key], 0);
-  let asignado = 0;
-
-  claves.forEach((key, index) => {
-    const esUltimo = index === claves.length - 1;
-    if (esUltimo) {
-      porcentajes[key] = remaining - asignado;
-      return;
-    }
-
-    const parte =
-      pesoActual > 0
-        ? (porcentajes[key] / pesoActual) * remaining
-        : remaining / claves.length;
-    const redondeado = Math.round(parte);
-    porcentajes[key] = redondeado;
-    asignado += redondeado;
-  });
-};
-
-const ajustarFactor = (factor, nuevoValor) => {
-  const clamped = Math.max(0, Math.min(100, Math.round(nuevoValor)));
-  porcentajes[factor] = clamped;
-  redistribuir(
-    FACTORES.filter(key => key !== factor),
-    100 - clamped
-  );
+const actualizarFactor = (factor, valorTexto) => {
+  const valor = Number(valorTexto);
+  porcentajes[factor] = Number.isFinite(valor)
+    ? Math.max(0, Math.min(100, Math.round(valor)))
+    : 0;
 };
 
 const aplicarPesos = pesos => {
@@ -105,6 +83,8 @@ const restablecer = () =>
   );
 
 const guardar = async () => {
+  if (!sumaValida.value) return;
+
   isSaving.value = true;
   try {
     const pesos = Object.fromEntries(
@@ -143,6 +123,7 @@ onMounted(cargarPesos);
           size="sm"
           :label="t('CARTERA.AJUSTES.GUARDAR')"
           :is-loading="isSaving"
+          :disabled="!sumaValida"
           @click="guardar"
         />
       </div>
@@ -155,38 +136,41 @@ onMounted(cargarPesos);
     <TableCard v-else>
       <div
         class="flex items-center justify-between px-5 py-3 border-b border-n-weak"
+        :class="sumaValida ? '' : 'bg-n-ruby-2 dark:bg-n-ruby-3'"
       >
-        <span class="text-body-main text-n-slate-11">
+        <span class="text-body-main font-medium text-n-slate-12">
           {{ t('CARTERA.AJUSTES.SUMA_LABEL', { porcentaje: suma }) }}
         </span>
-        <span v-if="suma !== 100" class="text-body-main text-n-ruby-9">
-          {{ t('CARTERA.AJUSTES.SUMA_INVALIDA') }}
+        <span v-if="!sumaValida" class="text-body-main text-n-ruby-11">
+          {{
+            diferencia > 0
+              ? t('CARTERA.AJUSTES.SUMA_SOBRA', { exceso: diferencia })
+              : t('CARTERA.AJUSTES.SUMA_FALTA', { faltante: -diferencia })
+          }}
         </span>
       </div>
-      <div class="divide-y divide-n-weak">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 p-5">
         <div
           v-for="factor in factorRows"
           :key="factor.key"
-          class="flex flex-col gap-2 px-5 py-4"
+          class="flex flex-col gap-1.5"
         >
-          <div class="flex items-center justify-between gap-4">
-            <label class="text-heading-3 text-n-slate-12">
-              {{ factor.label }}
-            </label>
-            <span class="text-heading-3 text-n-slate-12 tabular-nums shrink-0">
-              {{ factor.valor }}%
-            </span>
+          <label class="text-body-main font-medium text-n-slate-12">
+            {{ factor.label }}
+          </label>
+          <div class="flex items-center gap-2">
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              :model-value="porcentajes[factor.key]"
+              :disabled="!isAdmin"
+              class="w-24 [&>input]:text-right tabular-nums"
+              @update:model-value="valor => actualizarFactor(factor.key, valor)"
+            />
+            <span class="text-body-main text-n-slate-11">%</span>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            :value="factor.valor"
-            :disabled="!isAdmin"
-            class="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-n-slate-4 accent-n-brand-9 disabled:cursor-not-allowed [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-n-brand-9 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-n-brand-9"
-            @input="ajustarFactor(factor.key, $event.target.value)"
-          />
-          <p class="text-body-main text-n-slate-11 mb-0">
+          <p class="text-xs text-n-slate-10 mb-0">
             {{ factor.ayuda }}
           </p>
         </div>
