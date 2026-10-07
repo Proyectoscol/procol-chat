@@ -435,15 +435,18 @@
         },
         "HOURS_SAVED": {
           "LABEL": "Tiempo ahorrado",
-          "HINT": "Estimado: El Agente IA responde veces ~2 minutos de esfuerzo de agente asumido por respuesta. Trabajo direccional, no medido."
+          "HINT": "Estimado: El Agente IA responde veces ~2 minutos de esfuerzo de agente asumido por respuesta. Trabajo direccional, no medido.",
+          "NOTE": "Basado en dos minutos ahorrados por cada respuesta pública del Agente IA."
         },
         "REOPEN": {
           "LABEL": "Reabrir tasa",
-          "HINT": "Conversaciones resueltas automáticamente que se reabrieron después."
+          "HINT": "Conversaciones resueltas automáticamente que se reabrieron después.",
+          "NOTE": "Menor significa que más resoluciones se mantuvieron resueltas."
         },
         "DEPTH": {
           "LABEL": "Mensajes / conversación",
-          "HINT": "Promedio de respuestas que el asistente envía por conversación."
+          "HINT": "Promedio de respuestas que el asistente envía por conversación.",
+          "NOTE": "Un número más bajo puede significar respuestas más rápidas, pero las preguntas complejas pueden necesitar más respuestas."
         }
       },
       "DRILLDOWN": {
@@ -471,6 +474,95 @@
         "BILLING": {
           "TITLE": "Facturación",
           "DESCRIPTION": "Gestionar créditos y plan"
+        }
+      },
+      "V2": {
+        "EMPTY": "No hay datos disponibles para este período.",
+        "SUMMARY": {
+          "GREETING": "¡Hola, {name}!",
+          "DEFAULT_NAME": "equipo",
+          "EMPTY": "El resumen de desempeño del Agente IA aparecerá aquí cuando haya suficiente actividad.",
+          "PREVIOUS": "Punto anterior del resumen",
+          "NEXT": "Punto siguiente del resumen"
+        },
+        "UNITS": {
+          "DAYS": "{value}d",
+          "HOURS": "{value}h",
+          "MINUTES": "{value} min"
+        },
+        "METRICS": {
+          "TIME_SAVED": {
+            "LABEL": "Ahorrado en esfuerzo y tiempo del equipo"
+          },
+          "DURABLE": {
+            "LABEL": "Resoluciones del Agente IA que se mantuvieron cerradas",
+            "HINT": "El porcentaje de conversaciones resueltas por el Agente IA que seguían cerradas siete días después.",
+            "NOTE": "Solo se incluyen resoluciones con suficiente antigüedad para observarse durante siete días."
+          },
+          "MEDIAN_RESOLUTION": {
+            "LABEL": "Tiempo mediano de resolución",
+            "HINT": "El tiempo típico desde que una conversación llegó al Agente IA hasta que se resolvió.",
+            "NOTE": "Menor generalmente significa que los clientes se resolvieron más rápido."
+          },
+          "DEPTH": {
+            "LABEL": "Mensajes por conversación"
+          },
+          "OF_TOTAL": "de {total}"
+        },
+        "RESOLUTION_FLOW": {
+          "ARIA_LABEL": "Flujo de conversaciones manejadas a través del Agente IA y los resultados del equipo",
+          "NODES": {
+            "HANDLED": "Manejadas",
+            "RESOLVED_BY_CAPTAIN": "Resueltas por el Agente IA",
+            "HANDED_OFF": "Transferidas",
+            "CLOSED_WITH_TEAM": "Cerradas con el equipo",
+            "REOPENED": "Reabiertas en 7 días",
+            "STAYED_CLOSED": "Se mantuvieron cerradas",
+            "OTHER_REASONS": "Otros motivos"
+          }
+        },
+        "HANDOFF_REASONS": {
+          "TITLE": "Motivos de transferencia",
+          "CUSTOMER_REQUEST": "Solicitado por el cliente",
+          "MISSING_KNOWLEDGE": "Falta de conocimiento",
+          "UNSUPPORTED_REQUEST": "Solicitud no soportada",
+          "POLICY_RESTRICTION": "Restricción de política",
+          "TOOL_FAILURE": "Falla de herramienta",
+          "PENDING_CLARIFICATION": "Pendiente de aclaración del cliente",
+          "PERCENTAGE": "({value}%)",
+          "USAGE_LIMIT": "Límite de uso alcanzado",
+          "UNCLASSIFIED": "Sin clasificar"
+        },
+        "RESOLUTION_TREND": {
+          "TITLE": "Tendencia de resolución",
+          "CONVERSATION_COUNT": "Cantidad de conversaciones",
+          "RESOLUTION_RATE": "Tasa de resolución",
+          "CURRENT_PERIOD": "Período actual",
+          "PREVIOUS_PERIOD": "Período anterior",
+          "HANDLED": "Manejadas",
+          "RESOLVED": "Resueltas por el Agente IA",
+          "ARIA_LABEL": "Conversaciones manejadas y resueltas por el Agente IA por período de reporte",
+          "RATE_ARIA_LABEL": "Tasas actuales y anteriores de resolución del Agente IA"
+        },
+        "CSAT": {
+          "TITLE": "CSAT del Agente IA",
+          "AUTONOMOUS": "Conversaciones resueltas por el Agente IA",
+          "AUTONOMOUS_HINT": "La calificación promedio de clientes en conversaciones que el Agente IA resolvió sin ayuda de tu equipo.",
+          "ASSISTED": "Conversaciones asistidas por el Agente IA",
+          "ASSISTED_HINT": "La calificación promedio de clientes cuando el Agente IA ayudó antes de que tu equipo resolviera la conversación.",
+          "VS_HUMANS": "{value} frente a humanos"
+        },
+        "USAGE": {
+          "TITLE": "Uso",
+          "CREDITS": "Créditos",
+          "DOCUMENTS": "Documentos",
+          "USED": "({percentage}% usado)",
+          "VALUE": "{used}/{total}",
+          "REFRESH": "Actualizar uso",
+          "BUY_MORE": "Comprar más créditos"
+        },
+        "KNOWLEDGE": {
+          "REVIEW": "Revisar preguntas frecuentes"
         }
       }
     },
@@ -608,6 +700,79 @@
           "ALLOW_MEMORIES": "Guardar detalles clave como memorias de las interacciones con los clientes.",
           "ALLOW_CITATIONS": "Incluir referencias a la fuente en las respuestas",
           "ALLOW_CONTACT_ATTRIBUTES": "Permitir acceso a la información de contacto"
+        },
+        "AUDIENCE": {
+          "EVERYONE": {
+            "LABEL": "Todos",
+            "DESC": "El Agente IA responde a todas las conversaciones en las bandejas de entrada conectadas."
+          },
+          "SPECIFIC": {
+            "LABEL": "Audiencia específica",
+            "DESC": "El Agente IA responde solo a los clientes que cumplan las condiciones de abajo."
+          },
+          "ADD_CONDITION": "Agregar condición",
+          "ADD_GROUP": "Agregar grupo de condiciones",
+          "EMPTY_TITLE": "Aún no hay condiciones",
+          "EMPTY_BODY": "Agrega una condición para dirigirte a clientes específicos, o un grupo de condiciones para combinarlas con lógica Y/O.",
+          "EMPTY_ERROR": "Agrega al menos una condición para una audiencia específica.",
+          "MATCH_PREFIX": "Coincide con",
+          "MATCH_SUFFIX": "de las siguientes",
+          "MATCH_ALL": "todas",
+          "MATCH_ANY": "cualquiera",
+          "GROUP_CONTACT": "Atributos de contacto",
+          "GROUP_CONVERSATION": "Conversación",
+          "GROUP_CUSTOM": "Atributos personalizados",
+          "BROWSER_LANGUAGE": "Idioma del navegador",
+          "CONVERSATION_LANGUAGE": "Idioma del primer mensaje",
+          "LOGGED_IN": "Usuario con sesión iniciada",
+          "LOGGED_IN_TRUE": "Sí",
+          "LOGGED_IN_FALSE": "No"
+        },
+        "INACTIVITY_RESOLUTION": {
+          "TITLE": "Cuando los clientes dejan de responder",
+          "DESCRIPTION": "Elige cómo maneja el Agente IA la conversación.",
+          "MODE_LABEL": "Acción cuando el cliente deja de responder",
+          "REVIEW_AFTER": "Revisar después de",
+          "RESOLVE_AFTER": "Resolver después de",
+          "ALWAYS_WARNING": "El Agente IA resolverá todas las conversaciones después del tiempo seleccionado sin revisarlas. Algunas conversaciones que aún necesitan ayuda podrían cerrarse.",
+          "PENDING_INFO": "La conversación permanece pendiente hasta que el cliente responda.",
+          "RESOLUTION_MESSAGE": {
+            "TITLE": "Enviar un mensaje al resolver",
+            "DESCRIPTION": "El Agente IA envía este mensaje de cierre antes de resolver la conversación."
+          },
+          "MODES": {
+            "DISABLED": {
+              "LABEL": "Esperar al cliente",
+              "DESCRIPTION": "El Agente IA no resuelve la conversación. Aun así puede transferirla si el cliente lo solicita."
+            },
+            "LEGACY": {
+              "LABEL": "Resolver siempre",
+              "DESCRIPTION": "El Agente IA resuelve todas las conversaciones después del tiempo seleccionado."
+            },
+            "EVALUATED": {
+              "LABEL": "Dejar que el Agente IA la revise (recomendado)",
+              "DESCRIPTION": "El Agente IA decide si resolver la conversación o transferirla."
+            }
+          },
+          "DURATION_HOURS_ARIA_LABEL": "Horas antes de la acción",
+          "DURATION_MINUTES_ARIA_LABEL": "Minutos antes de la acción",
+          "DURATION_HOURS_SHORT": "{count} h",
+          "DURATION_MINUTES_SHORT": "{count} min"
+        },
+        "SCHEDULE": {
+          "ALWAYS": {
+            "LABEL": "En cualquier momento",
+            "DESC": "El Agente IA responde a todas las conversaciones, sin importar la hora."
+          },
+          "BUSINESS_HOURS": {
+            "LABEL": "En horario de atención",
+            "DESC": "El Agente IA responde solo dentro del horario de atención de cada bandeja de entrada."
+          },
+          "OUTSIDE_BUSINESS_HOURS": {
+            "LABEL": "Fuera del horario de atención",
+            "DESC": "El Agente IA responde solo cuando cada bandeja de entrada está cerrada."
+          },
+          "HINT": "Las bandejas de entrada sin horario de atención configurado siempre están cubiertas."
         }
       },
       "EDIT": {
@@ -624,7 +789,8 @@
         },
         "SYSTEM_SETTINGS": {
           "TITLE": "Configuración del sistema",
-          "DESCRIPTION": "Personaliza lo que dice el asistente al finalizar una conversación o al transferirla a una persona."
+          "DESCRIPTION": "Personaliza lo que dice el asistente al finalizar una conversación o al transferirla a una persona.",
+          "DESCRIPTION_V2": "Gestiona qué hace el Agente IA cuando los clientes dejan de responder y define el mensaje de transferencia."
         },
         "CONTROL_ITEMS": {
           "TITLE": "Ajustes avanzados",
@@ -644,6 +810,14 @@
           "TITLE": "Eliminar asistente",
           "DESCRIPTION": "Esta acción es permanente. Eliminar este asistente lo quitará de todas las bandejas conectadas y borrará para siempre todo el conocimiento generado.",
           "BUTTON_TEXT": "Eliminar {assistantName}"
+        },
+        "AUDIENCE": {
+          "TITLE": "Audiencia",
+          "DESCRIPTION": "Elige si este asistente responde a todos o solo a una audiencia específica."
+        },
+        "SCHEDULE": {
+          "TITLE": "Horario",
+          "DESCRIPTION": "Elige cuándo responde el Agente IA. Fuera de esta ventana, las conversaciones se transfieren a tu equipo."
         }
       },
       "OPTIONS": {
@@ -855,7 +1029,8 @@
         },
         "SORT": {
           "RECENTLY_UPDATED": "Actualizado recientemente",
-          "RECENTLY_CREATED": "Creado recientemente"
+          "RECENTLY_CREATED": "Creado recientemente",
+          "MOST_USED": "Más usado en conversaciones"
         },
         "SEARCH_PLACEHOLDER": "Buscar..."
       },
@@ -897,7 +1072,8 @@
         "VIEW_RAW": "Ver crudo",
         "VIEW_PREVIEW": "Ver vista previa",
         "UNREADABLE_CONTENT": "El contenido legible no se pudo extraer de este documento. Puede ver el contenido extraído en bruto.",
-        "EMPTY_CONTENT": "Aún no hay contenido grabado disponible para este documento."
+        "EMPTY_CONTENT": "Aún no hay contenido grabado disponible para este documento.",
+        "USED_IN_CONVERSATIONS": "Usado en conversaciones"
       },
       "FORM_DESCRIPTION": "Escribe la URL del documento para agregarlo como fuente de conocimiento y elige el asistente al que se va a asociar.",
       "CREATE": {
@@ -951,7 +1127,9 @@
           "TITLE": "Agente IA Documento",
           "NOTE": "Un documento en Agente IA es una fuente de conocimiento para el asistente. Al conectar tu centro de ayuda o tus guías, el Agente IA puede analizar el contenido y responder con precisión a las consultas de tus clientes."
         }
-      }
+      },
+      "NO_USED_CONVERSATIONS": "No se encontraron conversaciones para este documento.",
+      "USED_IN_CONVERSATIONS": "Usado en {n} conversación | Usado en {n} conversaciones"
     },
     "CUSTOM_TOOLS": {
       "HEADER": "Herramientas",
@@ -1151,7 +1329,8 @@
           "TITLE": "Agente IA FAQ",
           "NOTE": "Las preguntas frecuentes del Agente IA detectan las preguntas más comunes de tus clientes -ya sea que falten en tu base de conocimiento o se repitan seguido- y genera sugerencias para mejorar el soporte. Puedes revisar cada sugerencia y decidir si aprobarla o rechazarla."
         }
-      }
+      },
+      "NO_USED_CONVERSATIONS": "No se encontraron conversaciones para esta pregunta frecuente."
     },
     "FAQ_SUGGESTIONS": {
       "HEADER": "Sugerencias de FAQ",

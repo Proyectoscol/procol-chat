@@ -36,18 +36,17 @@ const displayGuidelines = computed(() =>
 const guidelinesExample = [
   {
     id: 1,
-    content:
-      'Block queries that share or request sensitive personal information (e.g. phone numbers, passwords).',
+    content: 'Usar un tono respetuoso y cercano, nunca amenazante ni agresivo.',
   },
   {
     id: 2,
     content:
-      'Reject queries that include offensive, discriminatory, or threatening language.',
+      'Ser breve y directo: indicar el monto adeudado, el plazo y los pasos para pagar en pocas líneas.',
   },
   {
     id: 3,
     content:
-      'Deflect when the assistant is asked for legal or medical diagnosis or treatment.',
+      'Evitar tecnicismos legales o contables; explicar la situación de la deuda en lenguaje sencillo.',
   },
 ];
 

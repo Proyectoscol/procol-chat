@@ -39,15 +39,15 @@ const renderInstruction = instruction => () =>
     innerHTML: instruction,
   });
 
-// Suggested example scenarios for quick add
+// Ejemplos de escenarios sugeridos para agregar rápido
 const scenariosExample = [
   {
     id: 1,
-    title: 'Prospective Buyer',
+    title: 'Cliente quiere acordar un plan de pago',
     description:
-      'Handle customers who are showing interest in purchasing a license',
+      'Atiende a clientes que piden fraccionar o negociar el pago de su deuda',
     instruction:
-      'If someone is interested in purchasing a license, ask them for following:\n\n1. How many licenses are they willing to purchase?\n2. Are they migrating from another platform?\n. Once these details are collected, do the following steps\n1. add a private note to with the information you collected using [Add Private Note](tool://add_private_note)\n2. Add label "sales" to the contact using [Add Label to Conversation](tool://add_label_to_conversation)\n3. Reply saying "one of us will reach out soon" and provide an estimated timeline for the response and [Handoff to Human](tool://handoff)',
+      'Si un cliente quiere negociar el pago de su deuda, pregúntale lo siguiente:\n\n1. ¿Cuánto puede pagar y en cuántas cuotas?\n2. ¿En qué fecha podría hacer el primer pago?\n\nUna vez tengas esta información, haz lo siguiente:\n1. Agrega una nota privada con la información recopilada usando [Agregar nota privada](tool://add_private_note)\n2. Agrega la etiqueta "negociacion" a la conversación usando [Agregar etiqueta a la conversación](tool://add_label_to_conversation)\n3. Responde indicando que un asesor de cartera se pondrá en contacto pronto para confirmar el acuerdo y usa [Transferir a un humano](tool://handoff)',
     tools: ['add_private_note', 'add_label_to_conversation', 'handoff'],
   },
 ];

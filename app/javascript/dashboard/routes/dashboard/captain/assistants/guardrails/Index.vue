@@ -35,17 +35,17 @@ const guardrailsExample = [
   {
     id: 1,
     content:
-      'Block queries that share or request sensitive personal information (e.g. phone numbers, passwords).',
+      'No compartir ni solicitar información sensible del cliente (contraseñas, números de tarjeta o datos bancarios completos).',
   },
   {
     id: 2,
     content:
-      'Reject queries that include offensive, discriminatory, or threatening language.',
+      'Rechazar mensajes que incluyan lenguaje ofensivo, discriminatorio o amenazante.',
   },
   {
     id: 3,
     content:
-      'Deflect when the assistant is asked for legal or medical diagnosis or treatment.',
+      'Transferir a un asesor humano cuando el cliente pida asesoría legal sobre su deuda o cuestione la validez del cobro.',
   },
 ];
 
