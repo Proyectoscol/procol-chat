@@ -21,15 +21,22 @@ const dynamicCount = useMapGetter(props.getterKeys.count);
 const count = computed(() =>
   dynamicCount.value > 99 ? '99+' : dynamicCount.value
 );
+// Custom env-configured menu items pass an absolute URL string as `to`
+// instead of a vue-router route object — render those as real external
+// links instead of letting router-link swallow the navigation.
+const isExternalTo = computed(() => typeof props.to === 'string');
 </script>
 
 <template>
   <component
-    :is="to ? 'router-link' : 'div'"
+    :is="to ? (isExternalTo ? 'a' : 'router-link') : 'div'"
     class="flex items-center gap-2 px-1.5 py-1 rounded-lg h-8 min-w-0"
     role="button"
     draggable="false"
-    :to="to"
+    :to="to && !isExternalTo ? to : undefined"
+    :href="to && isExternalTo ? to : undefined"
+    :target="isExternalTo ? '_blank' : undefined"
+    :rel="isExternalTo ? 'noopener noreferrer' : undefined"
     :title="label"
     :class="{
       'text-n-slate-12 bg-n-alpha-2 font-medium': isActive && !hasActiveChild,

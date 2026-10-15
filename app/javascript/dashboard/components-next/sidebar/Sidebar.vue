@@ -46,7 +46,7 @@ const emit = defineEmits([
 ]);
 
 const { accountScopedRoute, isOnChatwootCloud } = useAccount();
-const { isEnterprise } = useConfig();
+const { isEnterprise, hiddenSidebarItems, customMenuItems } = useConfig();
 const store = useStore();
 
 // Calls run on the enterprise-only API (cloud runs enterprise); hide the entry
@@ -373,7 +373,7 @@ const newReportRoutes = () => [
 
 const reportRoutes = computed(() => newReportRoutes());
 
-const menuItems = computed(() => {
+const rawMenuItems = computed(() => {
   return [
     {
       name: 'Inbox',
@@ -1001,6 +1001,48 @@ const menuItems = computed(() => {
       ...item,
       children: item.children?.filter(child => !child.hidden),
     }));
+});
+
+// Custom env-configured sidebar entries (CUSTOM_MENU_ITEM_n_*), sorted by
+// their configured 1-based position so they splice in a stable order.
+const customMenuItemsToInsert = computed(() =>
+  customMenuItems
+    .filter(entry => entry.label && entry.url)
+    .slice()
+    .sort((a, b) => a.position - b.position)
+    .map((entry, index) => ({
+      name: `CustomMenuItem-${index}`,
+      label: entry.label,
+      icon: 'i-lucide-external-link',
+      to: entry.url,
+      activeOn: [],
+      position: entry.position,
+    }))
+);
+
+const menuItems = computed(() => {
+  const items = rawMenuItems.value.filter(
+    item => !hiddenSidebarItems.includes(item.name)
+  );
+
+  customMenuItemsToInsert.value.forEach(({ position, ...item }) => {
+    const index = Math.min(Math.max(position - 1, 0), items.length);
+    items.splice(index, 0, item);
+  });
+
+  return items;
+});
+
+onMounted(() => {
+  const validNames = rawMenuItems.value.map(item => item.name);
+  hiddenSidebarItems
+    .filter(name => name && !validNames.includes(name))
+    .forEach(name => {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `HIDE_SIDEBAR_ITEMS: "${name}" doesn't match any sidebar item name — check spelling.`
+      );
+    });
 });
 </script>
 

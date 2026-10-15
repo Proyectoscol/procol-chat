@@ -14,7 +14,7 @@ const props = defineProps({
   name: { type: String, required: true },
   label: { type: String, required: true },
   icon: { type: [String, Object, Function], default: null },
-  to: { type: Object, default: null },
+  to: { type: [String, Object], default: null },
   activeOn: { type: Array, default: () => [] },
   children: { type: Array, default: undefined },
   getterKeys: { type: Object, default: () => ({}) },
@@ -47,6 +47,10 @@ const route = useRoute();
 const router = useRouter();
 const isExpanded = computed(() => expandedItem.value === props.name);
 const isExpandable = computed(() => props.children);
+// Custom env-configured menu items pass an absolute URL string as `to`
+// instead of a vue-router route object — render those as real external
+// links instead of letting router-link swallow the navigation.
+const isExternalTo = computed(() => typeof props.to === 'string');
 const hasChildren = computed(
   () => Array.isArray(props.children) && props.children.length > 0
 );
@@ -259,9 +263,14 @@ watch(
         @mouseleave="handleMouseLeave"
       >
         <component
-          :is="to && !hasChildren ? 'router-link' : 'button'"
+          :is="
+            to && !hasChildren ? (isExternalTo ? 'a' : 'router-link') : 'button'
+          "
           ref="triggerRef"
-          :to="to && !hasChildren ? to : undefined"
+          :to="to && !hasChildren && !isExternalTo ? to : undefined"
+          :href="to && !hasChildren && isExternalTo ? to : undefined"
+          :target="isExternalTo ? '_blank' : undefined"
+          :rel="isExternalTo ? 'noopener noreferrer' : undefined"
           type="button"
           class="flex items-center justify-center size-10 rounded-lg"
           :class="{

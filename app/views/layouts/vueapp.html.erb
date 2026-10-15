@@ -57,7 +57,15 @@
         enabledLanguages: <%= available_locales_with_name.to_json.html_safe %>,
         helpUrls: <%= feature_help_urls.to_json.html_safe %>,
         inboxEventsEnabled: '<%= ENV['ENABLE_INBOX_EVENTS'].present? %>',
-        selectedLocale: '<%= I18n.locale %>'
+        selectedLocale: '<%= I18n.locale %>',
+        hiddenSidebarItems: <%= ENV.fetch('HIDE_SIDEBAR_ITEMS', '').split(',').map(&:strip).to_json.html_safe %>,
+        customMenuItems: <%= (1..5).filter_map { |i|
+          label = ENV["CUSTOM_MENU_ITEM_#{i}_LABEL"]
+          url = ENV["CUSTOM_MENU_ITEM_#{i}_URL"]
+          next unless label.present? && url.present?
+
+          { label: label, url: url, position: ENV.fetch("CUSTOM_MENU_ITEM_#{i}_POSITION", '999').to_i }
+        }.to_json.html_safe %>
       }
       window.globalConfig = <%= raw @global_config.to_json %>
       window.browserConfig = {

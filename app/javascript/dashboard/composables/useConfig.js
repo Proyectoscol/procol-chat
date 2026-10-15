@@ -42,6 +42,18 @@ export function useConfig() {
    */
   const inboxEventsEnabled = config.inboxEventsEnabled === 'true';
 
+  /**
+   * Sidebar item `name`s to hide for this deployment (HIDE_SIDEBAR_ITEMS).
+   * @type {string[]}
+   */
+  const hiddenSidebarItems = config.hiddenSidebarItems || [];
+
+  /**
+   * Custom external sidebar entries for this deployment (CUSTOM_MENU_ITEM_n_*).
+   * @type {Array<{label: string, url: string, position: number}>}
+   */
+  const customMenuItems = config.customMenuItems || [];
+
   return {
     hostURL,
     vapidPublicKey,
@@ -49,5 +61,7 @@ export function useConfig() {
     isEnterprise,
     enterprisePlanName,
     inboxEventsEnabled,
+    hiddenSidebarItems,
+    customMenuItems,
   };
 }
