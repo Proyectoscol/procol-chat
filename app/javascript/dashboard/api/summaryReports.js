@@ -55,6 +55,26 @@ class SummaryReportsAPI extends ApiClient {
       },
     });
   }
+
+  getAuditoriaAdvisorConversations({
+    since,
+    until,
+    inboxId,
+    userId,
+    page,
+    signal,
+  } = {}) {
+    return axios.get(`${this.url}/auditoria_advisor_conversations`, {
+      params: {
+        since,
+        until,
+        inbox_id: inboxId,
+        user_id: userId,
+        page,
+      },
+      signal,
+    });
+  }
 }
 
 export default new SummaryReportsAPI();

@@ -676,6 +676,12 @@
     "HEADER": "Advisor Overview",
     "DESCRIPTION": "Conversation volume and average response time per advisor. Conversations with messages from more than one advisor are excluded here and flagged with the \"auditoria-multiple-asesor\" label instead.",
     "INBOX_FILTER_LABEL": "Inbox",
-    "INBOX_FILTER_ALL": "All inboxes"
+    "INBOX_FILTER_ALL": "All inboxes",
+    "CONVERSATIONS_DRAWER": {
+      "DESCRIPTION": "Conversations in the selected date range.",
+      "RESULT_COUNT": "{count} conversation | {count} conversations",
+      "EMPTY": "No conversations found for this advisor in the selected range.",
+      "ERROR": "Failed to load conversations, please try again."
+    }
   }
 }

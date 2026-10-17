@@ -6,6 +6,7 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import ReportHeader from './components/ReportHeader.vue';
 import OverviewReportFilters from './components/OverviewReportFilters.vue';
+import AuditoriaAdvisorConversationsDrawer from './components/AuditoriaAdvisorConversationsDrawer.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import Table from 'dashboard/components/table/Table.vue';
 import {
@@ -46,11 +47,29 @@ const defaulSpanRender = cellProps =>
     cellProps.getValue()
   );
 
+const selectedAdvisor = ref(null);
+const isDrawerOpen = computed(() => !!selectedAdvisor.value);
+const openAdvisorDrawer = row => {
+  selectedAdvisor.value = { id: row.id, name: row.name };
+};
+const closeAdvisorDrawer = () => {
+  selectedAdvisor.value = null;
+};
+
 const columns = computed(() => [
   columnHelper.accessor('name', {
     header: t('SUMMARY_REPORTS.AGENT'),
     width: 300,
-    cell: defaulSpanRender,
+    cell: cellProps =>
+      h(
+        'button',
+        {
+          type: 'button',
+          class: 'text-n-blue-text hover:underline',
+          onClick: () => openAdvisorDrawer(cellProps.row.original),
+        },
+        cellProps.getValue()
+      ),
   }),
   columnHelper.accessor('conversationsCount', {
     header: t('SUMMARY_REPORTS.CONVERSATIONS'),
@@ -185,4 +204,14 @@ const table = useVueTable({
       </div>
     </Transition>
   </div>
+
+  <AuditoriaAdvisorConversationsDrawer
+    :open="isDrawerOpen"
+    :advisor-name="selectedAdvisor?.name"
+    :user-id="selectedAdvisor?.id"
+    :since="from"
+    :until="to"
+    :inbox-id="selectedInboxId"
+    @close="closeAdvisorDrawer"
+  />
 </template>

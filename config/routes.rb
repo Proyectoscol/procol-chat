@@ -541,6 +541,7 @@ Rails.application.routes.draw do
               get :label
               get :channel
               get :auditoria_advisor
+              get :auditoria_advisor_conversations
             end
           end
           resources :reports, only: [:index] do

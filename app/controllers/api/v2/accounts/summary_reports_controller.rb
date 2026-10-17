@@ -33,6 +33,16 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     render json: builder.build
   end
 
+  # Click-to-detail del reporte: conversaciones de un asesor en el rango.
+  def auditoria_advisor_conversations
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaAdvisorConversationsBuilder.new(
+      account: Current.account, params: auditoria_conversations_params
+    )
+    render json: builder.build
+  end
+
   private
 
   def check_authorization
@@ -49,6 +59,10 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
 
   def auditoria_params
     params.permit(:since, :until, :inbox_id)
+  end
+
+  def auditoria_conversations_params
+    params.permit(:since, :until, :inbox_id, :user_id, :page)
   end
 
   def render_report_with(builder_class, type: nil)
