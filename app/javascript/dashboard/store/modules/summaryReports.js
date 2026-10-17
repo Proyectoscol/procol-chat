@@ -22,6 +22,11 @@ const typeMap = {
     apiMethod: 'getLabelReports',
     mutationKey: 'setLabelSummaryReport',
   },
+  auditoriaAdvisor: {
+    flagKey: 'isFetchingAuditoriaAdvisorSummaryReports',
+    apiMethod: 'getAuditoriaAdvisorReports',
+    mutationKey: 'setAuditoriaAdvisorSummaryReport',
+  },
 };
 
 async function fetchSummaryReports(type, params, { commit }) {
@@ -46,11 +51,13 @@ export const initialState = {
   agentSummaryReports: [],
   teamSummaryReports: [],
   labelSummaryReports: [],
+  auditoriaAdvisorSummaryReports: [],
   uiFlags: {
     isFetchingInboxSummaryReports: false,
     isFetchingAgentSummaryReports: false,
     isFetchingTeamSummaryReports: false,
     isFetchingLabelSummaryReports: false,
+    isFetchingAuditoriaAdvisorSummaryReports: false,
   },
 };
 
@@ -66,6 +73,9 @@ export const getters = {
   },
   getLabelSummaryReports(state) {
     return state.labelSummaryReports;
+  },
+  getAuditoriaAdvisorSummaryReports(state) {
+    return state.auditoriaAdvisorSummaryReports;
   },
   getUIFlags(state) {
     return state.uiFlags;
@@ -88,6 +98,10 @@ export const actions = {
   fetchLabelSummaryReports({ commit }, params) {
     return fetchSummaryReports('label', params, { commit });
   },
+
+  fetchAuditoriaAdvisorSummaryReports({ commit }, params) {
+    return fetchSummaryReports('auditoriaAdvisor', params, { commit });
+  },
 };
 
 export const mutations = {
@@ -102,6 +116,9 @@ export const mutations = {
   },
   setLabelSummaryReport(state, data) {
     state.labelSummaryReports = data;
+  },
+  setAuditoriaAdvisorSummaryReport(state, data) {
+    state.auditoriaAdvisorSummaryReports = data;
   },
   setUIFlags(state, uiFlag) {
     state.uiFlags = { ...state.uiFlags, ...uiFlag };

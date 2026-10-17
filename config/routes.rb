@@ -540,6 +540,7 @@ Rails.application.routes.draw do
               get :inbox
               get :label
               get :channel
+              get :auditoria_advisor
             end
           end
           resources :reports, only: [:index] do

@@ -24,6 +24,15 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     render_report_with(V2::Reports::ChannelSummaryBuilder)
   end
 
+  # Cuenta dedicada de Auditoria: no usa reporting_events (ver builder), asi
+  # que no comparte prepare_builder_params/render_report_with con el resto.
+  def auditoria_advisor
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaAdvisorSummaryBuilder.new(account: Current.account, params: auditoria_params)
+    render json: builder.build
+  end
+
   private
 
   def check_authorization
@@ -36,6 +45,10 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
       until: permitted_params[:until],
       business_hours: ActiveModel::Type::Boolean.new.cast(permitted_params[:business_hours])
     }
+  end
+
+  def auditoria_params
+    params.permit(:since, :until, :inbox_id)
   end
 
   def render_report_with(builder_class, type: nil)

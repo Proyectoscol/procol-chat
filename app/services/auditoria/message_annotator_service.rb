@@ -23,25 +23,67 @@ class Auditoria::MessageAnnotatorService
   MESSAGE_MARKER = 'message:'.freeze
   TYPE_MESSAGE_LINE = /\Atype message: (\w+)/
   TAGS = %w[forwarded reply].freeze
+  MULTIPLE_ADVISORS_LABEL_TITLE = 'auditoria-multiple-asesor'.freeze
 
   def call
     return unless message.account.feature_enabled?('auditoria')
 
-    blocks = strip_envelope(message.content.to_s.split(BLOCK_SEPARATOR))
+    blocks, source_name = strip_envelope(message.content.to_s.split(BLOCK_SEPARATOR))
     return unless blocks
 
+    tag, quoted_blocks, remaining_blocks = parse_body(blocks)
+    attrs = build_attrs(tag, quoted_blocks, remaining_blocks, source_name)
+
+    message.content_attributes = message.content_attributes.merge(attrs)
+    save_message
+    flag_multiple_advisors if attrs['auditoria_source_user_id']
+  end
+
+  private
+
+  def parse_body(blocks)
     tag = blocks.first if TAGS.include?(blocks.first)
     blocks.shift if tag
 
     quoted_blocks, remaining_blocks = split_on_marker(blocks, tag)
-    attrs = { 'auditoria_display_content' => reassemble(tag, strip_type_message(remaining_blocks)) }
-    annotate_reply(tag, quoted_blocks, attrs)
-
-    message.content_attributes = message.content_attributes.merge(attrs)
-    save_message
+    [tag, quoted_blocks, remaining_blocks]
   end
 
-  private
+  def build_attrs(tag, quoted_blocks, remaining_blocks, source_name)
+    attrs = {
+      'auditoria_display_content' => reassemble(tag, strip_type_message(remaining_blocks)),
+      'auditoria_source_user_id' => resolve_source_user_id(source_name)
+    }
+    annotate_reply(tag, quoted_blocks, attrs)
+    attrs
+  end
+
+  # Si la conversacion ya acumulo mensajes de mas de un asesor distinto
+  # (tipico de un contacto interno al que dos asesores le escriben desde su
+  # propio celular vinculado por QR), la marca con una label nativa para que
+  # el equipo la vea en el panel lateral y el reporte de Auditoria la
+  # excluya del calculo por asesor -- ninguno de los dos se queda con
+  # metricas infladas o robadas por un numero que en realidad comparten.
+  def flag_multiple_advisors
+    conversation = message.conversation
+    return if conversation.label_list.include?(MULTIPLE_ADVISORS_LABEL_TITLE)
+
+    # reorder(nil): Message's default_scope orders by created_at, y Postgres
+    # exige que las columnas de ORDER BY aparezcan en el SELECT cuando se usa
+    # DISTINCT -- sin esto, explota con la misma clase de error que group().
+    distinct_source_ids = conversation.messages
+                                      .reorder(nil)
+                                      .where("content_attributes->>'auditoria_source_user_id' IS NOT NULL")
+                                      .distinct
+                                      .pluck(Arel.sql("content_attributes->>'auditoria_source_user_id'"))
+    return if distinct_source_ids.size <= 1
+
+    label = Label.find_or_create_by!(account: message.account, title: MULTIPLE_ADVISORS_LABEL_TITLE) do |l|
+      l.color = '#FB2C36'
+      l.description = 'Conversacion con mensajes de mas de un asesor (Source distinto) - excluida de los reportes por asesor.'
+    end
+    conversation.add_labels(label.title)
+  end
 
   def save_message
     return message.save! if broadcast
@@ -57,8 +99,16 @@ class Auditoria::MessageAnnotatorService
     blocks.pop if blocks.last == DEVICE_SUFFIX
     return nil unless blocks.last&.start_with?(SOURCE_PREFIX)
 
-    blocks.pop
-    blocks
+    [blocks, blocks.pop.delete_prefix(SOURCE_PREFIX)]
+  end
+
+  # Mismo match exacto (nombre completo, literal) que usa la regla de
+  # asignacion "contains Source: <nombre>" -- si el nombre no calza con
+  # ningun agente de la cuenta (tilde/espacio distinto, agente renombrado),
+  # esta tambien queda nil; ver "reglas huerfanas" de reconcile_agents para
+  # encontrar esos casos.
+  def resolve_source_user_id(name)
+    message.account.users.find_by(name: name)&.id
   end
 
   # Para un reply: NUNCA enlaza al mensaje real via in_reply_to -- se intento

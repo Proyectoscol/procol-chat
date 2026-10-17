@@ -664,6 +664,13 @@
     "AVG_FIRST_RESPONSE_TIME": "Avg. First Response Time",
     "AVG_REPLY_TIME": "Avg. Customer Waiting Time",
     "RESOLUTION_COUNT": "Número de resoluciones",
-    "CONVERSATIONS": "Núm. de conversaciones"
+    "CONVERSATIONS": "Núm. de conversaciones",
+    "AVG_RESPONSE_TIME": "Tiempo de respuesta promedio"
+  },
+  "AUDITORIA_ADVISOR_REPORTS": {
+    "HEADER": "Resumen por asesor",
+    "DESCRIPTION": "Volumen de conversaciones y tiempo de respuesta promedio por asesor. Las conversaciones con mensajes de más de un asesor se excluyen aquí y quedan marcadas con la etiqueta \"auditoria-multiple-asesor\".",
+    "INBOX_FILTER_LABEL": "Bandeja",
+    "INBOX_FILTER_ALL": "Todas las bandejas"
   }
 }

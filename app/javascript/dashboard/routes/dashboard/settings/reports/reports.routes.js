@@ -5,6 +5,7 @@ import ReportsWrapper from './components/ReportsWrapper.vue';
 import Index from './Index.vue';
 
 import AgentReportsIndex from './AgentReportsIndex.vue';
+import AuditoriaAdvisorReportsIndex from './AuditoriaAdvisorReportsIndex.vue';
 import InboxReportsIndex from './InboxReportsIndex.vue';
 import TeamReportsIndex from './TeamReportsIndex.vue';
 import LabelReportsIndex from './LabelReportsIndex.vue';
@@ -62,6 +63,12 @@ const revisedReportRoutes = [
     name: 'agent_reports_index',
     meta,
     component: AgentReportsIndex,
+  },
+  {
+    path: 'auditoria_advisors',
+    name: 'auditoria_advisor_reports_index',
+    meta,
+    component: AuditoriaAdvisorReportsIndex,
   },
   {
     path: 'agents/:id',

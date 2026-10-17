@@ -369,6 +369,12 @@ const newReportRoutes = () => [
     to: accountScopedRoute('team_reports_index'),
     activeOn: ['team_reports_show'],
   },
+  {
+    name: 'Reports Auditoria Advisors',
+    label: t('SIDEBAR.REPORTS_AUDITORIA_ADVISORS'),
+    to: accountScopedRoute('auditoria_advisor_reports_index'),
+    hidden: !isFeatureEnabledonAccount.value(accountId.value, 'auditoria'),
+  },
 ];
 
 const reportRoutes = computed(() => newReportRoutes());

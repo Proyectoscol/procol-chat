@@ -39,6 +39,8 @@ namespace :auditoria do
 
     annotated = 0
     quoted = 0
+    resolved = 0
+    unresolved = 0
 
     # broadcast: false -- ver Auditoria::MessageAnnotatorService. Sin esto,
     # miles de updates en una sola corrida inundan Sidekiq de jobs de
@@ -50,10 +52,18 @@ namespace :auditoria do
 
       annotated += 1
       quoted += 1 if message.content_attributes['auditoria_quoted_text'].present?
+      message.content_attributes['auditoria_source_user_id'].present? ? resolved += 1 : unresolved += 1
     end
+
+    multiple_advisors = account.conversations.tagged_with(
+      Auditoria::MessageAnnotatorService::MULTIPLE_ADVISORS_LABEL_TITLE
+    ).count
 
     puts "Mensajes anotados: #{annotated}"
     puts "Replies con cita estatica: #{quoted}"
+    puts "Mensajes con asesor resuelto: #{resolved}"
+    puts "Mensajes con Source sin agente coincidente: #{unresolved}" if unresolved.positive?
+    puts "Conversaciones marcadas como multiple asesor: #{multiple_advisors}"
   end
 end
 # rubocop:enable Metrics/BlockLength

@@ -98,7 +98,17 @@ export default {
       listLoadingStatus: 'getAllMessagesLoaded',
       currentAccountId: 'getCurrentAccountId',
       isMetaMessageSendingDisabled: 'globalConfig/isMetaMessageSendingDisabled',
+      isFeatureEnabledonAccount: 'accounts/isFeatureEnabledonAccount',
     }),
+    // Procol Auditoria es de solo lectura: el equipo nunca envia mensajes
+    // desde aqui (la plataforma externa ya lo hace por su cuenta), asi que
+    // el composer es ruido que confunde al cliente.
+    showReplyComposer() {
+      return !this.isFeatureEnabledonAccount(
+        this.currentAccountId,
+        'auditoria'
+      );
+    },
     isOpen() {
       return this.currentChat?.status === wootConstants.STATUS_TYPE.OPEN;
     },
@@ -532,7 +542,7 @@ export default {
         />
       </template>
     </MessageList>
-    <div class="flex relative flex-col bg-n-surface-1">
+    <div v-if="showReplyComposer" class="flex relative flex-col bg-n-surface-1">
       <div
         v-if="isAnyoneTyping"
         class="absolute flex items-center w-full h-0 -top-7"
