@@ -24,6 +24,14 @@ class Auditoria::MessageAnnotatorService
   TYPE_MESSAGE_LINE = /\Atype message: (\w+)/
   TAGS = %w[forwarded reply].freeze
   MULTIPLE_ADVISORS_LABEL_TITLE = 'auditoria-multiple-asesor'.freeze
+  # content_attributes es `json` + `store coder: JSON` (ver Message) -- eso
+  # serializa dos veces al guardar (el coder lo convierte a texto JSON, y la
+  # columna nativa json lo vuelve a envolver en comillas), asi que en la base
+  # queda como un string JSON escapado, no un objeto. Leerlo por Ruby/AR
+  # deshace ambas capas sin que se note, pero el operador ->> de Postgres
+  # sobre el valor crudo no puede sacar una clave de un string escalar --
+  # hay que desenvolverlo primero con #>>'{}' y recien ahi castear a json.
+  UNWRAP_CONTENT_ATTRIBUTES = "(content_attributes #>> '{}')::json".freeze
 
   def call
     return unless message.account.feature_enabled?('auditoria')
@@ -73,9 +81,9 @@ class Auditoria::MessageAnnotatorService
     # DISTINCT -- sin esto, explota con la misma clase de error que group().
     distinct_source_ids = conversation.messages
                                       .reorder(nil)
-                                      .where("content_attributes->>'auditoria_source_user_id' IS NOT NULL")
+                                      .where("#{UNWRAP_CONTENT_ATTRIBUTES}->>'auditoria_source_user_id' IS NOT NULL")
                                       .distinct
-                                      .pluck(Arel.sql("content_attributes->>'auditoria_source_user_id'"))
+                                      .pluck(Arel.sql("#{UNWRAP_CONTENT_ATTRIBUTES}->>'auditoria_source_user_id'"))
     return if distinct_source_ids.size <= 1
 
     label = Label.find_or_create_by!(account: message.account, title: MULTIPLE_ADVISORS_LABEL_TITLE) do |l|

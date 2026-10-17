@@ -53,9 +53,7 @@ class V2::Reports::AuditoriaAdvisorSummaryBuilder
     prev_type = nil
     prev_created_at = nil
     rows_in_conversation.each do |row|
-      # prev_type puede ser nil (primer mensaje de la conversacion) -- zero?
-      # explotaria con NoMethodError, == no.
-      if row[:message_type] == 1 && row[:advisor_id] && prev_type == 0 # rubocop:disable Style/NumericPredicate
+      if row[:message_type] == 'outgoing' && row[:advisor_id] && prev_type == 'incoming'
         @response_samples_by_advisor[row[:advisor_id]] << (row[:created_at] - prev_created_at)
       end
       prev_type = row[:message_type]
@@ -69,11 +67,26 @@ class V2::Reports::AuditoriaAdvisorSummaryBuilder
     end
   end
 
+  # pluck(:message_type) devuelve el label del enum ("incoming"/"outgoing"),
+  # no el entero crudo -- Rails lo castea al leer la columna aunque sea un
+  # pluck directo.
+  #
+  # content_attributes es `json` + `store coder: JSON` (ver Message) -- eso
+  # hace que Rails lo serialice DOS veces al guardar (coder.dump produce un
+  # string JSON, que el tipo nativo json de la columna vuelve a envolver en
+  # comillas), asi que en la base queda como un string JSON escapado, no un
+  # objeto. Leerlo por Ruby/AR deshace ambas capas sin que se note, pero
+  # el operador ->> de Postgres sobre el valor crudo no puede sacar una
+  # clave de un string escalar -- por eso hay que desenvolverlo primero
+  # con #>>'{}' (extrae el string interno) y recien ahi castear a json.
+  UNWRAP_CONTENT_ATTRIBUTES = "(content_attributes #>> '{}')::json".freeze
+
   def scoped_messages
     scope = account.messages.where(created_at: range).where.not(conversation_id: excluded_conversation_ids)
     scope = scope.where(inbox_id: inbox_id) if inbox_id.present?
     scope.reorder('messages.conversation_id ASC, messages.id ASC')
-         .pluck(:conversation_id, :message_type, :created_at, Arel.sql("content_attributes->>'auditoria_source_user_id'"))
+         .pluck(:conversation_id, :message_type, :created_at,
+                Arel.sql("#{UNWRAP_CONTENT_ATTRIBUTES}->>'auditoria_source_user_id'"))
   end
 
   def excluded_conversation_ids
