@@ -55,6 +55,9 @@ class AgentBuilder
     temp_password = "1!aA#{SecureRandom.alphanumeric(12)}"
     User.new(email: email, name: @name, password: temp_password, password_confirmation: temp_password).tap do |new_user|
       new_user.skip_confirmation_notification!
+      # Auditoria agents are internal proxies for a WhatsApp source, not real
+      # invited users - skip email confirmation so they're assignable right away.
+      new_user.skip_confirmation! if account.feature_enabled?('auditoria')
       new_user.save!
       @new_user = true
     end

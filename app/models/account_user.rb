@@ -36,7 +36,7 @@ class AccountUser < ApplicationRecord
 
   accepts_nested_attributes_for :account
 
-  after_create_commit :notify_creation, :create_notification_setting
+  after_create_commit :notify_creation, :create_notification_setting, :create_auditoria_assignment_rule
   after_destroy :notify_deletion, :remove_user_from_account
   after_save :update_presence_in_redis, if: :saved_change_to_availability?
   after_commit :invalidate_filtered_unread_count_visibility, on: [:create, :destroy]
@@ -53,6 +53,17 @@ class AccountUser < ApplicationRecord
 
   def remove_user_from_account
     ::Agents::DestroyJob.perform_later(account, user)
+  end
+
+  # Auditoria agents are proxies for a WhatsApp source: the external platform
+  # tags every message it replicates with "Source: <agent name>", so each
+  # agent needs a matching rule to self-assign that conversation on creation.
+  # Shape of the rule lives in Auditoria::AgentReconcilerService, which also
+  # backfills it in bulk for agents that already existed before this feature.
+  def create_auditoria_assignment_rule
+    return unless account.feature_enabled?('auditoria')
+
+    Auditoria::AgentReconcilerService.create_assignment_rule!(account: account, user: user)
   end
 
   def permissions
