@@ -2,15 +2,23 @@
 
 # rubocop:disable Metrics/BlockLength
 namespace :auditoria do
-  desc 'Verifica agentes sin confirmar y crea las reglas "Source: <nombre>" que falten (ACCOUNT_ID=<id>)'
+  # Tambien corre sola en cada boot del contenedor (ver docker/entrypoints/rails.sh)
+  # cuando AUDITORIA_ACCOUNT_ID esta seteado.
+  desc 'Prende el feature "auditoria" si falta y reconcilia agentes/reglas "Source: <nombre>" (ACCOUNT_ID=<id>)'
   task reconcile_agents: :environment do
     account_id = ENV['ACCOUNT_ID'].presence || ENV['AUDITORIA_ACCOUNT_ID'].presence
     raise 'Pasa el account_id: rake auditoria:reconcile_agents ACCOUNT_ID=1' if account_id.blank?
 
     account = Account.find(account_id)
-    raise "La cuenta #{account.id} no tiene el feature 'auditoria' activo" unless account.feature_enabled?('auditoria')
 
-    result = Auditoria::AgentReconcilerService.new(account: account).call
+    # with_lock: el entrypoint corre esta tarea en cada boot (web y sidekiq
+    # bootean este mismo entrypoint), asi que puede llegar a correr dos veces
+    # en paralelo en un redeploy - el lock serializa para que no se dupliquen
+    # reglas de asignacion por una carrera entre ambos procesos.
+    result = account.with_lock do
+      account.enable_features!('auditoria') unless account.feature_enabled?('auditoria')
+      Auditoria::AgentReconcilerService.new(account: account).call
+    end
 
     puts "Verificados: #{result[:confirmed].inspect}"
     puts "Reglas creadas: #{result[:rules_created].inspect}"

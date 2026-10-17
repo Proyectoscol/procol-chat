@@ -30,5 +30,12 @@ do
   sleep 2;
 done
 
+# Procol Auditoria: prende el feature para la cuenta y reconcilia agentes en
+# cada boot (ver lib/tasks/auditoria.rake) - no-op para cualquier deploy que
+# no tenga esta variable seteada (p.ej. el procol-chat multi-tenant normal).
+if [ -n "$AUDITORIA_ACCOUNT_ID" ]; then
+  bundle exec rake auditoria:reconcile_agents ACCOUNT_ID="$AUDITORIA_ACCOUNT_ID" || echo "Auditoria: reconcile_agents fallo, continuando el boot"
+fi
+
 # Execute the main process of the container
 exec "$@"
