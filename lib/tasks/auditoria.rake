@@ -38,18 +38,22 @@ namespace :auditoria do
     raise "La cuenta #{account.id} no tiene el feature 'auditoria' activo" unless account.feature_enabled?('auditoria')
 
     annotated = 0
-    linked = 0
+    quoted = 0
 
+    # broadcast: false -- ver Auditoria::MessageAnnotatorService. Sin esto,
+    # miles de updates en una sola corrida inundan Sidekiq de jobs de
+    # "message.updated" y saturan la CPU para un aviso en vivo que nadie
+    # necesita en un backfill de mensajes historicos.
     account.messages.order(:id).find_each do |message|
-      Auditoria::MessageAnnotatorService.new(message: message).call
+      Auditoria::MessageAnnotatorService.new(message: message, broadcast: false).call
       next unless message.content_attributes.key?('auditoria_display_content')
 
       annotated += 1
-      linked += 1 if message.content_attributes['in_reply_to'].present?
+      quoted += 1 if message.content_attributes['auditoria_quoted_text'].present?
     end
 
     puts "Mensajes anotados: #{annotated}"
-    puts "Replies enlazados a un mensaje real: #{linked}"
+    puts "Replies con cita estatica: #{quoted}"
   end
 end
 # rubocop:enable Metrics/BlockLength
