@@ -7,6 +7,7 @@ import TranslationToggle from 'dashboard/components-next/message/TranslationTogg
 import { MESSAGE_TYPES } from '../../constants';
 import { useMessageContext } from '../../provider.js';
 import { useTranslations } from 'dashboard/composables/useTranslations';
+import MessageFormatter from 'shared/helpers/MessageFormatter.js';
 
 const {
   content,
@@ -14,6 +15,7 @@ const {
   contentAttributes,
   additionalAttributes,
   messageType,
+  inReplyTo,
 } = useMessageContext();
 
 const templateName = computed(
@@ -34,7 +36,18 @@ const renderContent = computed(() => {
     return translationContent.value;
   }
 
-  return content.value;
+  return contentAttributes.value?.auditoriaDisplayContent ?? content.value;
+});
+
+// Cuando un reply de Auditoria no se pudo enlazar a un mensaje real (ver
+// Auditoria::MessageAnnotatorService), no hay inReplyTo resuelto para que
+// Base.vue muestre su cuadrito nativo con scroll-to -- mostramos el texto
+// citado como cita estatica, sin link, en su lugar.
+const staticQuotePreview = computed(() => {
+  if (inReplyTo?.value) return '';
+
+  const quotedText = contentAttributes.value?.auditoriaQuotedText;
+  return quotedText ? new MessageFormatter(quotedText).formattedMessage : '';
 });
 
 const isTemplate = computed(() => {
@@ -59,6 +72,15 @@ const handleSeeOriginal = () => {
       <span v-if="isEmpty && templateName" class="text-n-slate-11 italic">{{
         templateName
       }}</span>
+      <div
+        v-if="staticQuotePreview"
+        class="p-2 -mx-1 rounded-lg bg-n-alpha-black1"
+      >
+        <div
+          v-dompurify-html="staticQuotePreview"
+          class="prose prose-bubble line-clamp-2"
+        />
+      </div>
       <FormattedContent v-if="renderContent" :content="renderContent" />
       <TranslationToggle
         v-if="hasTranslations"

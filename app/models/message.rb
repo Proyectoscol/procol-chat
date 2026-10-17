@@ -332,10 +332,17 @@ class Message < ApplicationRecord
     send_reply
     execute_message_template_hooks
     update_contact_activity
+    annotate_for_auditoria
   end
 
   def update_contact_activity
     sender.update(last_activity_at: DateTime.now) if sender.is_a?(Contact)
+  end
+
+  def annotate_for_auditoria
+    return unless account.feature_enabled?('auditoria')
+
+    Auditoria::MessageAnnotatorJob.perform_later(id)
   end
 
   def update_waiting_since
