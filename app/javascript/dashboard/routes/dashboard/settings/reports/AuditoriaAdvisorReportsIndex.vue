@@ -64,16 +64,23 @@ const columns = computed(() => [
   }),
 ]);
 
+// agents/getAgents trae todos los account_users (incluye administradores,
+// como Chatwoot ya hace en su propio reporte nativo de agentes) - aqui
+// filtramos solo a quien de verdad atiende WhatsApp como asesor.
 const tableData = computed(() =>
-  agents.value.map(agent => {
-    const { conversationsCount, avgResponseTimeSeconds } = getMetrics(agent.id);
-    return {
-      id: agent.id,
-      name: agent.name,
-      conversationsCount: renderCount(conversationsCount),
-      avgResponseTime: renderAvgTime(avgResponseTimeSeconds),
-    };
-  })
+  agents.value
+    .filter(agent => agent.role === 'agent')
+    .map(agent => {
+      const { conversationsCount, avgResponseTimeSeconds } = getMetrics(
+        agent.id
+      );
+      return {
+        id: agent.id,
+        name: agent.name,
+        conversationsCount: renderCount(conversationsCount),
+        avgResponseTime: renderAvgTime(avgResponseTimeSeconds),
+      };
+    })
 );
 
 const fetchReportsWithRetry = async () => {
