@@ -62,6 +62,7 @@ class AccountUser < ApplicationRecord
   # backfills it in bulk for agents that already existed before this feature.
   def create_auditoria_assignment_rule
     return unless account.feature_enabled?('auditoria')
+    return if auditoria_assignment_rule_exists?
 
     Auditoria::AgentReconcilerService.create_assignment_rule!(account: account, user: user)
   end
@@ -80,6 +81,17 @@ class AccountUser < ApplicationRecord
   end
 
   private
+
+  # Si el agente ya tuvo una regla antes (por ejemplo, removido y
+  # re-agregado a la cuenta) comparamos ignorando tildes/mayusculas/espacios
+  # -- ver Auditoria::MessageAnnotatorService.normalize_name -- para no
+  # crear una duplicada.
+  def auditoria_assignment_rule_exists?
+    normalized_tag = Auditoria::MessageAnnotatorService.normalize_name(Auditoria::AgentReconcilerService.source_tag_for(user))
+    account.automation_rules.where(event_name: 'message_created').any? do |rule|
+      Auditoria::MessageAnnotatorService.normalize_name(rule.description) == normalized_tag
+    end
+  end
 
   def notify_creation
     Rails.configuration.dispatcher.dispatch(AGENT_ADDED, Time.zone.now, account: account)
