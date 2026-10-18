@@ -14,7 +14,10 @@ class V2::Reports::AuditoriaAdvisorConversationsBuilder
     serializer = build_serializer(conversations)
     {
       meta: { current_page: current_page, per_page: per_page, total_count: paginated_conversations.total_count },
-      payload: conversations.map { |conversation| serializer.serialize_conversation(conversation) }
+      # DrilldownRecordSerializer#serialize_conversation es privado -- solo
+      # el publico #serialize, que la despacha para cualquier objeto que no
+      # sea Message/ReportingEvent (nuestro caso: Conversation).
+      payload: conversations.map { |conversation| serializer.serialize(conversation) }
     }
   end
 
@@ -30,12 +33,12 @@ class V2::Reports::AuditoriaAdvisorConversationsBuilder
   end
 
   def paginated_conversations
-    account.conversations
-           .where(id: conversation_ids)
-           .includes(:assignee, :contact, :inbox)
-           .order(last_activity_at: :desc)
-           .page(current_page)
-           .per(per_page)
+    @paginated_conversations ||= account.conversations
+                                        .where(id: conversation_ids)
+                                        .includes(:assignee, :contact, :inbox)
+                                        .order(last_activity_at: :desc)
+                                        .page(current_page)
+                                        .per(per_page)
   end
 
   def conversation_ids
