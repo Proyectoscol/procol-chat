@@ -55,9 +55,13 @@ class Auditoria::AgentReconcilerService
     user.confirm
   end
 
+  # Compara ignorando tildes/mayusculas/espacios (normalize_name) -- si ya
+  # existe una regla para este agente con distinta tilde/mayuscula (por
+  # ejemplo, una armada a mano antes de que existiera este reconciliador),
+  # no crea una duplicada.
   def create_missing_rule(user)
-    source_tag = self.class.source_tag_for(user)
-    return false if assignment_rules.any? { |rule| rule.description == source_tag }
+    normalized_tag = Auditoria::MessageAnnotatorService.normalize_name(self.class.source_tag_for(user))
+    return false if assignment_rules.any? { |rule| Auditoria::MessageAnnotatorService.normalize_name(rule.description) == normalized_tag }
 
     assignment_rules << self.class.create_assignment_rule!(account: account, user: user)
     true
@@ -65,11 +69,14 @@ class Auditoria::AgentReconcilerService
 
   # Reglas de asignacion por agente cuyo "Source: <nombre>" ya no coincide con
   # ningun agente actual - sintoma de un nombre con error de tipeo o un agente
-  # renombrado despues de crear la regla.
+  # renombrado despues de crear la regla. Normalizado para no marcar como
+  # huerfana una regla que solo difiere en tilde/mayuscula/espacio.
   def orphan_rules
-    agent_names = agents.map(&:name)
-    assignment_rules.reject { |rule| agent_names.include?(rule.description.delete_prefix(SOURCE_PREFIX)) }
-                    .map { |rule| { id: rule.id, description: rule.description } }
+    agent_names_normalized = agents.map { |u| Auditoria::MessageAnnotatorService.normalize_name(u.name) }
+    rules = assignment_rules.reject do |rule|
+      agent_names_normalized.include?(Auditoria::MessageAnnotatorService.normalize_name(rule.description.delete_prefix(SOURCE_PREFIX)))
+    end
+    rules.map { |rule| { id: rule.id, description: rule.description } }
   end
 
   def assignment_rules

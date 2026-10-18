@@ -33,6 +33,16 @@ class Auditoria::MessageAnnotatorService
   # hay que desenvolverlo primero con #>>'{}' y recien ahi castear a json.
   UNWRAP_CONTENT_ATTRIBUTES = "(content_attributes #>> '{}')::json".freeze
 
+  # Compara nombres ignorando tildes/mayusculas/espacios de mas, para que un
+  # redeploy nuevo no dependa de que el nombre del agente en Chatwoot calce
+  # byte a byte con el texto que manda la plataforma externa (ver
+  # resolve_source_user_id). Tambien la usa Auditoria::AgentReconcilerService
+  # para no crear una regla de asignacion duplicada cuando ya existe una con
+  # distinta tilde/mayuscula para el mismo agente.
+  def self.normalize_name(name)
+    I18n.transliterate(name.to_s).downcase.gsub(/\s+/, ' ').strip
+  end
+
   def call
     return unless message.account.feature_enabled?('auditoria')
 
@@ -110,13 +120,26 @@ class Auditoria::MessageAnnotatorService
     [blocks, blocks.pop.delete_prefix(SOURCE_PREFIX)]
   end
 
-  # Mismo match exacto (nombre completo, literal) que usa la regla de
-  # asignacion "contains Source: <nombre>" -- si el nombre no calza con
-  # ningun agente de la cuenta (tilde/espacio distinto, agente renombrado),
-  # esta tambien queda nil; ver "reglas huerfanas" de reconcile_agents para
-  # encontrar esos casos.
+  # Resuelve ignorando tildes/mayusculas/espacios (ver normalize_name), y si
+  # eso tampoco calza exacto, intenta un fallback seguro: la plataforma
+  # externa a veces manda el nombre sin el ultimo apellido (ver "Angela
+  # Maria Alzate" vs "Angela Maria Alzate Osorio" en produccion) -- si el
+  # texto es un prefijo (por palabra completa) del nombre de EXACTAMENTE un
+  # agente, lo resuelve a ese agente. Si hay 0 o 2+ candidatos (nombre
+  # desconocido, o ambiguo entre dos agentes), queda nil -- nunca adivina.
   def resolve_source_user_id(name)
-    message.account.users.find_by(name: name)&.id
+    normalized = self.class.normalize_name(name)
+    exact = users_by_normalized_name[normalized]
+    return exact.first.id if exact&.size == 1
+
+    prefix_matches = users_by_normalized_name
+                     .select { |full_name, _| full_name.start_with?("#{normalized} ") }
+                     .values.flatten
+    prefix_matches.first.id if prefix_matches.size == 1
+  end
+
+  def users_by_normalized_name
+    @users_by_normalized_name ||= message.account.users.group_by { |u| self.class.normalize_name(u.name) }
   end
 
   # Para un reply: NUNCA enlaza al mensaje real via in_reply_to -- se intento
