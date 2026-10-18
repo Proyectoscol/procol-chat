@@ -24,6 +24,7 @@ import ShopifyOrdersList from 'dashboard/components/widgets/conversation/Shopify
 import SidebarActionsHeader from 'dashboard/components-next/SidebarActionsHeader.vue';
 import LinearIssuesList from 'dashboard/components/widgets/conversation/linear/IssuesList.vue';
 import LinearSetupCTA from 'dashboard/components/widgets/conversation/linear/LinearSetupCTA.vue';
+import AuditorIaPanel from './AuditorIaPanel.vue';
 
 const props = defineProps({
   conversationId: {
@@ -59,6 +60,10 @@ const { isCloudFeatureEnabled } = useAccount();
 
 const isLinearFeatureEnabled = computed(() =>
   isCloudFeatureEnabled(FEATURE_FLAGS.LINEAR)
+);
+
+const isAuditorIaFeatureEnabled = computed(() =>
+  isCloudFeatureEnabled(FEATURE_FLAGS.CAPTAIN_TASKS)
 );
 
 const linearIntegration = useFunctionGetter(
@@ -284,6 +289,22 @@ onMounted(() => {
               "
             >
               <ShopifyOrdersList :contact-id="contactId" />
+            </AccordionItem>
+          </div>
+          <div
+            v-else-if="
+              element.name === 'auditor_ia' && isAuditorIaFeatureEnabled
+            "
+          >
+            <AccordionItem
+              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.AUDITOR_IA')"
+              :is-open="isContactSidebarItemOpen('is_auditor_ia_open')"
+              compact
+              @toggle="
+                value => toggleSidebarUIState('is_auditor_ia_open', value)
+              "
+            >
+              <AuditorIaPanel :conversation-id="conversationId" />
             </AccordionItem>
           </div>
           <div v-else-if="element.name === 'contact_notes'">

@@ -68,6 +68,7 @@ class Account < ApplicationRecord
   has_many :api_channels, dependent: :destroy_async, class_name: '::Channel::Api'
   has_many :articles, dependent: :destroy_async, class_name: '::Article'
   has_many :assignment_policies, dependent: :destroy_async
+  has_many :auditoria_ai_field_configs, dependent: :destroy_async, class_name: 'Auditoria::AiFieldConfig'
   has_many :automation_rules, dependent: :destroy_async
   has_many :automation_rule_pending_executions, dependent: :delete_all
   has_many :macros, dependent: :destroy_async

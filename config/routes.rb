@@ -186,6 +186,9 @@ Rails.application.routes.draw do
               resource :direct_uploads, only: [:create]
               resource :draft_messages, only: [:show, :update, :destroy]
             end
+            scope module: :auditoria do
+              resource :conversation_analyses, only: [:show, :create]
+            end
             member do
               post :mute
               post :unmute

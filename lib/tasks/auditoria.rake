@@ -17,6 +17,11 @@ namespace :auditoria do
     # reglas de asignacion por una carrera entre ambos procesos.
     result = account.with_lock do
       account.enable_features!('auditoria') unless account.feature_enabled?('auditoria')
+      # captain_tasks viene "enabled: true" en config/features.yml, pero ese
+      # default no aplica retroactivamente a cuentas ya existentes (solo a
+      # cuentas creadas despues de que el flag se agrego) - sin esto, "Auditor
+      # IA" queda bloqueado en silencio para esta cuenta.
+      account.enable_features!('captain_tasks') unless account.feature_enabled?('captain_tasks')
       Auditoria::AgentReconcilerService.new(account: account).call
     end
 
@@ -64,6 +69,26 @@ namespace :auditoria do
     puts "Mensajes con asesor resuelto: #{resolved}"
     puts "Mensajes con Source sin agente coincidente: #{unresolved}" if unresolved.positive?
     puts "Conversaciones marcadas como multiple asesor: #{multiple_advisors}"
+  end
+
+  desc 'Crea los 5 campos de IA por defecto para Auditor IA si no existen (ACCOUNT_ID=<id>)'
+  task seed_ai_field_configs: :environment do
+    account_id = ENV['ACCOUNT_ID'].presence || ENV['AUDITORIA_ACCOUNT_ID'].presence
+    raise 'Pasa el account_id: rake auditoria:seed_ai_field_configs ACCOUNT_ID=1' if account_id.blank?
+
+    account = Account.find(account_id)
+
+    created = 0
+    Auditoria::AiFieldConfig::DEFAULTS.each_with_index do |defaults, index|
+      config = account.auditoria_ai_field_configs.find_or_initialize_by(field_order: index + 1)
+      next if config.persisted?
+
+      config.update!(defaults)
+      created += 1
+    end
+
+    puts "Campos creados: #{created}"
+    puts "Total de campos en la cuenta: #{account.auditoria_ai_field_configs.count}"
   end
 end
 # rubocop:enable Metrics/BlockLength
