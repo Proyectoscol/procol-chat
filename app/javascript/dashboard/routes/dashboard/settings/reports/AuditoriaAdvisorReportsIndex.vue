@@ -13,6 +13,7 @@ import {
   useVueTable,
   createColumnHelper,
   getCoreRowModel,
+  getSortedRowModel,
 } from '@tanstack/vue-table';
 
 const { t } = useI18n();
@@ -32,6 +33,9 @@ const inboxes = useMapGetter('inboxes/getInboxes');
 const reportMetrics = useMapGetter(
   'summaryReports/getAuditoriaAdvisorSummaryReports'
 );
+const reportTotals = useMapGetter(
+  'summaryReports/getAuditoriaAdvisorSummaryTotals'
+);
 
 const getMetrics = id =>
   reportMetrics.value.find(metrics => metrics.id === Number(id)) || {};
@@ -40,11 +44,21 @@ const renderAvgTime = value => (value ? formatTime(value) : '--');
 const renderCount = value => (value ? value.toLocaleString() : '--');
 
 const columnHelper = createColumnHelper();
-const defaulSpanRender = cellProps =>
+// Las columnas numericas ordenan sobre el valor crudo (getValue) y solo
+// formatean para mostrar -- si se ordenara sobre el texto ya formateado
+// ("1h 30m" vs "45m"), el orden alfabetico de strings no respetaria la
+// duracion real.
+const countCellRender = cellProps =>
   h(
     'span',
     { class: cellProps.getValue() ? '' : 'text-n-slate-12' },
-    cellProps.getValue()
+    renderCount(cellProps.getValue())
+  );
+const avgTimeCellRender = cellProps =>
+  h(
+    'span',
+    { class: cellProps.getValue() ? '' : 'text-n-slate-12' },
+    renderAvgTime(cellProps.getValue())
   );
 
 const selectedAdvisor = ref(null);
@@ -74,19 +88,19 @@ const columns = computed(() => [
   columnHelper.accessor('conversationsCount', {
     header: t('SUMMARY_REPORTS.CONVERSATIONS'),
     width: 200,
-    cell: defaulSpanRender,
+    cell: countCellRender,
   }),
   columnHelper.accessor('avgResponseTime', {
     header: t('SUMMARY_REPORTS.AVG_RESPONSE_TIME'),
     width: 200,
-    cell: defaulSpanRender,
+    cell: avgTimeCellRender,
   }),
 ]);
 
 // agents/getAgents trae todos los account_users (incluye administradores,
 // como Chatwoot ya hace en su propio reporte nativo de agentes) - aqui
 // filtramos solo a quien de verdad atiende WhatsApp como asesor.
-const tableData = computed(() =>
+const advisorRows = computed(() =>
   agents.value
     .filter(agent => agent.role === 'agent')
     .map(agent => {
@@ -96,11 +110,19 @@ const tableData = computed(() =>
       return {
         id: agent.id,
         name: agent.name,
-        conversationsCount: renderCount(conversationsCount),
-        avgResponseTime: renderAvgTime(avgResponseTimeSeconds),
+        conversationsCount: conversationsCount || 0,
+        avgResponseTime: avgResponseTimeSeconds ?? null,
       };
     })
 );
+
+// Al filtrar por una bandeja puntual, la mayoria de asesores no trabajan
+// ahi -- se quitan del todo en vez de mostrarlos en "--" (ver backend).
+const tableData = computed(() => {
+  if (!selectedInboxId.value) return advisorRows.value;
+
+  return advisorRows.value.filter(row => row.conversationsCount > 0);
+});
 
 const fetchReportsWithRetry = async () => {
   const params = {
@@ -140,6 +162,15 @@ const onFilterChange = updatedFilter => {
 
 const onInboxChange = () => fetchAllData();
 
+const totalsSummary = computed(() => {
+  if (!reportTotals.value) return '';
+
+  return t('AUDITORIA_ADVISOR_REPORTS.TOTALS_SUMMARY', {
+    conversations: renderCount(reportTotals.value.conversationsCount),
+    avgResponseTime: renderAvgTime(reportTotals.value.avgResponseTimeSeconds),
+  });
+});
+
 const table = useVueTable({
   get data() {
     return tableData.value;
@@ -147,8 +178,12 @@ const table = useVueTable({
   get columns() {
     return columns.value;
   },
-  enableSorting: false,
+  enableSorting: true,
   getCoreRowModel: getCoreRowModel(),
+  getSortedRowModel: getSortedRowModel(),
+  initialState: {
+    sorting: [{ id: 'name', desc: false }],
+  },
 });
 </script>
 
@@ -204,6 +239,10 @@ const table = useVueTable({
       </div>
     </Transition>
   </div>
+
+  <p v-if="totalsSummary" class="text-sm text-n-slate-11 mt-2 text-right">
+    {{ totalsSummary }}
+  </p>
 
   <AuditoriaAdvisorConversationsDrawer
     :open="isDrawerOpen"

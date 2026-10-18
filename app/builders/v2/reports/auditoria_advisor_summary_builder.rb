@@ -12,7 +12,12 @@ class V2::Reports::AuditoriaAdvisorSummaryBuilder
   pattr_initialize [:account!, :params!]
 
   def build
-    account.account_users.map { |account_user| build_advisor_stats(account_user.user_id) }
+    stats = agent_user_ids.map { |user_id| build_advisor_stats(user_id) }
+    # Cuando se filtra por una bandeja puntual, la mayoria de asesores no
+    # trabajan ahi -- mostrarlos en "--" es ruido; se quitan del todo y solo
+    # quedan quienes de verdad tuvieron actividad en esa bandeja.
+    stats = stats.reject { |row| row[:conversations_count].zero? } if inbox_id.present?
+    { advisors: stats, totals: totals }
   end
 
   private
@@ -25,10 +30,27 @@ class V2::Reports::AuditoriaAdvisorSummaryBuilder
     }
   end
 
+  # Sobre el mismo scope ya filtrado (fecha/bandeja/multiple-asesor) que las
+  # filas por asesor, para que el total/promedio general sea consistente con
+  # lo que se ve en la tabla -- nunca una cifra distinta "por fuera".
+  def totals
+    {
+      conversations_count: conversation_ids_by_advisor.values.sum(&:size),
+      avg_response_time_seconds: average_seconds(response_samples_by_advisor.values.flatten)
+    }
+  end
+
   def average_seconds(samples)
     return nil if samples.blank?
 
     (samples.sum / samples.size).round
+  end
+
+  # Solo agentes (no administradores) -- igual que el filtro que ya aplica
+  # el frontend sobre agents/getAgents, pero aqui ademas evita que un mensaje
+  # resuelto por casualidad al nombre de un administrador infle el total.
+  def agent_user_ids
+    @agent_user_ids ||= account.account_users.where(role: :agent).pluck(:user_id)
   end
 
   def conversation_ids_by_advisor
@@ -61,10 +83,17 @@ class V2::Reports::AuditoriaAdvisorSummaryBuilder
     end
   end
 
+  # select al final: descarta filas resueltas a un administrador, para que
+  # ni las filas por asesor ni totals (ambas construidas sobre rows) se
+  # inflen con un mensaje que por coincidencia calzo con el nombre de un
+  # administrador.
   def rows
-    @rows ||= scoped_messages.map do |conversation_id, message_type, created_at, advisor_id|
+    return @rows if defined?(@rows)
+
+    mapped = scoped_messages.map do |conversation_id, message_type, created_at, advisor_id|
       { conversation_id: conversation_id, message_type: message_type, created_at: created_at, advisor_id: advisor_id&.to_i }
     end
+    @rows = mapped.select { |row| row[:advisor_id].nil? || agent_user_ids.include?(row[:advisor_id]) }
   end
 
   # pluck(:message_type) devuelve el label del enum ("incoming"/"outgoing"),

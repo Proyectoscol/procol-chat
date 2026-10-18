@@ -52,6 +52,7 @@ export const initialState = {
   teamSummaryReports: [],
   labelSummaryReports: [],
   auditoriaAdvisorSummaryReports: [],
+  auditoriaAdvisorSummaryTotals: null,
   uiFlags: {
     isFetchingInboxSummaryReports: false,
     isFetchingAgentSummaryReports: false,
@@ -76,6 +77,9 @@ export const getters = {
   },
   getAuditoriaAdvisorSummaryReports(state) {
     return state.auditoriaAdvisorSummaryReports;
+  },
+  getAuditoriaAdvisorSummaryTotals(state) {
+    return state.auditoriaAdvisorSummaryTotals;
   },
   getUIFlags(state) {
     return state.uiFlags;
@@ -117,8 +121,12 @@ export const mutations = {
   setLabelSummaryReport(state, data) {
     state.labelSummaryReports = data;
   },
+  // El endpoint devuelve { advisors, totals } (no una lista plana como los
+  // demas reportes) porque ademas de las filas por asesor trae el total y
+  // el promedio general ya calculados sobre el mismo scope filtrado.
   setAuditoriaAdvisorSummaryReport(state, data) {
-    state.auditoriaAdvisorSummaryReports = data;
+    state.auditoriaAdvisorSummaryReports = data.advisors || [];
+    state.auditoriaAdvisorSummaryTotals = data.totals || null;
   },
   setUIFlags(state, uiFlag) {
     state.uiFlags = { ...state.uiFlags, ...uiFlag };

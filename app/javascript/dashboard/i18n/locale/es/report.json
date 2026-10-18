@@ -672,6 +672,7 @@
     "DESCRIPTION": "Volumen de conversaciones y tiempo de respuesta promedio por asesor. Las conversaciones con mensajes de más de un asesor se excluyen aquí y quedan marcadas con la etiqueta \"auditoria-multiple-asesor\".",
     "INBOX_FILTER_LABEL": "Bandeja",
     "INBOX_FILTER_ALL": "Todas las bandejas",
+    "TOTALS_SUMMARY": "Total: {conversations} conversaciones · Tiempo de respuesta promedio general: {avgResponseTime}",
     "CONVERSATIONS_DRAWER": {
       "DESCRIPTION": "Conversaciones en el rango de fechas seleccionado.",
       "RESULT_COUNT": "{count} conversación | {count} conversaciones",
