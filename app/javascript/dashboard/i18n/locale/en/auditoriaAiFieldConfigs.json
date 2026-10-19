@@ -1,0 +1,13 @@
+{
+  "AUDITORIA_AI_FIELD_CONFIGS": {
+    "HEADER": "Auditor IA",
+    "DESCRIPTION": "Customize the title and instructions for each of the 5 fields Auditor IA fills in when it analyzes a conversation.",
+    "LOADING": "Fetching fields",
+    "FIELD_TITLE_LABEL": "Title",
+    "FIELD_SUBTITLE_LABEL": "Instructions (optional)",
+    "SAVE_BUTTON": "Save",
+    "SAVE_SUCCESS": "Field saved",
+    "SAVE_ERROR": "Could not save the field. Try again.",
+    "FETCH_ERROR": "Could not load the fields. Try again."
+  }
+}

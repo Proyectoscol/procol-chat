@@ -206,6 +206,10 @@ Rails.application.routes.draw do
             end
           end
 
+          namespace :auditoria do
+            resources :ai_field_configs, only: [:index, :update]
+          end
+
           resources :search, only: [:index] do
             collection do
               get :conversations
