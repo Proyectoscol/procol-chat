@@ -333,6 +333,7 @@ class Message < ApplicationRecord
     execute_message_template_hooks
     update_contact_activity
     annotate_for_auditoria
+    transcribe_audio_for_auditoria
   end
 
   def update_contact_activity
@@ -343,6 +344,14 @@ class Message < ApplicationRecord
     return unless account.feature_enabled?('auditoria')
 
     Auditoria::MessageAnnotatorJob.perform_later(id)
+  end
+
+  def transcribe_audio_for_auditoria
+    return unless account.feature_enabled?('auditoria')
+    return unless account.audio_transcriptions
+    return unless attachments.any? { |a| a.file_type == 'audio' }
+
+    Auditoria::AudioTranscriptionJob.perform_later(id)
   end
 
   def update_waiting_since
