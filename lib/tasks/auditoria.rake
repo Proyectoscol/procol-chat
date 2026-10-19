@@ -22,6 +22,10 @@ namespace :auditoria do
       # cuentas creadas despues de que el flag se agrego) - sin esto, "Auditor
       # IA" queda bloqueado en silencio para esta cuenta.
       account.enable_features!('captain_tasks') unless account.feature_enabled?('captain_tasks')
+      Auditoria::AiFieldConfig::DEFAULTS.each_with_index do |defaults, index|
+        config = account.auditoria_ai_field_configs.find_or_initialize_by(field_order: index + 1)
+        config.update!(defaults) unless config.persisted?
+      end
       Auditoria::AgentReconcilerService.new(account: account).call
     end
 

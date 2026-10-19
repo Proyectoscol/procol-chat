@@ -6,21 +6,34 @@ class Api::V1::Accounts::Auditoria::ConversationAnalysesController < Api::V1::Ac
       results: analysis&.results,
       analyzed_at: analysis&.analyzed_at&.to_i,
       needs_analysis: analyzer_service.needs_analysis?,
+      analyzing: pending?,
+      error: Redis::Alfred.get(error_key),
       field_configs: field_configs
     }
   end
 
   def create
-    result = analyzer_service.perform
+    render(json: { queued: true }) and return if pending?
 
-    if result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_content
-    else
-      render json: { results: result[:message], analyzed_at: analysis&.analyzed_at }
-    end
+    Redis::Alfred.set(pending_key, '1', ex: 5.minutes)
+    Redis::Alfred.delete(error_key)
+    Auditoria::ConversationAnalyzerJob.perform_later(@conversation.id)
+    render json: { queued: true }
   end
 
   private
+
+  def pending?
+    Redis::Alfred.get(pending_key).present?
+  end
+
+  def pending_key
+    Auditoria::ConversationAnalyzerJob.pending_key(@conversation.id)
+  end
+
+  def error_key
+    Auditoria::ConversationAnalyzerJob.error_key(@conversation.id)
+  end
 
   def analyzer_service
     @analyzer_service ||= Auditoria::ConversationAnalyzerService.new(
