@@ -53,7 +53,7 @@ class Auditoria::AudioTranscriptionService < Captain::BaseTaskService
   def download_to_tempfile
     blob = audio_attachment.file.blob
     url = Rails.application.routes.url_helpers.rails_blob_url(blob)
-    tempfile = Tempfile.new(['auditoria_audio', File.extname(blob.filename.to_s)], binmode: true)
+    tempfile = Tempfile.new(['auditoria_audio', tempfile_extension(blob)], binmode: true)
     response = HTTParty.get(url, follow_redirects: true)
     raise "No se pudo descargar el adjunto de audio #{blob.id}: HTTP #{response.code}" unless response.success?
 
@@ -63,6 +63,17 @@ class Auditoria::AudioTranscriptionService < Captain::BaseTaskService
   ensure
     tempfile&.close
     tempfile&.unlink
+  end
+
+  # OpenAI rechaza la extension .oga (la que usa WhatsApp/Chatwoot para notas
+  # de voz: RubyLLM::BadRequestError "Unsupported file format oga") aunque el
+  # contenido es el mismo contenedor Ogg que .ogg, que si acepta -- RubyLLM
+  # sube el archivo usando File.basename del tempfile como nombre tal cual
+  # (ver Provider#build_audio_file_part), asi que la extension del tempfile
+  # es la que decide que formato ve la API.
+  def tempfile_extension(blob)
+    extension = File.extname(blob.filename.to_s)
+    extension.casecmp('.oga').zero? ? '.ogg' : extension
   end
 
   def persist_result(result)
