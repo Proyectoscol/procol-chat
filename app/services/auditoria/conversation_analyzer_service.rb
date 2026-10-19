@@ -14,6 +14,9 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
     return skipped_result unless needs_analysis?
     return spend_limit_error unless Auditoria::AiUsageLogger.within_limit?(account)
 
+    transcribe_pending_audio!
+    return spend_limit_error unless Auditoria::AiUsageLogger.within_limit?(account)
+
     response = make_api_call(
       feature: 'editor', messages: messages, model: account.auditoria_chat_model.presence,
       schema: Auditoria::ConversationAnalyzerSchema
@@ -48,6 +51,39 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
 
   def spend_limit_error
     { error: I18n.t('auditoria.ai_spend_limit_reached') }
+  end
+
+  # "Analizar ahora" es una accion explicita del usuario pidiendo el
+  # resultado completo ya -- a diferencia del toggle "Transcribe Audio
+  # Messages" (automatico, pasivo, solo corre para mensajes nuevos), aqui
+  # se transcribe cualquier audio pendiente de la conversacion sin importar
+  # si ese toggle esta prendido, para que el analisis nunca ignore audios
+  # por falta de transcripcion. Si un audio falla, se sigue con los demas
+  # -- el analisis usa lo que si haya quedado disponible (ver
+  # content_for_llm), nunca aborta por un solo audio.
+  def transcribe_pending_audio!
+    pending_audio_messages.each do |message|
+      next unless Auditoria::AiUsageLogger.within_limit?(account)
+
+      Auditoria::AudioTranscriptionService.new(account: account, message: message).perform
+    end
+  end
+
+  # Sin .distinct: hacer DISTINCT sobre filas que incluyen la columna jsonb
+  # de attachments.meta rompe en Postgres ("could not identify an equality
+  # operator for type json") -- se obtienen los ids primero (pluck, sin esa
+  # columna) y se cargan los mensajes aparte. .reorder(nil) porque el
+  # default_scope de Message (order by created_at) choca con SELECT DISTINCT
+  # id ("ORDER BY expressions must appear in select list").
+  def pending_audio_messages
+    message_ids = conversation.messages
+                              .reorder(nil)
+                              .joins(:attachments)
+                              .where(attachments: { file_type: Attachment.file_types[:audio] })
+                              .where("attachments.meta ->> 'transcribed_text' IS NULL OR attachments.meta ->> 'transcribed_text' = ''")
+                              .distinct
+                              .pluck(:id)
+    Message.where(id: message_ids)
   end
 
   def log_usage(response)
