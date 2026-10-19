@@ -78,6 +78,7 @@ class Auditoria::AudioTranscriptionService < Captain::BaseTaskService
 
   def persist_result(result)
     audio_attachment.update!(meta: audio_attachment.meta.merge('transcribed_text' => result.text))
+    message.reload.send_update_event
     log_usage(result)
     { text: result.text }
   end
