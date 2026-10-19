@@ -9,6 +9,11 @@ class Auditoria::AudioTranscriptionJob < ApplicationJob
     return if audio_attachment.blank?
     return if audio_attachment.meta['transcribed_text'].present?
 
-    Auditoria::AudioTranscriptionService.new(account: message.account, message: message).perform
+    result = Auditoria::AudioTranscriptionService.new(account: message.account, message: message).perform
+    return unless result[:error]
+
+    Rails.logger.error(
+      "[Auditoria] audio transcription failed for message=#{message_id} account=#{message.account_id}: #{result[:error]}"
+    )
   end
 end

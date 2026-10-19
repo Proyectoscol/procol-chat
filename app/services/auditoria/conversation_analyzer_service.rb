@@ -65,7 +65,12 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
     pending_audio_messages.each do |message|
       next unless Auditoria::AiUsageLogger.within_limit?(account)
 
-      Auditoria::AudioTranscriptionService.new(account: account, message: message).perform
+      result = Auditoria::AudioTranscriptionService.new(account: account, message: message).perform
+      next unless result[:error]
+
+      Rails.logger.error(
+        "[Auditoria] audio transcription failed for message=#{message.id} account=#{account.id}: #{result[:error]}"
+      )
     end
   end
 
