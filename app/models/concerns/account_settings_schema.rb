@@ -16,6 +16,10 @@ module AccountSettingsSchema
         'keep_pending_on_bot_failure': { 'type': %w[boolean null] },
         'captain_auto_resolve_mode': { 'type': %w[string null], 'enum': ['evaluated', 'legacy', 'disabled', nil] },
         'captain_false_promise_harness_enabled': { 'type': %w[boolean null] },
+        'auditoria_ai_monthly_cost_limit_usd': { 'type': %w[number null], 'minimum': 0 },
+        'auditoria_ai_monthly_token_limit': { 'type': %w[integer null], 'minimum': 0 },
+        'auditoria_chat_model': { 'type': %w[string null] },
+        'auditoria_transcription_model': { 'type': %w[string null] },
         'conversation_required_attributes': {
           'type': %w[array null],
           'items': { 'type': 'string' }

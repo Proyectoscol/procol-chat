@@ -59,6 +59,8 @@ class Account < ApplicationRecord
   store_accessor :settings, :reporting_timezone
   store_accessor :settings, :keep_pending_on_bot_failure
   store_accessor :settings, :captain_auto_resolve_mode, :captain_false_promise_harness_enabled
+  store_accessor :settings, :auditoria_ai_monthly_cost_limit_usd, :auditoria_ai_monthly_token_limit
+  store_accessor :settings, :auditoria_chat_model, :auditoria_transcription_model
   include AccountCaptainAutoResolve
 
   has_many :account_users, dependent: :destroy_async
@@ -69,6 +71,7 @@ class Account < ApplicationRecord
   has_many :articles, dependent: :destroy_async, class_name: '::Article'
   has_many :assignment_policies, dependent: :destroy_async
   has_many :auditoria_ai_field_configs, dependent: :destroy_async, class_name: 'Auditoria::AiFieldConfig'
+  has_many :auditoria_ai_usage_logs, dependent: :destroy_async, class_name: 'Auditoria::AiUsageLog'
   has_many :automation_rules, dependent: :destroy_async
   has_many :automation_rule_pending_executions, dependent: :delete_all
   has_many :macros, dependent: :destroy_async

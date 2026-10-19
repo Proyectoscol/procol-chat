@@ -75,7 +75,7 @@ class Captain::BaseTaskService
       return { error: 'No conversation messages provided', error_code: 400, request_messages: messages } if conversation_messages.empty?
 
       add_messages_if_needed(chat, conversation_messages)
-      build_ruby_llm_response(chat.ask(conversation_messages.last[:content]), messages)
+      build_ruby_llm_response(chat.ask(conversation_messages.last[:content]), messages, model)
     end
   rescue StandardError => e
     capture_llm_exception(e, credential: credential)
@@ -104,9 +104,10 @@ class Captain::BaseTaskService
     end
   end
 
-  def build_ruby_llm_response(response, messages)
+  def build_ruby_llm_response(response, messages, model)
     {
       message: response.content,
+      model: model,
       usage: {
         'prompt_tokens' => response.input_tokens,
         'completion_tokens' => response.output_tokens,

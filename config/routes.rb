@@ -208,6 +208,9 @@ Rails.application.routes.draw do
 
           namespace :auditoria do
             resources :ai_field_configs, only: [:index, :update]
+            get 'ai_usage/summary', to: 'ai_usage#summary'
+            get 'ai_usage', to: 'ai_usage#index'
+            patch 'ai_usage/settings', to: 'ai_usage#update_settings'
           end
 
           resources :search, only: [:index] do

@@ -12,10 +12,15 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
 
   def perform
     return skipped_result unless needs_analysis?
+    return spend_limit_error unless Auditoria::AiUsageLogger.within_limit?(account)
 
-    response = make_api_call(feature: 'editor', messages: messages, schema: Auditoria::ConversationAnalyzerSchema)
+    response = make_api_call(
+      feature: 'editor', messages: messages, model: account.auditoria_chat_model.presence,
+      schema: Auditoria::ConversationAnalyzerSchema
+    )
     return response if response[:error]
 
+    log_usage(response)
     persist_result(response[:message])
   end
 
@@ -39,6 +44,21 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
 
   def skipped_result
     { message: analysis&.results, skipped: true }
+  end
+
+  def spend_limit_error
+    { error: I18n.t('auditoria.ai_spend_limit_reached') }
+  end
+
+  def log_usage(response)
+    cost_usd = Auditoria::AiCostCalculator.calculate(
+      model: response[:model], prompt_tokens: response[:usage]['prompt_tokens'],
+      completion_tokens: response[:usage]['completion_tokens']
+    )
+    Auditoria::AiUsageLogger.log!(
+      account: account, conversation: conversation, feature: :conversation_analysis,
+      model: response[:model], usage: response[:usage], cost_usd: cost_usd, triggered_by: :manual
+    )
   end
 
   def persist_result(parsed_fields)

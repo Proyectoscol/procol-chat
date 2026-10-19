@@ -485,6 +485,8 @@ en:
     custom_tool:
       slug_generation_failed: 'Unable to generate unique slug after 5 attempts'
       limit_exceeded: 'You can create a maximum of %{limit} custom tools per account'
+  auditoria:
+    ai_spend_limit_reached: 'The configured monthly AI spend limit has been reached. Contact your administrator.'
   public_portal:
     search:
       search_placeholder: Search for article by title or body...
