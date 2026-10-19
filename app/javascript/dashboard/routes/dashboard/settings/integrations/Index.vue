@@ -14,8 +14,14 @@ const { replaceInstallationName } = useBranding();
 const searchQuery = ref('');
 const uiFlags = getters['integrations/getUIFlags'];
 
-const integrationList = computed(
-  () => getters['integrations/getAppIntegrations'].value
+// Esta cuenta es espejo de solo lectura, no atencion en vivo - estas
+// integraciones no aplican (panel de apps embebidas, video/voz, chatbot).
+const HIDDEN_INTEGRATION_IDS = ['dashboard_apps', 'dyte', 'dialogflow'];
+
+const integrationList = computed(() =>
+  getters['integrations/getAppIntegrations'].value.filter(
+    item => !HIDDEN_INTEGRATION_IDS.includes(item.id)
+  )
 );
 
 const filteredIntegrationList = computed(() => {

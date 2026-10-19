@@ -403,7 +403,9 @@ const contextMenuEnabledOptions = computed(() => {
       !isMessageDeleted.value,
     cannedResponse: isOutgoing && hasText && !isMessageDeleted.value,
     copyLink: !isFailedOrProcessing,
-    translate: !isFailedOrProcessing && !isMessageDeleted.value && hasText,
+    // Esta cuenta es espejo de solo lectura, no atencion en vivo - traducir
+    // un mensaje no aplica aqui.
+    translate: false,
     replyTo:
       !props.private &&
       props.inboxSupportsReplyTo.outgoing &&
