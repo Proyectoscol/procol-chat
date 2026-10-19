@@ -23,7 +23,9 @@ class InboxMember < ApplicationRecord
   belongs_to :inbox
 
   after_create :add_agent_to_round_robin
+  after_create :sync_agent_to_mirror_team
   after_destroy :remove_agent_from_round_robin
+  after_destroy :desync_agent_from_mirror_team
   after_commit :invalidate_filtered_unread_count_visibility, on: [:create, :destroy]
 
   private
@@ -34,6 +36,14 @@ class InboxMember < ApplicationRecord
 
   def remove_agent_from_round_robin
     ::AutoAssignment::InboxRoundRobinService.new(inbox: inbox).remove_agent_from_queue(user_id) if inbox.present?
+  end
+
+  def sync_agent_to_mirror_team
+    inbox.mirror_team&.add_members([user_id])
+  end
+
+  def desync_agent_from_mirror_team
+    inbox.mirror_team&.remove_members([user_id]) if inbox.present?
   end
 
   def invalidate_filtered_unread_count_visibility

@@ -1,6 +1,7 @@
 class Api::V1::Accounts::TeamMembersController < Api::V1::Accounts::BaseController
   before_action :fetch_team
   before_action :check_authorization
+  before_action :ensure_not_mirrored, only: [:create, :update, :destroy]
   before_action :validate_member_id_params, only: [:create, :update, :destroy]
 
   def index
@@ -45,6 +46,10 @@ class Api::V1::Accounts::TeamMembersController < Api::V1::Accounts::BaseControll
 
   def fetch_team
     @team = Current.account.teams.find(params[:team_id])
+  end
+
+  def ensure_not_mirrored
+    raise CustomExceptions::Team::MirroredFromInbox.new({}) if @team.mirrors_inbox?
   end
 
   def validate_member_id_params

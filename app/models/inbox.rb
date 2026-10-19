@@ -47,6 +47,7 @@ class Inbox < ApplicationRecord
   include InboxAgentAvailability
   include InboxBrandedEmailLayoutable
   include InboxBotStatus
+  include InboxMirrorTeam
 
   # Not allowing characters:
   validates :name, presence: true
@@ -80,11 +81,10 @@ class Inbox < ApplicationRecord
 
   enum sender_name_type: { friendly: 0, professional: 1 }
 
-  before_destroy :capture_filtered_unread_count_user_ids, prepend: true
-  after_destroy :delete_round_robin_agents
-
   after_create_commit :dispatch_create_event
   after_update_commit :dispatch_update_event
+  before_destroy :capture_filtered_unread_count_user_ids, prepend: true
+  after_destroy :delete_round_robin_agents
   after_destroy_commit :invalidate_filtered_unread_counts_after_destroy
 
   scope :order_by_name, -> { order('lower(name) ASC') }

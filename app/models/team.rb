@@ -11,16 +11,23 @@
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  account_id        :bigint           not null
+#  inbox_id          :bigint
 #
 # Indexes
 #
 #  index_teams_on_account_id           (account_id)
+#  index_teams_on_inbox_id             (inbox_id) UNIQUE
 #  index_teams_on_name_and_account_id  (name,account_id) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (inbox_id => inboxes.id) ON DELETE => cascade
 #
 class Team < ApplicationRecord
   include AccountCacheRevalidator
 
   belongs_to :account
+  belongs_to :inbox, optional: true
   has_many :team_members, dependent: :destroy_async
   has_many :members, through: :team_members, source: :user
   has_many :conversations, dependent: :nullify
@@ -54,6 +61,13 @@ class Team < ApplicationRecord
   def remove_members(user_ids)
     team_members.where(user_id: user_ids).destroy_all
     update_account_cache
+  end
+
+  # Teams mirroring an inbox's collaborators (see Inbox#mirror_team and
+  # InboxMember's sync callbacks) are not manually editable - their name and
+  # membership always match the inbox. See TeamsController/TeamMembersController.
+  def mirrors_inbox?
+    inbox_id.present?
   end
 
   def messages
