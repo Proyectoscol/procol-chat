@@ -1027,9 +1027,14 @@ const customMenuItemsToInsert = computed(() =>
 );
 
 const menuItems = computed(() => {
-  const items = rawMenuItems.value.filter(
-    item => !hiddenSidebarItems.includes(item.name)
-  );
+  const items = rawMenuItems.value
+    .filter(item => !hiddenSidebarItems.includes(item.name))
+    .map(item => ({
+      ...item,
+      children: item.children?.filter(
+        child => !hiddenSidebarItems.includes(child.name)
+      ),
+    }));
 
   customMenuItemsToInsert.value.forEach(({ position, ...item }) => {
     const index = Math.min(Math.max(position - 1, 0), items.length);
@@ -1040,7 +1045,10 @@ const menuItems = computed(() => {
 });
 
 onMounted(() => {
-  const validNames = rawMenuItems.value.map(item => item.name);
+  const validNames = rawMenuItems.value.flatMap(item => [
+    item.name,
+    ...(item.children?.map(child => child.name) || []),
+  ]);
   hiddenSidebarItems
     .filter(name => name && !validNames.includes(name))
     .forEach(name => {
