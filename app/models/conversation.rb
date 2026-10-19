@@ -7,7 +7,7 @@
 #  agent_last_seen_at     :datetime
 #  ai_assignee_type       :string
 #  assignee_last_seen_at  :datetime
-#  cached_label_list      :text
+#  cached_label_list      :string
 #  contact_last_seen_at   :datetime
 #  custom_attributes      :jsonb
 #  first_reply_created_at :datetime
@@ -139,6 +139,7 @@ class Conversation < ApplicationRecord
   before_save :set_status_changed_at
   before_create :determine_conversation_status
   before_create :ensure_waiting_since
+  before_create :assign_mirror_team, if: -> { team_id.blank? }
 
   after_update_commit :execute_after_update_commit_callbacks
   after_create_commit :notify_conversation_creation
@@ -300,6 +301,13 @@ class Conversation < ApplicationRecord
 
   def ensure_waiting_since
     self.waiting_since = created_at
+  end
+
+  # See InboxMirrorTeam - inboxes on this deploy each have a 1:1 mirror team,
+  # so new conversations default to it instead of showing up team-less in
+  # team-scoped reports (see V2::Reports::TeamSummaryBuilder#group_by_key).
+  def assign_mirror_team
+    self.team_id = inbox.mirror_team&.id
   end
 
   def validate_additional_attributes
