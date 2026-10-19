@@ -38,8 +38,31 @@ class Auditoria::AudioTranscriptionService < Captain::BaseTaskService
     end
   end
 
+  # No se usa blob.open (lee del disco local de ActiveStorage): en despliegues
+  # donde el proceso web y el worker de Sidekiq corren en contenedores
+  # separados sin disco compartido, el archivo que escribio el proceso web
+  # no existe en el disco del worker (ActiveStorage::FileNotFoundError). Se
+  # descarga en cambio por HTTP desde la propia URL firmada del blob -- la
+  # misma que ya usa el navegador para reproducir el audio -- asi que
+  # funciona sin importar la topologia de storage del despliegue. rails_blob_url
+  # (no blob.url) porque usa las default_url_options de las rutas, ya
+  # configuradas para todos los entornos -- blob.url depende de
+  # ActiveStorage::Current.url_options, que solo Rails setea automaticamente
+  # dentro de una request web, no en un job (mismo patron ya usado en
+  # Account::ContactsExportJob/LeadStatsExportJob).
   def download_to_tempfile
-    audio_attachment.file.blob.open { |file| yield file.path }
+    blob = audio_attachment.file.blob
+    url = Rails.application.routes.url_helpers.rails_blob_url(blob)
+    tempfile = Tempfile.new(['auditoria_audio', File.extname(blob.filename.to_s)], binmode: true)
+    response = HTTParty.get(url, follow_redirects: true)
+    raise "No se pudo descargar el adjunto de audio #{blob.id}: HTTP #{response.code}" unless response.success?
+
+    tempfile.write(response.body)
+    tempfile.flush
+    yield tempfile.path
+  ensure
+    tempfile&.close
+    tempfile&.unlink
   end
 
   def persist_result(result)

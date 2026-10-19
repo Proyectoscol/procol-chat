@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { fromUnixTime, format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -85,12 +85,22 @@ const analyzeNow = async () => {
   }
 };
 
-onMounted(async () => {
+const loadConversation = async () => {
+  stopPolling();
   isLoading.value = true;
+  results.value = null;
+  analyzedAt.value = null;
+  needsAnalysis.value = false;
+  fieldConfigs.value = [];
+  errorMessage.value = '';
+  isAnalyzing.value = false;
   await fetchAnalysis();
   isLoading.value = false;
   if (isAnalyzing.value) startPolling();
-});
+};
+
+onMounted(loadConversation);
+watch(() => props.conversationId, loadConversation);
 
 onUnmounted(stopPolling);
 </script>
