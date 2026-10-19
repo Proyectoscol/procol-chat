@@ -71,38 +71,52 @@ const defaulSpanRender = cellProps =>
     cellProps.getValue()
   );
 
-const columns = computed(() => [
-  columnHelper.accessor('name', {
-    header: t(`SUMMARY_REPORTS.${props.type.toUpperCase()}`),
-    width: 300,
-    cell: cellProps => h(SummaryReportLink, cellProps),
-  }),
-  columnHelper.accessor('conversationsCount', {
-    header: t('SUMMARY_REPORTS.CONVERSATIONS'),
-    width: 200,
-    cell: defaulSpanRender,
-  }),
-  columnHelper.accessor('avgFirstResponseTime', {
-    header: t('SUMMARY_REPORTS.AVG_FIRST_RESPONSE_TIME'),
-    width: 200,
-    cell: defaulSpanRender,
-  }),
-  columnHelper.accessor('avgResolutionTime', {
-    header: t('SUMMARY_REPORTS.AVG_RESOLUTION_TIME'),
-    width: 200,
-    cell: defaulSpanRender,
-  }),
-  columnHelper.accessor('avgReplyTime', {
-    header: t('SUMMARY_REPORTS.AVG_REPLY_TIME'),
-    width: 200,
-    cell: defaulSpanRender,
-  }),
-  columnHelper.accessor('resolutionsCount', {
-    header: t('SUMMARY_REPORTS.RESOLUTION_COUNT'),
-    width: 200,
-    cell: defaulSpanRender,
-  }),
-]);
+// Inbox y Team no se resuelven/esperan como soporte tradicional en este
+// deploy (ver conversation_analyzer_service.rb y la decision de que Team
+// ahora es un espejo 1:1 de los colaboradores del inbox) - esas 3 columnas
+// no reflejan nada real para esos dos tipos.
+const METRICS_HIDDEN_FOR_TYPES = ['inbox', 'team'];
+
+const columns = computed(() => {
+  const allColumns = [
+    columnHelper.accessor('name', {
+      header: t(`SUMMARY_REPORTS.${props.type.toUpperCase()}`),
+      width: 300,
+      cell: cellProps => h(SummaryReportLink, cellProps),
+    }),
+    columnHelper.accessor('conversationsCount', {
+      header: t('SUMMARY_REPORTS.CONVERSATIONS'),
+      width: 200,
+      cell: defaulSpanRender,
+    }),
+    columnHelper.accessor('avgFirstResponseTime', {
+      header: t('SUMMARY_REPORTS.AVG_FIRST_RESPONSE_TIME'),
+      width: 200,
+      cell: defaulSpanRender,
+    }),
+  ];
+
+  if (METRICS_HIDDEN_FOR_TYPES.includes(props.type)) return allColumns;
+
+  return [
+    ...allColumns,
+    columnHelper.accessor('avgResolutionTime', {
+      header: t('SUMMARY_REPORTS.AVG_RESOLUTION_TIME'),
+      width: 200,
+      cell: defaulSpanRender,
+    }),
+    columnHelper.accessor('avgReplyTime', {
+      header: t('SUMMARY_REPORTS.AVG_REPLY_TIME'),
+      width: 200,
+      cell: defaulSpanRender,
+    }),
+    columnHelper.accessor('resolutionsCount', {
+      header: t('SUMMARY_REPORTS.RESOLUTION_COUNT'),
+      width: 200,
+      cell: defaulSpanRender,
+    }),
+  ];
+});
 
 const renderAvgTime = value => (value ? formatTime(value) : '--');
 
