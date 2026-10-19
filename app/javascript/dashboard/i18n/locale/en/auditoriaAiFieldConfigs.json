@@ -1,6 +1,7 @@
 {
   "AUDITORIA_AI_FIELD_CONFIGS": {
     "HEADER": "Auditor IA",
+    "TAB_LABEL": "Fields",
     "DESCRIPTION": "Customize the title and instructions for each of the 5 fields Auditor IA fills in when it analyzes a conversation.",
     "LOADING": "Fetching fields",
     "FIELD_TITLE_LABEL": "Title",

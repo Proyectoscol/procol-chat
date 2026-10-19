@@ -1,0 +1,38 @@
+{
+  "AUDITORIA_AI_USAGE": {
+    "TAB_LABEL": "Usage & limits",
+    "FETCH_ERROR": "Could not load usage data. Try again.",
+    "SAVE_SUCCESS": "Settings saved",
+    "SAVE_ERROR": "Could not save settings. Try again.",
+    "TOTAL_COST_THIS_MONTH": "Total cost this month",
+    "TOTAL_TOKENS_THIS_MONTH": "Total tokens this month",
+    "LIMIT_OF": "Limit: {limit}",
+    "TOKENS": "tokens",
+    "FEATURE_SUMMARY": "{cost} · {tokens} tokens",
+    "FEATURE": {
+      "CONVERSATION_ANALYSIS": "Conversation analysis",
+      "AUDIO_TRANSCRIPTION": "Audio transcription"
+    },
+    "TRIGGERED_BY": {
+      "MANUAL": "Manual",
+      "BATCH": "Batch"
+    },
+    "SETTINGS_HEADER": "Spend limits and models",
+    "COST_LIMIT_LABEL": "Monthly cost limit (USD)",
+    "TOKEN_LIMIT_LABEL": "Monthly token limit",
+    "NO_LIMIT_PLACEHOLDER": "No limit",
+    "CHAT_MODEL_LABEL": "Conversation analysis model",
+    "TRANSCRIPTION_MODEL_LABEL": "Audio transcription model",
+    "SAVE_BUTTON": "Save",
+    "LOGS_HEADER": "Recent activity",
+    "LOGS_EMPTY": "No AI usage recorded yet",
+    "LOGS_TABLE": {
+      "DATE": "Date",
+      "FEATURE": "Feature",
+      "MODEL": "Model",
+      "TOKENS": "Tokens (in/out)",
+      "COST": "Cost",
+      "TRIGGERED_BY": "Triggered by"
+    }
+  }
+}

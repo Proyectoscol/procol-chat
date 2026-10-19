@@ -1,19 +1,30 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import AuditoriaAiFieldConfigsAPI from 'dashboard/api/auditoriaAiFieldConfigs';
 import SettingsLayout from '../SettingsLayout.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
+import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import AiUsageSection from './AiUsageSection.vue';
 
 const { t } = useI18n();
 
 const isLoading = ref(false);
 const savingId = ref(null);
 const fieldConfigs = ref([]);
+
+const tabs = computed(() => [
+  { label: t('AUDITORIA_AI_FIELD_CONFIGS.TAB_LABEL') },
+  { label: t('AUDITORIA_AI_USAGE.TAB_LABEL') },
+]);
+const activeTab = ref(0);
+const onTabChange = tab => {
+  activeTab.value = tabs.value.findIndex(t2 => t2.label === tab.label);
+};
 
 const fetchFieldConfigs = async () => {
   isLoading.value = true;
@@ -57,7 +68,12 @@ onMounted(fetchFieldConfigs);
       />
     </template>
     <template #body>
-      <div class="flex flex-col gap-4 max-w-2xl">
+      <TabBar
+        :tabs="tabs"
+        :initial-active-tab="activeTab"
+        @tab-changed="onTabChange"
+      />
+      <div v-if="activeTab === 0" class="flex flex-col gap-4 max-w-2xl mt-4">
         <div
           v-for="config in fieldConfigs"
           :key="config.id"
@@ -83,6 +99,7 @@ onMounted(fetchFieldConfigs);
           />
         </div>
       </div>
+      <AiUsageSection v-else class="mt-4" />
     </template>
   </SettingsLayout>
 </template>
