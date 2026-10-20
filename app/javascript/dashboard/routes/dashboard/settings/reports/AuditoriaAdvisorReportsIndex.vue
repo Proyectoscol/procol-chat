@@ -6,10 +6,11 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import ReportHeader from './components/ReportHeader.vue';
 import OverviewReportFilters from './components/OverviewReportFilters.vue';
-import AuditoriaAdvisorConversationsDrawer from './components/AuditoriaAdvisorConversationsDrawer.vue';
+import AuditoriaReportConversationsDrawer from './components/AuditoriaReportConversationsDrawer.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
 import Table from 'dashboard/components/table/Table.vue';
+import SummaryReportsAPI from 'dashboard/api/summaryReports';
 import {
   useVueTable,
   createColumnHelper,
@@ -79,6 +80,12 @@ const selectedAdvisorBreakdown = computed(() => {
   if (!selectedAdvisor.value) return [];
   return getMetrics(selectedAdvisor.value.id).responseBreakdown || [];
 });
+
+// Wrapper local (no la referencia desnuda del metodo) -- useReportDrilldown
+// invoca fetcher(...) como funcion suelta, y SummaryReportsAPI.method sin
+// el objeto delante perderia el `this.url` interno de ApiClient.
+const fetchAdvisorConversations = params =>
+  SummaryReportsAPI.getAuditoriaAdvisorConversations(params);
 
 const columns = computed(() => [
   columnHelper.accessor('name', {
@@ -274,14 +281,23 @@ const table = useVueTable({
     {{ totalsSummary }}
   </p>
 
-  <AuditoriaAdvisorConversationsDrawer
+  <AuditoriaReportConversationsDrawer
     :open="isDrawerOpen"
-    :advisor-name="selectedAdvisor?.name"
-    :user-id="selectedAdvisor?.id"
+    :title="selectedAdvisor?.name"
+    :description="
+      t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.DESCRIPTION')
+    "
+    :empty-text="t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.EMPTY')"
+    :error-text="t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.ERROR')"
     :response-breakdown="selectedAdvisorBreakdown"
-    :since="from"
-    :until="to"
-    :inbox-id="selectedInboxId"
+    show-breakdown
+    :filter-params="{
+      userId: selectedAdvisor?.id,
+      since: from,
+      until: to,
+      inboxId: selectedInboxId,
+    }"
+    :fetcher="fetchAdvisorConversations"
     @close="closeAdvisorDrawer"
   />
 </template>

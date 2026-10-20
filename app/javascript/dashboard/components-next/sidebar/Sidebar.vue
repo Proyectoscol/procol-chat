@@ -375,6 +375,12 @@ const newReportRoutes = () => [
     to: accountScopedRoute('auditoria_advisor_reports_index'),
     hidden: !isFeatureEnabledonAccount.value(accountId.value, 'auditoria'),
   },
+  {
+    name: 'Reports Auditoria Categories',
+    label: t('SIDEBAR.REPORTS_AUDITORIA_CATEGORIES'),
+    to: accountScopedRoute('auditoria_category_reports_index'),
+    hidden: !isFeatureEnabledonAccount.value(accountId.value, 'auditoria'),
+  },
 ];
 
 const reportRoutes = computed(() => newReportRoutes());

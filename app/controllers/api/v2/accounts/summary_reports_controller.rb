@@ -43,6 +43,36 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     render json: builder.build
   end
 
+  # Resumen (tabla): cuantas conversaciones distintas tiene cada categoria
+  # ahora mismo -- sin since/until, ver comentario en el builder.
+  def auditoria_category
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaCategorySummaryBuilder.new(account: Current.account, params: auditoria_category_params)
+    render json: builder.build
+  end
+
+  # Serie de tiempo (grafica): menciones por dia, filtrable por rango de
+  # fechas y por una o varias categorias.
+  def auditoria_category_timeseries
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaCategoryMentionsTimeseriesBuilder.new(
+      account: Current.account, params: auditoria_category_timeseries_params
+    )
+    render json: builder.build
+  end
+
+  # Click-to-detail del reporte: conversaciones con una categoria puntual.
+  def auditoria_category_conversations
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaCategoryConversationsBuilder.new(
+      account: Current.account, params: auditoria_category_conversations_params
+    )
+    render json: builder.build
+  end
+
   private
 
   def check_authorization
@@ -63,6 +93,18 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
 
   def auditoria_conversations_params
     params.permit(:since, :until, :inbox_id, :user_id, :page)
+  end
+
+  def auditoria_category_params
+    params.permit(:inbox_id)
+  end
+
+  def auditoria_category_timeseries_params
+    params.permit(:since, :until, :inbox_id, category_ids: [])
+  end
+
+  def auditoria_category_conversations_params
+    params.permit(:category_id, :inbox_id, :page)
   end
 
   def render_report_with(builder_class, type: nil)

@@ -7,16 +7,17 @@ import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ReportDrilldownCard from './ReportDrilldownCard.vue';
 import { useReportDrilldown } from '../composables/useReportDrilldown';
-import SummaryReportsAPI from 'dashboard/api/summaryReports';
 
 const props = defineProps({
   open: { type: Boolean, default: false },
-  advisorName: { type: String, default: '' },
-  userId: { type: [String, Number], default: null },
+  title: { type: String, default: '' },
+  description: { type: String, default: '' },
+  emptyText: { type: String, default: '' },
+  errorText: { type: String, default: '' },
   responseBreakdown: { type: Array, default: () => [] },
-  since: { type: Number, default: null },
-  until: { type: Number, default: null },
-  inboxId: { type: [String, Number], default: '' },
+  showBreakdown: { type: Boolean, default: false },
+  filterParams: { type: Object, default: () => ({}) },
+  fetcher: { type: Function, required: true },
 });
 
 const emit = defineEmits(['close']);
@@ -38,16 +39,6 @@ const orderLabel = order =>
     `AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.${ORDER_LABEL_KEYS[order] || 'ORDER_5_PLUS'}`
   );
 
-const fetcher = ({ userId, since, until, inboxId, page, signal }) =>
-  SummaryReportsAPI.getAuditoriaAdvisorConversations({
-    since,
-    until,
-    inboxId,
-    userId,
-    page,
-    signal,
-  });
-
 const {
   records,
   meta,
@@ -59,17 +50,12 @@ const {
   open: openDrilldown,
   close,
   loadMore,
-} = useReportDrilldown(fetcher);
+} = useReportDrilldown(props.fetcher);
 
 const recordKey = record => record.conversation?.id;
 
 const fetchConversations = () => {
-  openDrilldown({
-    userId: props.userId,
-    since: props.since,
-    until: props.until,
-    inboxId: props.inboxId,
-  });
+  openDrilldown({ ...props.filterParams });
 };
 
 watch(
@@ -90,46 +76,48 @@ watch(
 <template>
   <SidePanel
     ref="panelRef"
-    :title="advisorName"
-    :description="
-      t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.DESCRIPTION')
-    "
+    :title="title"
+    :description="description"
     width="xl"
     @close="emit('close')"
   >
-    <div
-      v-if="responseBreakdown.length"
-      class="mb-4 rounded-lg border border-n-weak p-3"
-    >
-      <p class="text-sm font-medium text-n-slate-12 mb-2">
-        {{
-          t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.TITLE')
-        }}
-      </p>
-      <ul class="flex flex-col gap-1">
-        <li
-          v-for="row in responseBreakdown"
-          :key="row.order"
-          class="flex items-center justify-between text-sm"
-        >
-          <span class="text-n-slate-11">{{ orderLabel(row.order) }}</span>
-          <span class="text-n-slate-12">
-            {{ formatTime(row.avgResponseTimeSeconds) }}
-            <span class="text-n-slate-10">
-              {{
-                t(
-                  'AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.COUNT',
-                  { count: row.count }
-                )
-              }}
+    <template v-if="showBreakdown">
+      <div
+        v-if="responseBreakdown.length"
+        class="mb-4 rounded-lg border border-n-weak p-3"
+      >
+        <p class="text-sm font-medium text-n-slate-12 mb-2">
+          {{
+            t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.TITLE')
+          }}
+        </p>
+        <ul class="flex flex-col gap-1">
+          <li
+            v-for="row in responseBreakdown"
+            :key="row.order"
+            class="flex items-center justify-between text-sm"
+          >
+            <span class="text-n-slate-11">{{ orderLabel(row.order) }}</span>
+            <span class="text-n-slate-12">
+              {{ formatTime(row.avgResponseTimeSeconds) }}
+              <span class="text-n-slate-10">
+                {{
+                  t(
+                    'AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.COUNT',
+                    { count: row.count }
+                  )
+                }}
+              </span>
             </span>
-          </span>
-        </li>
-      </ul>
-    </div>
-    <div v-else class="mb-4 text-sm text-n-slate-10">
-      {{ t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.EMPTY') }}
-    </div>
+          </li>
+        </ul>
+      </div>
+      <div v-else class="mb-4 text-sm text-n-slate-10">
+        {{
+          t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.EMPTY')
+        }}
+      </div>
+    </template>
 
     <div v-if="isFetching" class="flex h-40 items-center justify-center">
       <Spinner />
@@ -139,20 +127,20 @@ watch(
       v-else-if="hasError"
       class="flex h-40 items-center justify-center text-sm text-n-ruby-11"
     >
-      {{ t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.ERROR') }}
+      {{ errorText }}
     </div>
 
     <div
       v-else-if="!hasRecords"
       class="flex h-40 items-center justify-center text-sm text-n-slate-10"
     >
-      {{ t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.EMPTY') }}
+      {{ emptyText }}
     </div>
 
     <div v-else class="flex flex-col gap-2">
       <p class="text-sm text-n-slate-11 mb-1">
         {{
-          t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.RESULT_COUNT', {
+          t('REPORT.DRILLDOWN.RESULT_COUNT_CONVERSATION', {
             count: meta.total_count,
           })
         }}

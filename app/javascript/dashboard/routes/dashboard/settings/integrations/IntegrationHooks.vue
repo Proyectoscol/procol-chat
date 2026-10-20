@@ -11,6 +11,7 @@ import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import AudioTranscription from '../account/components/AudioTranscription.vue';
 import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import AiFieldConfigsSection from '../auditoria/AiFieldConfigsSection.vue';
+import CategoriesSection from '../auditoria/CategoriesSection.vue';
 import AiUsageSection from '../auditoria/AiUsageSection.vue';
 
 export default {
@@ -23,6 +24,7 @@ export default {
     AudioTranscription,
     TabBar,
     AiFieldConfigsSection,
+    CategoriesSection,
     AiUsageSection,
   },
   props: {
@@ -69,6 +71,7 @@ export default {
     auditoriaTabs() {
       return [
         { label: this.$t('AUDITORIA_AI_FIELD_CONFIGS.TAB_LABEL') },
+        { label: this.$t('AUDITORIA_CATEGORIES.TAB_LABEL') },
         { label: this.$t('AUDITORIA_AI_USAGE.TAB_LABEL') },
       ];
     },
@@ -174,6 +177,7 @@ export default {
               @tab-changed="onAuditoriaTabChange"
             />
             <AiFieldConfigsSection v-if="activeTab === 0" class="mt-4" />
+            <CategoriesSection v-else-if="activeTab === 1" class="mt-4" />
             <AiUsageSection v-else class="mt-4" />
           </div>
         </template>

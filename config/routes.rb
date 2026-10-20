@@ -208,6 +208,7 @@ Rails.application.routes.draw do
 
           namespace :auditoria do
             resources :ai_field_configs, only: [:index, :update]
+            resources :categories, only: [:index, :create, :update, :destroy]
             get 'ai_usage/summary', to: 'ai_usage#summary'
             get 'ai_usage', to: 'ai_usage#index'
             patch 'ai_usage/settings', to: 'ai_usage#update_settings'
@@ -552,6 +553,9 @@ Rails.application.routes.draw do
               get :channel
               get :auditoria_advisor
               get :auditoria_advisor_conversations
+              get :auditoria_category
+              get :auditoria_category_timeseries
+              get :auditoria_category_conversations
             end
           end
           resources :reports, only: [:index] do

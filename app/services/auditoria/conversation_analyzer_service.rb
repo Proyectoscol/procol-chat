@@ -8,6 +8,8 @@
 # errores -- la misma infraestructura que ya usa el "Summarize"/"Suggest a
 # reply" nativos de Chatwoot.
 class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
+  include Auditoria::ConversationAnalyzerCategoryMatching
+
   pattr_initialize [:account!, :conversation_display_id!]
 
   def perform
@@ -19,7 +21,7 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
 
     response = make_api_call(
       feature: 'editor', messages: messages, model: account.auditoria_chat_model.presence,
-      schema: Auditoria::ConversationAnalyzerSchema
+      schema: schema
     )
     return response if response[:error]
 
@@ -105,11 +107,15 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
   def persist_result(parsed_fields)
     record = analysis || Auditoria::ConversationAnalysis.new(account: account, conversation: conversation)
     record.update!(results: stringify_fields(parsed_fields), analyzed_at: Time.current)
+    sync_ai_categories!(parsed_fields[:categories])
     { message: record.results }
   end
 
   def stringify_fields(parsed_fields)
-    parsed_fields.transform_keys(&:to_s).transform_values(&:to_s)
+    # :categories es un Array -- #to_s lo mangla a texto estilo inspect, asi
+    # que se excluye del stringify masivo y se sincroniza aparte (ver
+    # sync_ai_categories!). `results` sigue siendo solo field_1..field_5.
+    parsed_fields.except(:categories).transform_keys(&:to_s).transform_values(&:to_s)
   end
 
   def messages
@@ -126,7 +132,7 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
       Responde cada una de las siguientes 5 tareas, basandote unicamente en la conversacion proporcionada:
 
       #{field_instructions}
-
+      #{category_instructions}
       Responde en #{account.locale_english_name}.
     PROMPT
   end
@@ -142,8 +148,22 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
     @field_configs ||= account.auditoria_ai_field_configs.active.limit(5)
   end
 
+  # Inserta un marcador "Fecha: AAAA-MM-DD" cada vez que el dia cambia (no
+  # por mensaje) -- le da a la IA la referencia de dia calendario que
+  # necesita para reportar en que dia(s) detecto cada categoria configurada
+  # (ver schema/sync_ai_categories!), sin inflar el prompt con una fecha por
+  # linea.
   def conversation_text
-    conversation_messages.map { |m| "#{m[:role]}: #{m[:content]}" }.join("\n\n")
+    lines = []
+    last_date = nil
+    conversation_messages.each do |m|
+      if m[:date] != last_date
+        lines << "Fecha: #{m[:date].iso8601}"
+        last_date = m[:date]
+      end
+      lines << "#{m[:role]}: #{m[:content]}"
+    end
+    lines.join("\n\n")
   end
 
   # Igual a Captain::BaseTaskService#conversation_messages, salvo que NO
@@ -163,7 +183,7 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
       next if content.blank?
       break if character_count + content.length > TOKEN_LIMIT
 
-      collected.prepend({ role: (message.incoming? ? 'user' : 'assistant'), content: content })
+      collected.prepend({ role: (message.incoming? ? 'user' : 'assistant'), content: content, date: message.created_at.to_date })
       character_count += content.length
     end
 

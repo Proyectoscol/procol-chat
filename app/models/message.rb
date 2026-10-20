@@ -334,6 +334,7 @@ class Message < ApplicationRecord
     update_contact_activity
     annotate_for_auditoria
     transcribe_audio_for_auditoria
+    match_keyword_categories_for_auditoria
   end
 
   def update_contact_activity
@@ -352,6 +353,12 @@ class Message < ApplicationRecord
     return unless attachments.any? { |a| a.file_type == 'audio' }
 
     Auditoria::AudioTranscriptionJob.perform_later(id)
+  end
+
+  def match_keyword_categories_for_auditoria
+    return unless account.feature_enabled?('auditoria')
+
+    Auditoria::KeywordCategoryMatcherJob.perform_later(id)
   end
 
   def update_waiting_since

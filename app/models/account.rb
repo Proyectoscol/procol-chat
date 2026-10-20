@@ -72,6 +72,8 @@ class Account < ApplicationRecord
   has_many :assignment_policies, dependent: :destroy_async
   has_many :auditoria_ai_field_configs, dependent: :destroy_async, class_name: 'Auditoria::AiFieldConfig'
   has_many :auditoria_ai_usage_logs, dependent: :destroy_async, class_name: 'Auditoria::AiUsageLog'
+  has_many :auditoria_categories, dependent: :destroy_async, class_name: 'Auditoria::Category'
+  has_many :auditoria_category_mentions, dependent: :destroy_async, class_name: 'Auditoria::CategoryMention'
   has_many :automation_rules, dependent: :destroy_async
   has_many :automation_rule_pending_executions, dependent: :delete_all
   has_many :macros, dependent: :destroy_async

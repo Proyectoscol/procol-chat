@@ -27,6 +27,16 @@ const typeMap = {
     apiMethod: 'getAuditoriaAdvisorReports',
     mutationKey: 'setAuditoriaAdvisorSummaryReport',
   },
+  auditoriaCategory: {
+    flagKey: 'isFetchingAuditoriaCategorySummaryReports',
+    apiMethod: 'getAuditoriaCategoryReports',
+    mutationKey: 'setAuditoriaCategorySummaryReport',
+  },
+  auditoriaCategoryTimeseries: {
+    flagKey: 'isFetchingAuditoriaCategoryTimeseries',
+    apiMethod: 'getAuditoriaCategoryTimeseries',
+    mutationKey: 'setAuditoriaCategoryTimeseries',
+  },
 };
 
 async function fetchSummaryReports(type, params, { commit }) {
@@ -53,12 +63,17 @@ export const initialState = {
   labelSummaryReports: [],
   auditoriaAdvisorSummaryReports: [],
   auditoriaAdvisorSummaryTotals: null,
+  auditoriaCategorySummaryReports: [],
+  auditoriaCategorySummaryTotals: null,
+  auditoriaCategoryTimeseries: [],
   uiFlags: {
     isFetchingInboxSummaryReports: false,
     isFetchingAgentSummaryReports: false,
     isFetchingTeamSummaryReports: false,
     isFetchingLabelSummaryReports: false,
     isFetchingAuditoriaAdvisorSummaryReports: false,
+    isFetchingAuditoriaCategorySummaryReports: false,
+    isFetchingAuditoriaCategoryTimeseries: false,
   },
 };
 
@@ -80,6 +95,15 @@ export const getters = {
   },
   getAuditoriaAdvisorSummaryTotals(state) {
     return state.auditoriaAdvisorSummaryTotals;
+  },
+  getAuditoriaCategorySummaryReports(state) {
+    return state.auditoriaCategorySummaryReports;
+  },
+  getAuditoriaCategorySummaryTotals(state) {
+    return state.auditoriaCategorySummaryTotals;
+  },
+  getAuditoriaCategoryTimeseries(state) {
+    return state.auditoriaCategoryTimeseries;
   },
   getUIFlags(state) {
     return state.uiFlags;
@@ -106,6 +130,16 @@ export const actions = {
   fetchAuditoriaAdvisorSummaryReports({ commit }, params) {
     return fetchSummaryReports('auditoriaAdvisor', params, { commit });
   },
+
+  fetchAuditoriaCategorySummaryReports({ commit }, params) {
+    return fetchSummaryReports('auditoriaCategory', params, { commit });
+  },
+
+  fetchAuditoriaCategoryTimeseries({ commit }, params) {
+    return fetchSummaryReports('auditoriaCategoryTimeseries', params, {
+      commit,
+    });
+  },
 };
 
 export const mutations = {
@@ -127,6 +161,16 @@ export const mutations = {
   setAuditoriaAdvisorSummaryReport(state, data) {
     state.auditoriaAdvisorSummaryReports = data.advisors || [];
     state.auditoriaAdvisorSummaryTotals = data.totals || null;
+  },
+  setAuditoriaCategorySummaryReport(state, data) {
+    state.auditoriaCategorySummaryReports = data.categories || [];
+    state.auditoriaCategorySummaryTotals = data.totals || null;
+  },
+  // El endpoint devuelve { series } -- un arreglo de {id, title, points},
+  // no una lista plana -- cada categoria ya trae sus propios puntos
+  // {date, count} listos para el chart.
+  setAuditoriaCategoryTimeseries(state, data) {
+    state.auditoriaCategoryTimeseries = data.series || [];
   },
   setUIFlags(state, uiFlag) {
     state.uiFlags = { ...state.uiFlags, ...uiFlag };

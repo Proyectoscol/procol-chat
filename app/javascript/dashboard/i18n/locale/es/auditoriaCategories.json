@@ -1,0 +1,52 @@
+{
+  "AUDITORIA_CATEGORIES": {
+    "TAB_LABEL": "Categorías",
+    "DESCRIPTION": "Configura las categorías que se rastrean en todas las conversaciones — por coincidencia exacta de palabras clave o clasificación con IA.",
+    "ADD_BUTTON": "Agregar categoría",
+    "EMPTY": "Aún no hay categorías configuradas.",
+    "DELETE_SUCCESS": "Categoría eliminada",
+    "DELETE_ERROR": "No se pudo eliminar la categoría. Inténtalo de nuevo.",
+    "TABLE": {
+      "TITLE": "Título",
+      "TYPE": "Tipo",
+      "STATUS": "Estado",
+      "ACTIONS": "Acciones"
+    },
+    "MATCH_TYPE": {
+      "KEYWORD": "Palabras clave",
+      "AI": "IA"
+    },
+    "STATUS": {
+      "ACTIVE": "Activa",
+      "INACTIVE": "Inactiva"
+    },
+    "DELETE_CONFIRM": {
+      "TITLE": "Eliminar categoría",
+      "MESSAGE": "Las conversaciones que ya tienen esta categoría conservarán ese historial.",
+      "YES": "Eliminar",
+      "NO": "Cancelar"
+    },
+    "FORM": {
+      "CREATE_TITLE": "Nueva categoría",
+      "EDIT_TITLE": "Editar categoría",
+      "TITLE_LABEL": "Título",
+      "TITLE_PLACEHOLDER": "ej. Mazda CX-5",
+      "MATCH_TYPE_LABEL": "Tipo de coincidencia",
+      "MATCH_TYPE": {
+        "KEYWORD": "Palabras clave",
+        "AI": "Clasificación con IA"
+      },
+      "SEARCH_TERMS_LABEL": "Términos de búsqueda (separados por coma o salto de línea)",
+      "SEARCH_TERMS_PLACEHOLDER": "Toyota, Hilux, Prado",
+      "INSTRUCTIONS_LABEL": "Instrucciones para la IA",
+      "INSTRUCTIONS_PLACEHOLDER": "La persona menciona que necesita consultar con su pareja o familia antes de decidir",
+      "IS_ACTIVE_LABEL": "Activa",
+      "CANCEL": "Cancelar",
+      "SAVE": "Guardar",
+      "CREATE": "Crear",
+      "CREATE_SUCCESS": "Categoría creada",
+      "EDIT_SUCCESS": "Categoría actualizada",
+      "ERROR": "No se pudo guardar la categoría. Inténtalo de nuevo."
+    }
+  }
+}

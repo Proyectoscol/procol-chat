@@ -1,0 +1,52 @@
+{
+  "AUDITORIA_CATEGORIES": {
+    "TAB_LABEL": "Categories",
+    "DESCRIPTION": "Configure the categories tracked across all conversations — by exact keyword match or AI classification.",
+    "ADD_BUTTON": "Add category",
+    "EMPTY": "No categories configured yet.",
+    "DELETE_SUCCESS": "Category deleted",
+    "DELETE_ERROR": "Could not delete the category. Try again.",
+    "TABLE": {
+      "TITLE": "Title",
+      "TYPE": "Type",
+      "STATUS": "Status",
+      "ACTIONS": "Actions"
+    },
+    "MATCH_TYPE": {
+      "KEYWORD": "Keyword",
+      "AI": "AI"
+    },
+    "STATUS": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive"
+    },
+    "DELETE_CONFIRM": {
+      "TITLE": "Delete category",
+      "MESSAGE": "Conversations already tagged with this category will keep that history.",
+      "YES": "Delete",
+      "NO": "Cancel"
+    },
+    "FORM": {
+      "CREATE_TITLE": "New category",
+      "EDIT_TITLE": "Edit category",
+      "TITLE_LABEL": "Title",
+      "TITLE_PLACEHOLDER": "e.g. Mazda CX-5",
+      "MATCH_TYPE_LABEL": "Matching type",
+      "MATCH_TYPE": {
+        "KEYWORD": "Keywords",
+        "AI": "AI classification"
+      },
+      "SEARCH_TERMS_LABEL": "Search terms (comma or newline separated)",
+      "SEARCH_TERMS_PLACEHOLDER": "Toyota, Hilux, Prado",
+      "INSTRUCTIONS_LABEL": "Instructions for the AI",
+      "INSTRUCTIONS_PLACEHOLDER": "La persona menciona que necesita consultar con su pareja o familia antes de decidir",
+      "IS_ACTIVE_LABEL": "Active",
+      "CANCEL": "Cancel",
+      "SAVE": "Save",
+      "CREATE": "Create",
+      "CREATE_SUCCESS": "Category created",
+      "EDIT_SUCCESS": "Category updated",
+      "ERROR": "Could not save the category. Try again."
+    }
+  }
+}

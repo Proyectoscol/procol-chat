@@ -456,6 +456,7 @@ es:
       limit_exceeded: 'You can create a maximum of %{limit} custom tools per account'
   auditoria:
     ai_spend_limit_reached: 'Se alcanzó el límite mensual de gasto en IA configurado. Contacta a tu administrador.'
+    max_categories_reached: 'Puedes crear un máximo de %{limit} categorías por cuenta.'
   public_portal:
     search:
       search_placeholder: Buscar artículo por título o cuerpo...

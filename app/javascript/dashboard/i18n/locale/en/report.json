@@ -695,5 +695,25 @@
         "EMPTY": "No response data for this advisor in the selected range."
       }
     }
+  },
+  "AUDITORIA_CATEGORY_REPORTS": {
+    "HEADER": "Categories Overview",
+    "DESCRIPTION": "Track whether the team is mentioning what you asked them to — a promotion, a launch, a product line — and since when. Compare categories over time to bring concrete data to management.",
+    "TABLE": {
+      "TITLE": "Category",
+      "CONVERSATIONS": "No. of conversations",
+      "SHOW_IN_CHART": "Show in chart"
+    },
+    "INBOX_FILTER_LABEL": "Inbox",
+    "INBOX_FILTER_ALL": "All inboxes",
+    "TOTALS_SUMMARY": "Total conversations with at least one category: {conversations}",
+    "CHART": {
+      "EMPTY": "No mentions found for the selected categories and date range."
+    },
+    "CONVERSATIONS_DRAWER": {
+      "DESCRIPTION": "Conversations tagged with this category.",
+      "EMPTY": "No conversations found for this category.",
+      "ERROR": "Failed to load conversations, please try again."
+    }
   }
 }

@@ -76,6 +76,41 @@ class SummaryReportsAPI extends ApiClient {
       signal,
     });
   }
+
+  getAuditoriaCategoryReports({ inboxId } = {}) {
+    return axios.get(`${this.url}/auditoria_category`, {
+      params: {
+        inbox_id: inboxId,
+      },
+    });
+  }
+
+  getAuditoriaCategoryTimeseries({ since, until, inboxId, categoryIds } = {}) {
+    return axios.get(`${this.url}/auditoria_category_timeseries`, {
+      params: {
+        since,
+        until,
+        inbox_id: inboxId,
+        category_ids: categoryIds,
+      },
+    });
+  }
+
+  getAuditoriaCategoryConversations({
+    categoryId,
+    inboxId,
+    page,
+    signal,
+  } = {}) {
+    return axios.get(`${this.url}/auditoria_category_conversations`, {
+      params: {
+        category_id: categoryId,
+        inbox_id: inboxId,
+        page,
+      },
+      signal,
+    });
+  }
 }
 
 export default new SummaryReportsAPI();

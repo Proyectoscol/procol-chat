@@ -4,6 +4,7 @@ import agentMgmt from './agentMgmt.json';
 import attributesMgmt from './attributesMgmt.json';
 import auditLogs from './auditLogs.json';
 import auditoriaAiFieldConfigs from './auditoriaAiFieldConfigs.json';
+import auditoriaCategories from './auditoriaCategories.json';
 import auditoriaAiUsage from './auditoriaAiUsage.json';
 import automation from './automation.json';
 import bulkActions from './bulkActions.json';
@@ -52,6 +53,7 @@ export default {
   ...attributesMgmt,
   ...auditLogs,
   ...auditoriaAiFieldConfigs,
+  ...auditoriaCategories,
   ...auditoriaAiUsage,
   ...automation,
   ...bulkActions,
