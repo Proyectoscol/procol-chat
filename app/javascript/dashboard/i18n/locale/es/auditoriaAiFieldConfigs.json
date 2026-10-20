@@ -1,0 +1,14 @@
+{
+  "AUDITORIA_AI_FIELD_CONFIGS": {
+    "HEADER": "Auditor IA",
+    "TAB_LABEL": "Campos",
+    "DESCRIPTION": "Personaliza el título y las instrucciones de cada uno de los 5 campos que Auditor IA completa al analizar una conversación.",
+    "LOADING": "Cargando campos",
+    "FIELD_TITLE_LABEL": "Título",
+    "FIELD_SUBTITLE_LABEL": "Instrucciones (opcional)",
+    "SAVE_BUTTON": "Guardar",
+    "SAVE_SUCCESS": "Campo guardado",
+    "SAVE_ERROR": "No se pudo guardar el campo. Inténtalo de nuevo.",
+    "FETCH_ERROR": "No se pudieron cargar los campos. Inténtalo de nuevo."
+  }
+}

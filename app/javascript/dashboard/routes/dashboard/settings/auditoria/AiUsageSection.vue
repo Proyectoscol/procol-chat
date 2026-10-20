@@ -5,6 +5,8 @@ import { format, fromUnixTime } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAlert } from 'dashboard/composables';
 import { useCamelCase } from 'dashboard/composables/useTransformKeys';
+import { useAccount } from 'dashboard/composables/useAccount';
+import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import AuditoriaAiUsageAPI from 'dashboard/api/auditoriaAiUsage';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -14,6 +16,7 @@ import PaginationFooter from 'dashboard/components-next/pagination/PaginationFoo
 const LOGS_PER_PAGE = 25;
 
 const { t } = useI18n();
+const { accountId } = useAccount();
 
 const isLoading = ref(false);
 const isSaving = ref(false);
@@ -39,6 +42,15 @@ const featureLabel = feature =>
   feature === 'conversation_analysis'
     ? t('AUDITORIA_AI_USAGE.FEATURE.CONVERSATION_ANALYSIS')
     : t('AUDITORIA_AI_USAGE.FEATURE.AUDIO_TRANSCRIPTION');
+
+const logLink = log => {
+  if (!log.conversationId) return null;
+  const params = log.messageId ? { messageId: log.messageId } : undefined;
+  return frontendURL(
+    conversationUrl({ id: log.conversationId, accountId: accountId.value }),
+    params
+  );
+};
 
 const triggeredByLabel = triggeredBy =>
   triggeredBy === 'manual'
@@ -267,7 +279,14 @@ onMounted(fetchAll);
                   {{ formatDate(log.createdAt) }}
                 </td>
                 <td class="px-3 py-2 whitespace-nowrap">
-                  {{ featureLabel(log.feature) }}
+                  <router-link
+                    v-if="logLink(log)"
+                    :to="logLink(log)"
+                    class="text-n-brand hover:underline"
+                  >
+                    {{ featureLabel(log.feature) }}
+                  </router-link>
+                  <span v-else>{{ featureLabel(log.feature) }}</span>
                 </td>
                 <td class="px-3 py-2 whitespace-nowrap">{{ log.model }}</td>
                 <td class="px-3 py-2 whitespace-nowrap">

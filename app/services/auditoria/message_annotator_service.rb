@@ -23,6 +23,7 @@ class Auditoria::MessageAnnotatorService
   MESSAGE_MARKER = 'message:'.freeze
   TYPE_MESSAGE_LINE = /\Atype message: (\w+)/
   TAGS = %w[forwarded reply].freeze
+  TAG_LABELS = { 'forwarded' => 'Reenviado' }.freeze
   MULTIPLE_ADVISORS_LABEL_TITLE = 'auditoria-multiple-asesor'.freeze
   # content_attributes es `json` + `store coder: JSON` (ver Message) -- eso
   # serializa dos veces al guardar (el coder lo convierte a texto JSON, y la
@@ -175,7 +176,7 @@ class Auditoria::MessageAnnotatorService
   end
 
   def reassemble(tag, blocks)
-    parts = tag == 'forwarded' ? [tag, *blocks] : blocks
+    parts = tag == 'forwarded' ? [TAG_LABELS.fetch(tag), *blocks] : blocks
     parts.join(BLOCK_SEPARATOR)
   end
 end

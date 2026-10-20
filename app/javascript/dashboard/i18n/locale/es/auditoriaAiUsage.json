@@ -1,0 +1,38 @@
+{
+  "AUDITORIA_AI_USAGE": {
+    "TAB_LABEL": "Uso y límites",
+    "FETCH_ERROR": "No se pudieron cargar los datos de uso. Inténtalo de nuevo.",
+    "SAVE_SUCCESS": "Ajustes guardados",
+    "SAVE_ERROR": "No se pudieron guardar los ajustes. Inténtalo de nuevo.",
+    "TOTAL_COST_THIS_MONTH": "Costo total este mes",
+    "TOTAL_TOKENS_THIS_MONTH": "Tokens totales este mes",
+    "LIMIT_OF": "Límite: {limit}",
+    "TOKENS": "tokens",
+    "FEATURE_SUMMARY": "{cost} · {tokens} tokens",
+    "FEATURE": {
+      "CONVERSATION_ANALYSIS": "Análisis de conversación",
+      "AUDIO_TRANSCRIPTION": "Transcripción de audio"
+    },
+    "TRIGGERED_BY": {
+      "MANUAL": "Manual",
+      "BATCH": "Automático"
+    },
+    "SETTINGS_HEADER": "Límites de gasto y modelos",
+    "COST_LIMIT_LABEL": "Límite de costo mensual (USD)",
+    "TOKEN_LIMIT_LABEL": "Límite de tokens mensual",
+    "NO_LIMIT_PLACEHOLDER": "Sin límite",
+    "CHAT_MODEL_LABEL": "Modelo de análisis de conversación",
+    "TRANSCRIPTION_MODEL_LABEL": "Modelo de transcripción de audio",
+    "SAVE_BUTTON": "Guardar",
+    "LOGS_HEADER": "Actividad reciente",
+    "LOGS_EMPTY": "Aún no hay uso de IA registrado",
+    "LOGS_TABLE": {
+      "DATE": "Fecha",
+      "FEATURE": "Función",
+      "MODEL": "Modelo",
+      "TOKENS": "Tokens (entrada/salida)",
+      "COST": "Costo",
+      "TRIGGERED_BY": "Disparado por"
+    }
+  }
+}

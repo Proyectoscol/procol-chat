@@ -429,7 +429,17 @@
       "MACROS": "Macros",
       "LINEAR_ISSUES": "Problemas lineales vinculados",
       "SHOPIFY_ORDERS": "Shopify Orders",
-      "SHARED_FILES": "Adjuntos"
+      "SHARED_FILES": "Adjuntos",
+      "AUDITOR_IA": "Auditor IA"
+    },
+    "AUDITOR_IA": {
+      "ANALYZE_BUTTON": "Analizar ahora",
+      "ANALYZING": "Analizando...",
+      "LAST_ANALYZED_AT": "Último análisis: {time}",
+      "NEVER_ANALYZED": "Esta conversación aún no ha sido analizada",
+      "OUTDATED_NOTICE": "Hay mensajes nuevos desde el último análisis",
+      "ERROR": "No se pudo generar el análisis. Por favor, inténtelo de nuevo.",
+      "EMPTY": "No hay campos configurados"
     },
     "SHARED_FILES": {
       "EMPTY": "No hay archivos adjuntos aún",

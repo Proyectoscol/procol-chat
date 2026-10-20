@@ -44,6 +44,7 @@ class Api::V1::Accounts::Auditoria::AiUsageController < Api::V1::Accounts::BaseC
       feature: log.feature,
       model: log.model,
       conversation_id: log.conversation&.display_id,
+      message_id: log.message_id,
       prompt_tokens: log.prompt_tokens,
       completion_tokens: log.completion_tokens,
       total_tokens: log.total_tokens,
