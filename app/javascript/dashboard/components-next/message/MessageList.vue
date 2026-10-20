@@ -1,6 +1,8 @@
 <script setup>
 import { computed, reactive } from 'vue';
+import { isSameDay, fromUnixTime } from 'date-fns';
 import Message from './Message.vue';
+import DateDivider from './DateDivider.vue';
 import { MESSAGE_TYPES } from './constants.js';
 import { useCamelCase } from 'dashboard/composables/useTransformKeys';
 import { useMapGetter } from 'dashboard/composables/store.js';
@@ -127,6 +129,24 @@ const shouldGroupWithNext = (index, searchList) => {
 };
 
 /**
+ * Whether a date divider should render before this message -- the first
+ * message always gets one (so the day is never ambiguous without scrolling),
+ * and any message whose local calendar day differs from the previous one.
+ * @param {Number} index - Index of the current message
+ * @returns {Boolean}
+ */
+const shouldShowDateDivider = index => {
+  if (index === 0) return true;
+
+  const current = allMessages.value[index];
+  const previous = allMessages.value[index - 1];
+  return !isSameDay(
+    fromUnixTime(current.createdAt),
+    fromUnixTime(previous.createdAt)
+  );
+};
+
+/**
  * Gets the message that was replied to
  * @param {Object} parentMessage - The message containing the reply reference
  * @returns {Object|null} - The message being replied to, or null if not found
@@ -169,6 +189,10 @@ const getInReplyToMessage = parentMessage => {
   <ul class="px-4 bg-n-surface-1">
     <slot name="beforeAll" />
     <template v-for="(message, index) in allMessages" :key="message.id">
+      <DateDivider
+        v-if="shouldShowDateDivider(index)"
+        :timestamp="message.createdAt"
+      />
       <slot
         v-if="firstUnreadId && message.id === firstUnreadId"
         name="unreadBadge"
