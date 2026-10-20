@@ -17,9 +17,24 @@ class V2::Reports::AuditoriaCategoryTermsBuilder
     return [] unless category&.match_type_keyword?
 
     rows = category.search_terms_list.map do |term|
-      { term: term, mentions_count: matched_messages.where('content ~* ?', pattern_for(term)).count }
+      { term: term, mentions_count: count_for_term(term) }
     end
     rows.sort_by { |row| -row[:mentions_count] }
+  end
+
+  # Mismo criterio que AuditoriaCategorySummaryBuilder/...TimeseriesBuilder:
+  # en modo "menciones" cada mensaje que matchea cuenta (crudo); en modo
+  # "conversaciones" se deduplica por conversation_id, para no doblar una
+  # conversacion donde el mismo termino aparece en varios mensajes.
+  def count_for_term(term)
+    scope = matched_messages.where('content ~* ?', pattern_for(term))
+    return scope.count if mentions_mode?
+
+    scope.distinct.count(:conversation_id)
+  end
+
+  def mentions_mode?
+    params[:count_mode] == 'mentions'
   end
 
   def pattern_for(term)

@@ -134,6 +134,7 @@ const toggleTerms = async category => {
       until: to.value,
       categoryId: category.id,
       inboxId: selectedInboxId.value || undefined,
+      countMode: countMode.value,
     });
     termsByCategoryId.value = {
       ...termsByCategoryId.value,
@@ -242,6 +243,7 @@ const onInboxChange = () => fetchAllData();
 // conversation_id), ver V2::Reports::AuditoriaCategorySummaryBuilder y
 // ...TimeseriesBuilder.
 const onCountModeChange = () => {
+  resetTermsState();
   fetchSummary();
   fetchTimeseries();
 };

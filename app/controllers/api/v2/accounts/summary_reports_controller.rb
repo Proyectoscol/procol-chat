@@ -116,7 +116,7 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
   end
 
   def auditoria_category_terms_params
-    params.permit(:since, :until, :category_id, :inbox_id)
+    params.permit(:since, :until, :category_id, :inbox_id, :count_mode)
   end
 
   def render_report_with(builder_class, type: nil)

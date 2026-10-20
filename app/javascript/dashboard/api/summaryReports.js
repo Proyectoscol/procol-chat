@@ -126,13 +126,20 @@ class SummaryReportsAPI extends ApiClient {
     });
   }
 
-  getAuditoriaCategoryTerms({ since, until, categoryId, inboxId } = {}) {
+  getAuditoriaCategoryTerms({
+    since,
+    until,
+    categoryId,
+    inboxId,
+    countMode,
+  } = {}) {
     return axios.get(`${this.url}/auditoria_category_terms`, {
       params: {
         since,
         until,
         category_id: categoryId,
         inbox_id: inboxId,
+        count_mode: countMode,
       },
     });
   }
