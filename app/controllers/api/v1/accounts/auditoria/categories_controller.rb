@@ -33,7 +33,9 @@ class Api::V1::Accounts::Auditoria::CategoriesController < Api::V1::Accounts::Ba
   end
 
   def destroy
+    parent = @category.parent
     @category.destroy!
+    reconcile_orphaned_parent(parent)
     head :no_content
   end
 
@@ -59,6 +61,19 @@ class Api::V1::Accounts::Auditoria::CategoriesController < Api::V1::Accounts::Ba
     return unless category.parent.subcategories.count == 1
 
     Auditoria::CategoryMention.where(category_id: category.parent_id).delete_all
+  end
+
+  # Simetrico al metodo de arriba, en la direccion contraria: si este
+  # destroy dejo al padre sin subcategorias, vuelve a ser una hoja normal
+  # (ver Auditoria::Category.leaf) -- pero sus propias menciones se habian
+  # borrado cuando ganó su primer hijo, asi que sin este backfill quedaria
+  # con match_type/search_terms vigentes y 0 menciones propias, sin que
+  # nada lo repueble.
+  def reconcile_orphaned_parent(parent)
+    return if parent.blank?
+    return if parent.subcategories.exists?
+
+    Auditoria::KeywordCategoryBackfillJob.perform_later(parent.id)
   end
 
   def serialize(category)
