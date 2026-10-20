@@ -97,11 +97,11 @@
         "HELP": "When enabled, the system will skip resolving conversations that are still waiting for an agent's reply."
       },
       "AUDIO_TRANSCRIPTION": {
-        "TITLE": "Transcribe Audio Messages",
-        "NOTE": "Automatically transcribe audio messages in conversations. Generate a text transcript whenever an audio message is sent or received, and display it alongside the message.",
+        "TITLE": "Transcribir mensajes de audio",
+        "NOTE": "Transcribe automáticamente los mensajes de audio en las conversaciones. Genera un texto cada vez que se envía o recibe un mensaje de audio, y lo muestra junto al mensaje.",
         "API": {
-          "SUCCESS": "Audio transcription setting updated successfully",
-          "ERROR": "Failed to update audio transcription setting"
+          "SUCCESS": "Ajuste de transcripción de audio actualizado correctamente",
+          "ERROR": "No se pudo actualizar el ajuste de transcripción de audio"
         }
       },
       "AUTO_RESOLVE_DURATION": {
