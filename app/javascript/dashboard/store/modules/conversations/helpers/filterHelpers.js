@@ -68,6 +68,15 @@ const getValueFromConversation = (conversation, attributeKey) => {
     case 'created_at':
     case 'last_activity_at':
       return conversation[attributeKey];
+    // No es una columna de conversation -- vive en el mensaje. El backend
+    // (Conversations::FilterService#annotate_matched_message) ya sustituye
+    // last_non_activity_message por el mensaje que disparo el filtro de
+    // contenido cuando ese filtro esta activo, asi que revalidar contra
+    // ese mismo texto aqui coincide por construccion con lo que el backend
+    // ya confirmo -- sin esto, content caia al "default" (null) y
+    // rechazaba toda conversacion, sin importar lo que devolviera el server.
+    case 'content':
+      return conversation.last_non_activity_message?.content;
     case 'display_id':
       // Frontend uses 'id' but backend expects 'display_id'
       return conversation.display_id || conversation.id;
