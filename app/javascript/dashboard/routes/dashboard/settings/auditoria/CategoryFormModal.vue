@@ -65,12 +65,17 @@ const onClose = () => emit('close');
 
 const submit = async () => {
   isSaving.value = true;
+  // search_terms/instructions se mandan tal cual, sin vaciar el que no
+  // esta activo -- match_type ya decide cual se usa para matchear (ver
+  // Auditoria::KeywordCategoryMatcherService/ConversationAnalyzerCategoryMatching),
+  // asi que vaciar el otro aqui solo perdia datos si el usuario cambiaba
+  // de tipo para explorar y volvia a guardar con el tipo original.
   const payload = {
     title: title.value,
     match_type: matchType.value,
     is_active: isActive.value,
-    search_terms: matchType.value === 'keyword' ? searchTerms.value : '',
-    instructions: matchType.value === 'ai' ? instructions.value : '',
+    search_terms: searchTerms.value,
+    instructions: instructions.value,
     parent_id: isGroupingCategory.value ? null : parentId.value || null,
   };
   try {
