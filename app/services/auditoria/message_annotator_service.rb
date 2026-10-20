@@ -24,6 +24,18 @@ class Auditoria::MessageAnnotatorService
   TYPE_MESSAGE_LINE = /\Atype message: (\w+)/
   TAGS = %w[forwarded reply].freeze
   TAG_LABELS = { 'forwarded' => 'Reenviado' }.freeze
+  # Mismos bloques literales en ingles que manda la plataforma externa para
+  # eventos de sistema (llamadas, eliminados) -- ver tambien TAG_LABELS para
+  # "forwarded". "Outgoing voice call" no se ha visto en produccion todavia,
+  # se agrega por si sigue el mismo patron que "Incoming"/"Missed".
+  SYSTEM_MESSAGE_LABELS = {
+    '📞 Incoming voice call' => '📞 Llamada entrante',
+    '📞 Missed voice call' => '📞 Llamada perdida',
+    '📞 Outgoing voice call' => '📞 Llamada saliente',
+    '🗑️ Message deleted by sender' => '🗑️ Mensaje eliminado por el remitente'
+  }.freeze
+  EDITED_PREFIX = '✏️ Edited: '.freeze
+  EDITED_PREFIX_ES = '✏️ Editado: '.freeze
   MULTIPLE_ADVISORS_LABEL_TITLE = 'auditoria-multiple-asesor'.freeze
   # content_attributes es `json` + `store coder: JSON` (ver Message) -- eso
   # serializa dos veces al guardar (el coder lo convierte a texto JSON, y la
@@ -70,7 +82,7 @@ class Auditoria::MessageAnnotatorService
 
   def build_attrs(tag, quoted_blocks, remaining_blocks, source_name)
     attrs = {
-      'auditoria_display_content' => reassemble(tag, strip_type_message(remaining_blocks)),
+      'auditoria_display_content' => reassemble(tag, translate_system_messages(strip_type_message(remaining_blocks))),
       'auditoria_source_user_id' => resolve_source_user_id(source_name)
     }
     annotate_reply(tag, quoted_blocks, attrs)
@@ -173,6 +185,15 @@ class Auditoria::MessageAnnotatorService
 
   def strip_type_message(blocks)
     blocks.reject { |block| block.blank? || block.lines.first.to_s.match?(TYPE_MESSAGE_LINE) }
+  end
+
+  def translate_system_messages(blocks)
+    blocks.map do |block|
+      next SYSTEM_MESSAGE_LABELS[block] if SYSTEM_MESSAGE_LABELS.key?(block)
+      next block.sub(EDITED_PREFIX, EDITED_PREFIX_ES) if block.start_with?(EDITED_PREFIX)
+
+      block
+    end
   end
 
   def reassemble(tag, blocks)
