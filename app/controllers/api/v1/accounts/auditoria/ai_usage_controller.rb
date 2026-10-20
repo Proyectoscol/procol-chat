@@ -1,5 +1,6 @@
 class Api::V1::Accounts::Auditoria::AiUsageController < Api::V1::Accounts::BaseController
   RESULTS_PER_PAGE = 25
+  SORTABLE_COLUMNS = %w[created_at total_tokens cost_usd feature model triggered_by].freeze
 
   before_action :check_authorization
 
@@ -19,7 +20,9 @@ class Api::V1::Accounts::Auditoria::AiUsageController < Api::V1::Accounts::BaseC
   end
 
   def index
-    logs = Current.account.auditoria_ai_usage_logs.order(created_at: :desc).page(params[:page]).per(RESULTS_PER_PAGE)
+    logs = Current.account.auditoria_ai_usage_logs
+    logs = logs.where('cost_usd >= ?', params[:min_cost]) if params[:min_cost].present?
+    logs = logs.order(sort_column => sort_direction).page(params[:page]).per(RESULTS_PER_PAGE)
     render json: { logs: logs.map { |log| serialize(log) }, total_count: logs.total_count }
   end
 
@@ -29,6 +32,14 @@ class Api::V1::Accounts::Auditoria::AiUsageController < Api::V1::Accounts::BaseC
   end
 
   private
+
+  def sort_column
+    SORTABLE_COLUMNS.include?(params[:sort_by]) ? params[:sort_by] : 'created_at'
+  end
+
+  def sort_direction
+    params[:sort_direction] == 'asc' ? :asc : :desc
+  end
 
   def totals_by_feature
     Current.account.auditoria_ai_usage_logs

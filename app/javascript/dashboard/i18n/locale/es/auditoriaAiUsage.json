@@ -26,6 +26,7 @@
     "SAVE_BUTTON": "Guardar",
     "LOGS_HEADER": "Actividad reciente",
     "LOGS_EMPTY": "Aún no hay uso de IA registrado",
+    "MIN_COST_LABEL": "Costo mínimo (USD)",
     "LOGS_TABLE": {
       "DATE": "Fecha",
       "FEATURE": "Función",

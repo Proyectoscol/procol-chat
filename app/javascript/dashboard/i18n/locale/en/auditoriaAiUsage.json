@@ -26,6 +26,7 @@
     "SAVE_BUTTON": "Save",
     "LOGS_HEADER": "Recent activity",
     "LOGS_EMPTY": "No AI usage recorded yet",
+    "MIN_COST_LABEL": "Min. cost (USD)",
     "LOGS_TABLE": {
       "DATE": "Date",
       "FEATURE": "Feature",

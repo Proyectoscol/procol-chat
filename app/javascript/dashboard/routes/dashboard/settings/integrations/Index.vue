@@ -16,7 +16,12 @@ const uiFlags = getters['integrations/getUIFlags'];
 
 // Esta cuenta es espejo de solo lectura, no atencion en vivo - estas
 // integraciones no aplican (panel de apps embebidas, video/voz, chatbot).
-const HIDDEN_INTEGRATION_IDS = ['dashboard_apps', 'dyte', 'dialogflow'];
+const HIDDEN_INTEGRATION_IDS = [
+  'dashboard_apps',
+  'dyte',
+  'dialogflow',
+  'google_translate',
+];
 
 const integrationList = computed(() =>
   getters['integrations/getAppIntegrations'].value.filter(

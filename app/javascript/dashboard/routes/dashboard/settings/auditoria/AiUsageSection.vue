@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDebounceFn } from '@vueuse/core';
 import { format, fromUnixTime } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAlert } from 'dashboard/composables';
@@ -12,8 +13,14 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
+import {
+  BaseTable,
+  BaseTableRow,
+  BaseTableCell,
+} from 'dashboard/components-next/table';
 
 const LOGS_PER_PAGE = 25;
+const MIN_COST_DEBOUNCE_MS = 400;
 
 const { t } = useI18n();
 const { accountId } = useAccount();
@@ -24,6 +31,21 @@ const summary = ref(null);
 const logs = ref([]);
 const totalLogs = ref(0);
 const currentPage = ref(1);
+const minCost = ref('');
+const sortBy = ref('created_at');
+const sortDirection = ref('desc');
+
+const columns = computed(() => [
+  { key: 'created_at', label: t('AUDITORIA_AI_USAGE.LOGS_TABLE.DATE') },
+  { key: 'feature', label: t('AUDITORIA_AI_USAGE.LOGS_TABLE.FEATURE') },
+  { key: 'model', label: t('AUDITORIA_AI_USAGE.LOGS_TABLE.MODEL') },
+  { key: 'total_tokens', label: t('AUDITORIA_AI_USAGE.LOGS_TABLE.TOKENS') },
+  { key: 'cost_usd', label: t('AUDITORIA_AI_USAGE.LOGS_TABLE.COST') },
+  {
+    key: 'triggered_by',
+    label: t('AUDITORIA_AI_USAGE.LOGS_TABLE.TRIGGERED_BY'),
+  },
+]);
 
 const costLimit = ref('');
 const tokenLimit = ref('');
@@ -57,6 +79,13 @@ const triggeredByLabel = triggeredBy =>
     ? t('AUDITORIA_AI_USAGE.TRIGGERED_BY.MANUAL')
     : t('AUDITORIA_AI_USAGE.TRIGGERED_BY.BATCH');
 
+const sortIcon = key => {
+  if (sortBy.value !== key) return 'i-lucide-arrow-up-down';
+  return sortDirection.value === 'asc'
+    ? 'i-lucide-arrow-up'
+    : 'i-lucide-arrow-down';
+};
+
 const conversationAnalysisTotals = computed(
   () => summary.value?.byFeature?.conversationAnalysis || {}
 );
@@ -75,11 +104,30 @@ const fetchSummary = async () => {
 };
 
 const fetchLogs = async page => {
-  const response = await AuditoriaAiUsageAPI.getLogs(page);
+  const response = await AuditoriaAiUsageAPI.getLogs(page, {
+    sortBy: sortBy.value,
+    sortDirection: sortDirection.value,
+    minCost: minCost.value,
+  });
   const data = useCamelCase(response.data, { deep: true });
   logs.value = data.logs;
   totalLogs.value = data.totalCount;
 };
+
+const toggleSort = key => {
+  sortDirection.value =
+    sortBy.value === key && sortDirection.value === 'desc' ? 'asc' : 'desc';
+  sortBy.value = key;
+  currentPage.value = 1;
+  fetchLogs(1);
+};
+
+const onMinCostChange = useDebounceFn(() => {
+  currentPage.value = 1;
+  fetchLogs(1);
+}, MIN_COST_DEBOUNCE_MS);
+
+watch(minCost, onMinCostChange);
 
 const fetchAll = async () => {
   isLoading.value = true;
@@ -240,45 +288,46 @@ onMounted(fetchAll);
       </div>
 
       <div class="flex flex-col gap-3">
-        <span class="text-sm font-medium text-n-slate-12">{{
-          t('AUDITORIA_AI_USAGE.LOGS_HEADER')
-        }}</span>
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <span class="text-sm font-medium text-n-slate-12">{{
+            t('AUDITORIA_AI_USAGE.LOGS_HEADER')
+          }}</span>
+          <Input
+            id="auditoria-min-cost"
+            v-model="minCost"
+            type="number"
+            class="!mb-0 w-40"
+            :placeholder="t('AUDITORIA_AI_USAGE.MIN_COST_LABEL')"
+          />
+        </div>
         <div
-          class="overflow-x-auto rounded-xl outline outline-1 outline-n-weak"
+          class="rounded-xl outline outline-1 outline-n-weak overflow-hidden"
         >
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="bg-n-solid-2 text-left text-n-slate-11">
-                <th class="px-3 py-2">
-                  {{ t('AUDITORIA_AI_USAGE.LOGS_TABLE.DATE') }}
-                </th>
-                <th class="px-3 py-2">
-                  {{ t('AUDITORIA_AI_USAGE.LOGS_TABLE.FEATURE') }}
-                </th>
-                <th class="px-3 py-2">
-                  {{ t('AUDITORIA_AI_USAGE.LOGS_TABLE.MODEL') }}
-                </th>
-                <th class="px-3 py-2">
-                  {{ t('AUDITORIA_AI_USAGE.LOGS_TABLE.TOKENS') }}
-                </th>
-                <th class="px-3 py-2">
-                  {{ t('AUDITORIA_AI_USAGE.LOGS_TABLE.COST') }}
-                </th>
-                <th class="px-3 py-2">
-                  {{ t('AUDITORIA_AI_USAGE.LOGS_TABLE.TRIGGERED_BY') }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="log in logs"
-                :key="log.id"
-                class="border-t border-n-weak text-n-slate-12"
+          <BaseTable
+            :headers="columns"
+            :items="logs"
+            :no-data-message="t('AUDITORIA_AI_USAGE.LOGS_EMPTY')"
+          >
+            <template
+              v-for="(column, index) in columns"
+              #[`header-${index}`]="{ header }"
+              :key="column.key"
+            >
+              <button
+                type="button"
+                class="flex items-center gap-1 hover:text-n-slate-12"
+                @click="toggleSort(header.key)"
               >
-                <td class="px-3 py-2 whitespace-nowrap">
+                {{ header.label }}
+                <span :class="sortIcon(header.key)" class="size-3.5" />
+              </button>
+            </template>
+            <template #row="{ items }">
+              <BaseTableRow v-for="log in items" :key="log.id" :item="log">
+                <BaseTableCell class="whitespace-nowrap">
                   {{ formatDate(log.createdAt) }}
-                </td>
-                <td class="px-3 py-2 whitespace-nowrap">
+                </BaseTableCell>
+                <BaseTableCell class="whitespace-nowrap">
                   <router-link
                     v-if="logLink(log)"
                     :to="logLink(log)"
@@ -287,30 +336,26 @@ onMounted(fetchAll);
                     {{ featureLabel(log.feature) }}
                   </router-link>
                   <span v-else>{{ featureLabel(log.feature) }}</span>
-                </td>
-                <td class="px-3 py-2 whitespace-nowrap">{{ log.model }}</td>
-                <td class="px-3 py-2 whitespace-nowrap">
+                </BaseTableCell>
+                <BaseTableCell class="whitespace-nowrap">
+                  {{ log.model }}
+                </BaseTableCell>
+                <BaseTableCell class="whitespace-nowrap">
                   {{
                     formatTokensInOut(log.promptTokens, log.completionTokens)
                   }}
-                </td>
-                <td class="px-3 py-2 whitespace-nowrap">
+                </BaseTableCell>
+                <BaseTableCell class="whitespace-nowrap">
                   {{ formatCost(log.costUsd) }}
-                </td>
-                <td class="px-3 py-2 whitespace-nowrap">
+                </BaseTableCell>
+                <BaseTableCell class="whitespace-nowrap">
                   {{ triggeredByLabel(log.triggeredBy) }}
-                </td>
-              </tr>
-              <tr v-if="!logs.length">
-                <td colspan="6" class="px-3 py-6 text-center text-n-slate-11">
-                  {{ t('AUDITORIA_AI_USAGE.LOGS_EMPTY') }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </BaseTableCell>
+              </BaseTableRow>
+            </template>
+          </BaseTable>
         </div>
         <PaginationFooter
-          v-if="totalLogs > LOGS_PER_PAGE"
           :current-page="currentPage"
           :total-items="totalLogs"
           :items-per-page="LOGS_PER_PAGE"

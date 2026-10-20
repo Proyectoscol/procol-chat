@@ -8,6 +8,10 @@ import SingleIntegrationHooks from './SingleIntegrationHooks.vue';
 import MultipleIntegrationHooks from './MultipleIntegrationHooks.vue';
 import SettingsLayout from '../SettingsLayout.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
+import AudioTranscription from '../account/components/AudioTranscription.vue';
+import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
+import AiFieldConfigsSection from '../auditoria/AiFieldConfigsSection.vue';
+import AiUsageSection from '../auditoria/AiUsageSection.vue';
 
 export default {
   components: {
@@ -16,6 +20,10 @@ export default {
     MultipleIntegrationHooks,
     SettingsLayout,
     BaseSettingsHeader,
+    AudioTranscription,
+    TabBar,
+    AiFieldConfigsSection,
+    AiUsageSection,
   },
   props: {
     integrationId: {
@@ -47,12 +55,22 @@ export default {
       showDeleteConfirmationPopup: false,
       selectedHook: {},
       alertMessage: '',
+      activeTab: 0,
     };
   },
   computed: {
     ...mapGetters({ uiFlags: 'integrations/getUIFlags' }),
     showIntegrationHooks() {
       return !this.uiFlags.isFetching && !isEmptyObject(this.integration);
+    },
+    showAuditoriaSections() {
+      return this.integrationId === 'openai';
+    },
+    auditoriaTabs() {
+      return [
+        { label: this.$t('AUDITORIA_AI_FIELD_CONFIGS.TAB_LABEL') },
+        { label: this.$t('AUDITORIA_AI_USAGE.TAB_LABEL') },
+      ];
     },
     showAddButton() {
       return this.showIntegrationHooks && this.isIntegrationMultiple;
@@ -80,6 +98,9 @@ export default {
     this.$store.dispatch('integrations/get');
   },
   methods: {
+    onAuditoriaTabChange(tab) {
+      this.activeTab = this.auditoriaTabs.findIndex(t => t.label === tab.label);
+    },
     openAddHookModal() {
       this.showAddHookModal = true;
     },
@@ -143,6 +164,19 @@ export default {
             @delete="openDeletePopup"
           />
         </div>
+
+        <template v-if="showAuditoriaSections">
+          <AudioTranscription class="mt-4" />
+          <div class="mt-4">
+            <TabBar
+              :tabs="auditoriaTabs"
+              :initial-active-tab="activeTab"
+              @tab-changed="onAuditoriaTabChange"
+            />
+            <AiFieldConfigsSection v-if="activeTab === 0" class="mt-4" />
+            <AiUsageSection v-else class="mt-4" />
+          </div>
+        </template>
       </div>
     </template>
     <woot-modal v-model:show="showAddHookModal" :on-close="hideAddHookModal">

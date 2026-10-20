@@ -10,8 +10,15 @@ class AuditoriaAiUsageAPI extends ApiClient {
     return axios.get(`${this.url}/summary`);
   }
 
-  getLogs(page = 1) {
-    return axios.get(this.url, { params: { page } });
+  getLogs(page = 1, { sortBy, sortDirection, minCost } = {}) {
+    return axios.get(this.url, {
+      params: {
+        page,
+        sort_by: sortBy,
+        sort_direction: sortDirection,
+        min_cost: minCost || undefined,
+      },
+    });
   }
 
   updateSettings(data) {

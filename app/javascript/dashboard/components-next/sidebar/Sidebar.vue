@@ -935,12 +935,6 @@ const rawMenuItems = computed(() => {
           to: accountScopedRoute('macros_wrapper'),
         },
         {
-          name: 'Settings Auditor Ia',
-          label: t('SIDEBAR.AUDITOR_IA'),
-          icon: 'i-lucide-sparkles',
-          to: accountScopedRoute('auditoria_ai_field_configs'),
-        },
-        {
           name: 'Settings Canned Responses',
           label: t('SIDEBAR.CANNED_RESPONSES'),
           icon: 'i-lucide-message-square-quote',
