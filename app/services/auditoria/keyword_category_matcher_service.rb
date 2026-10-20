@@ -77,9 +77,16 @@ class Auditoria::KeywordCategoryMatcherService
     messages.where(message_type: [:incoming, :outgoing])
   end
 
+  # Subquery (IN) en vez de joins(:attachments)+distinct a proposito:
+  # messages.content_attributes es json (no jsonb, sin operador de
+  # igualdad) -- un SELECT DISTINCT sobre messages.* revienta en Postgres
+  # con "could not identify an equality operator for type json". El join
+  # solo serviria para evitar filas repetidas si un mensaje tuviera mas de
+  # un adjunto de audio; el IN evita el problema de raiz sin necesitar
+  # distinct para nada.
   def audio_candidate_messages
     candidate_messages.where(content: [nil, ''])
-                      .joins(:attachments).where(attachments: { file_type: :audio }).distinct
+                      .where(id: Attachment.where(file_type: :audio).select(:message_id))
                       .includes(:attachments)
   end
 
