@@ -10,7 +10,10 @@
 namespace :auditoria do
   desc 'Convierte vcards crudos guardados en content (antes del fix de Twilio) a burbuja de contacto'
   task vcard_backfill: :environment do
-    scope = Message.where("content LIKE 'BEGIN:VCARD%'")
+    # %...% (no solo al inicio): confirmado contra produccion que estos
+    # mensajes de Twilio a veces traen algo antes de "BEGIN:VCARD" (un
+    # salto de linea en blanco) -- un LIKE anclado al inicio los pierde.
+    scope = Message.where("content LIKE '%BEGIN:VCARD%'")
     scope = scope.where(account_id: ENV['ACCOUNT_ID']) if ENV['ACCOUNT_ID'].present?
 
     total = scope.count
@@ -35,7 +38,10 @@ namespace :auditoria do
           )
         end
       end
-      message.update!(content: nil)
+      # Quita solo el bloque vcard -- si hubiera texto real antes/despues
+      # (ej. una linea en blanco, o un mensaje real mezclado), se conserva
+      # en vez de borrar todo el mensaje.
+      message.update!(content: Twilio::VcardContactParserService.strip_vcard_blocks(message.content).presence)
       fixed += 1
     end
 

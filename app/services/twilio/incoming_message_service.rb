@@ -251,9 +251,11 @@ class Twilio::IncomingMessageService
 
     contacts.each { |contact| attach_vcard_contact(contact) }
     # Algunos clientes de WhatsApp duplican el vcard crudo como Body del
-    # mensaje -- si el contenido es literalmente el vcard, se limpia para no
-    # mostrar el texto crudo encima de la burbuja de contacto ya armada.
-    @message.content = nil if @message.content.to_s.strip.start_with?('BEGIN:VCARD')
+    # mensaje -- se quita solo el bloque vcard, conservando cualquier texto
+    # real que venga antes o despues (ver
+    # Twilio::VcardContactParserService.strip_vcard_blocks), en vez de
+    # asumir que el mensaje es *solo* el vcard y borrarlo entero.
+    @message.content = Twilio::VcardContactParserService.strip_vcard_blocks(@message.content).presence
   end
 
   def attach_vcard_contact(contact)

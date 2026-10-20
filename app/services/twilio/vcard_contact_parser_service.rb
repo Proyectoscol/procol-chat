@@ -11,6 +11,15 @@
 class Twilio::VcardContactParserService
   pattr_initialize [:text!]
 
+  # Quita el/los bloque(s) BEGIN:VCARD...END:VCARD de un texto y devuelve lo
+  # que quede (vacio si el texto completo era el vcard) -- para no borrar
+  # texto real que venga antes o despues del vcard al limpiar content (ver
+  # Twilio::IncomingMessageService y el rake task de backfill, ninguno debe
+  # asumir que el mensaje es *solo* el vcard).
+  def self.strip_vcard_blocks(text)
+    text.to_s.gsub(/BEGIN:VCARD.*?END:VCARD/im, '').strip
+  end
+
   def call
     vcards.map { |lines| contact_from(lines) }
   end
