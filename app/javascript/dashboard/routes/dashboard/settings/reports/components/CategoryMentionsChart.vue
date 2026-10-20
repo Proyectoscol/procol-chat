@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import eachDayOfInterval from 'date-fns/eachDayOfInterval';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import format from 'date-fns/format';
+import { colorForIndex } from 'dashboard/helper/auditoriaCategoryPalette';
 
 const props = defineProps({
   series: { type: Array, default: () => [] },
@@ -12,22 +13,6 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-
-// Paleta categorica validada (skill dataviz) -- orden fijo, nunca se
-// reordena al cambiar la seleccion de categorias, para que el color de
-// cada categoria sea siempre el mismo sin importar cuales otras esten
-// prendidas. light/dark via clases dark: de Tailwind (esta app usa
-// darkMode: 'class', no prefers-color-scheme).
-const PALETTE = [
-  { light: '#2a78d6', dark: '#3987e5' },
-  { light: '#eb6834', dark: '#d95926' },
-  { light: '#1baf7a', dark: '#199e70' },
-  { light: '#eda100', dark: '#c98500' },
-  { light: '#e87ba4', dark: '#d55181' },
-  { light: '#008300', dark: '#008300' },
-  { light: '#4a3aa7', dark: '#9085e9' },
-  { light: '#e34948', dark: '#e66767' },
-];
 
 const WIDTH = 760;
 const HEIGHT = 280;
@@ -56,7 +41,7 @@ const filledSeries = computed(() =>
     return {
       id: s.id,
       title: s.title,
-      color: PALETTE[index % PALETTE.length],
+      color: colorForIndex(index),
       counts: days.value.map(date => countByDate[date] || 0),
     };
   })
@@ -125,27 +110,6 @@ const hoverTooltipX = computed(() => {
 
 <template>
   <div class="flex flex-col gap-3">
-    <div
-      v-if="series.length > 1"
-      class="flex flex-wrap items-center gap-4"
-      role="list"
-    >
-      <span
-        v-for="s in filledSeries"
-        :key="s.id"
-        class="flex items-center gap-1.5 text-xs text-n-slate-11"
-      >
-        <span
-          class="size-2.5 rounded-full [background-color:var(--series-light)] dark:[background-color:var(--series-dark)]"
-          :style="{
-            '--series-light': s.color.light,
-            '--series-dark': s.color.dark,
-          }"
-        />
-        {{ s.title }}
-      </span>
-    </div>
-
     <div
       v-if="!hasData"
       class="flex h-40 items-center justify-center text-sm text-n-slate-10"
@@ -245,5 +209,27 @@ const hoverTooltipX = computed(() => {
         </foreignObject>
       </g>
     </svg>
+
+    <!--
+      Leyenda SIEMPRE visible (incluso con 1 sola serie) debajo de la
+      grafica -- el color de cada linea no es deducible sin esto, y con
+      una sola categoria igual ayuda a confirmar que color le corresponde.
+    -->
+    <div v-if="hasData" class="flex flex-wrap items-center gap-4" role="list">
+      <span
+        v-for="s in filledSeries"
+        :key="s.id"
+        class="flex items-center gap-1.5 text-xs text-n-slate-11"
+      >
+        <span
+          class="size-2.5 rounded-full [background-color:var(--series-light)] dark:[background-color:var(--series-dark)]"
+          :style="{
+            '--series-light': s.color.light,
+            '--series-dark': s.color.dark,
+          }"
+        />
+        {{ s.title }}
+      </span>
+    </div>
   </div>
 </template>

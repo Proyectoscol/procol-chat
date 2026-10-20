@@ -96,7 +96,7 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
   end
 
   def auditoria_category_params
-    params.permit(:inbox_id)
+    params.permit(:inbox_id, :count_mode)
   end
 
   def auditoria_category_timeseries_params

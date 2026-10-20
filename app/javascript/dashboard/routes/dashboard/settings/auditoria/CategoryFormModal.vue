@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
-import { useStore } from 'dashboard/composables/store';
+import { useStore, useMapGetter } from 'dashboard/composables/store';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
@@ -15,14 +15,20 @@ const emit = defineEmits(['close']);
 
 const { t } = useI18n();
 const store = useStore();
+const allCategories = useMapGetter('auditoriaCategories/getCategories');
 
 const isEditMode = computed(() => !!props.category);
+// Una categoria que YA tiene subcategorias es pura agrupacion visual (ver
+// Auditoria::Category.leaf) -- oculta sus propios campos de match (dejaron
+// de importar) y no puede a su vez tener padre (maximo 2 niveles).
+const isGroupingCategory = computed(() => !!props.category?.has_subcategories);
 
 const title = ref('');
 const matchType = ref('keyword');
 const isActive = ref(true);
 const searchTerms = ref('');
 const instructions = ref('');
+const parentId = ref('');
 const isSaving = ref(false);
 
 const matchTypeOptions = computed(() => [
@@ -33,12 +39,23 @@ const matchTypeOptions = computed(() => [
   { value: 'ai', label: t('AUDITORIA_CATEGORIES.FORM.MATCH_TYPE.AI') },
 ]);
 
+// Solo categorias de nivel superior (sin padre propio) pueden ser elegidas
+// como padre -- garantiza maximo 2 niveles sin necesitar deteccion de
+// ciclos. Una categoria no puede ser su propio padre.
+const parentOptions = computed(() => [
+  { value: '', label: t('AUDITORIA_CATEGORIES.FORM.PARENT_NONE') },
+  ...allCategories.value
+    .filter(c => !c.parent_id && c.id !== props.category?.id)
+    .map(c => ({ value: c.id, label: c.title })),
+]);
+
 const setFormValues = () => {
   title.value = props.category?.title || '';
   matchType.value = props.category?.match_type || 'keyword';
   isActive.value = props.category ? props.category.is_active : true;
   searchTerms.value = props.category?.search_terms || '';
   instructions.value = props.category?.instructions || '';
+  parentId.value = props.category?.parent_id ?? '';
 };
 watch(() => props.category, setFormValues, { immediate: true });
 
@@ -54,6 +71,7 @@ const submit = async () => {
     is_active: isActive.value,
     search_terms: matchType.value === 'keyword' ? searchTerms.value : '',
     instructions: matchType.value === 'ai' ? instructions.value : '',
+    parent_id: isGroupingCategory.value ? null : parentId.value || null,
   };
   try {
     if (isEditMode.value) {
@@ -86,32 +104,57 @@ const submit = async () => {
           : t('AUDITORIA_CATEGORIES.FORM.CREATE_TITLE')
       "
     />
-    <form class="flex flex-col gap-4 px-4 pb-4" @submit.prevent="submit">
+    <!--
+      !self-stretch: Modal.vue trae un CSS global (sin scoped) que aplica
+      align-self:center a CUALQUIER <form> dentro de .modal-container -- sin
+      este override, el form deja de estirarse al ancho fijo del modal y
+      pasa a encogerse al contenido (shrink-to-fit), cuyo resultado depende
+      de que tan ancho sea el texto actual del Select (por eso el modal se
+      veia mas angosto solo al cambiar a "Clasificacion con IA"/mas texto).
+    -->
+    <form
+      class="flex flex-col gap-4 px-4 pb-4 w-full !self-stretch"
+      @submit.prevent="submit"
+    >
       <Input
         v-model="title"
         :label="t('AUDITORIA_CATEGORIES.FORM.TITLE_LABEL')"
         :placeholder="t('AUDITORIA_CATEGORIES.FORM.TITLE_PLACEHOLDER')"
       />
-      <div class="flex flex-col gap-1">
+      <div v-if="!isGroupingCategory" class="flex flex-col gap-1">
         <label class="text-sm font-medium text-n-slate-12">
-          {{ t('AUDITORIA_CATEGORIES.FORM.MATCH_TYPE_LABEL') }}
+          {{ t('AUDITORIA_CATEGORIES.FORM.PARENT_LABEL') }}
         </label>
-        <Select v-model="matchType" :options="matchTypeOptions" />
+        <Select v-model="parentId" :options="parentOptions" />
       </div>
-      <TextArea
-        v-if="matchType === 'keyword'"
-        v-model="searchTerms"
-        :label="t('AUDITORIA_CATEGORIES.FORM.SEARCH_TERMS_LABEL')"
-        :placeholder="t('AUDITORIA_CATEGORIES.FORM.SEARCH_TERMS_PLACEHOLDER')"
-        :max-length="2000"
-      />
-      <TextArea
-        v-else
-        v-model="instructions"
-        :label="t('AUDITORIA_CATEGORIES.FORM.INSTRUCTIONS_LABEL')"
-        :placeholder="t('AUDITORIA_CATEGORIES.FORM.INSTRUCTIONS_PLACEHOLDER')"
-        :max-length="2000"
-      />
+      <p
+        v-if="isGroupingCategory"
+        class="text-sm text-n-slate-11 rounded-lg bg-n-alpha-1 p-3"
+      >
+        {{ t('AUDITORIA_CATEGORIES.FORM.GROUPING_NOTE') }}
+      </p>
+      <template v-else>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-n-slate-12">
+            {{ t('AUDITORIA_CATEGORIES.FORM.MATCH_TYPE_LABEL') }}
+          </label>
+          <Select v-model="matchType" :options="matchTypeOptions" />
+        </div>
+        <TextArea
+          v-if="matchType === 'keyword'"
+          v-model="searchTerms"
+          :label="t('AUDITORIA_CATEGORIES.FORM.SEARCH_TERMS_LABEL')"
+          :placeholder="t('AUDITORIA_CATEGORIES.FORM.SEARCH_TERMS_PLACEHOLDER')"
+          :max-length="2000"
+        />
+        <TextArea
+          v-else
+          v-model="instructions"
+          :label="t('AUDITORIA_CATEGORIES.FORM.INSTRUCTIONS_LABEL')"
+          :placeholder="t('AUDITORIA_CATEGORIES.FORM.INSTRUCTIONS_PLACEHOLDER')"
+          :max-length="2000"
+        />
+      </template>
       <div class="flex items-center gap-2">
         <input id="category-is-active" v-model="isActive" type="checkbox" />
         <label for="category-is-active">

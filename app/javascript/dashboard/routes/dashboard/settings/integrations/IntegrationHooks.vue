@@ -14,6 +14,12 @@ import AiFieldConfigsSection from '../auditoria/AiFieldConfigsSection.vue';
 import CategoriesSection from '../auditoria/CategoriesSection.vue';
 import AiUsageSection from '../auditoria/AiUsageSection.vue';
 
+// Orden fijo, debe calzar 1 a 1 con auditoriaTabs() mas abajo -- permite
+// entrar directo a una pestana via #fields / #categories / #usage en la
+// URL (ej. desde el hipervinculo "crear categoria" del reporte de
+// categorias), y deja la URL sincronizada al cambiar de pestana a mano.
+const AUDITORIA_TAB_HASHES = ['fields', 'categories', 'usage'];
+
 export default {
   components: {
     NewHook,
@@ -99,10 +105,22 @@ export default {
   },
   mounted() {
     this.$store.dispatch('integrations/get');
+    this.applyTabFromHash();
+    window.addEventListener('hashchange', this.applyTabFromHash);
+  },
+  unmounted() {
+    window.removeEventListener('hashchange', this.applyTabFromHash);
   },
   methods: {
+    applyTabFromHash() {
+      const hashIndex = AUDITORIA_TAB_HASHES.indexOf(
+        window.location.hash.replace('#', '')
+      );
+      if (hashIndex !== -1) this.activeTab = hashIndex;
+    },
     onAuditoriaTabChange(tab) {
       this.activeTab = this.auditoriaTabs.findIndex(t => t.label === tab.label);
+      window.location.hash = AUDITORIA_TAB_HASHES[this.activeTab];
     },
     openAddHookModal() {
       this.showAddHookModal = true;

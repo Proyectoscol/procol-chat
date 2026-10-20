@@ -15,7 +15,11 @@ class Auditoria::KeywordCategoryMatcherService
     # find_each no aplica -- maximo 10 categorias por cuenta
     # (Auditoria::Category::MAX_CATEGORIES_PER_ACCOUNT), no una tabla grande.
     # rubocop:disable Rails/FindEach
-    categories.active.where(match_type: :keyword).each { |category| match_category(category) }
+    # .leaf: una categoria "padre" (ej. "Competencia") es solo una
+    # agrupacion visual en el reporte -- aunque tuviera search_terms
+    # sobrantes de antes de ganar subcategorias, nunca debe matchear por si
+    # misma (ver Auditoria::Category.leaf).
+    categories.active.leaf.where(match_type: :keyword).each { |category| match_category(category) }
     # rubocop:enable Rails/FindEach
   end
 

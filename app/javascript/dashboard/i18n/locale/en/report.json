@@ -699,13 +699,20 @@
   "AUDITORIA_CATEGORY_REPORTS": {
     "HEADER": "Categories Overview",
     "DESCRIPTION": "Track whether the team is mentioning what you asked them to — a promotion, a launch, a product line — and since when. Compare categories over time to bring concrete data to management.",
+    "CREATE_CATEGORY_LINK": "Create new category",
     "TABLE": {
       "TITLE": "Category",
       "CONVERSATIONS": "No. of conversations",
-      "SHOW_IN_CHART": "Show in chart"
+      "SHOW_IN_CHART": "Show in chart",
+      "BREAKDOWN_SEGMENT": "{title} ({count})"
     },
     "INBOX_FILTER_LABEL": "Inbox",
     "INBOX_FILTER_ALL": "All inboxes",
+    "COUNT_MODE_LABEL": "Count",
+    "COUNT_MODE": {
+      "CONVERSATIONS": "Conversations where mentioned",
+      "MENTIONS": "Times mentioned"
+    },
     "TOTALS_SUMMARY": "Total conversations with at least one category: {conversations}",
     "CHART": {
       "EMPTY": "No mentions found for the selected categories and date range."

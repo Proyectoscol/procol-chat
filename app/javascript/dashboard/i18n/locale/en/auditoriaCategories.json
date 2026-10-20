@@ -10,11 +10,13 @@
       "TITLE": "Title",
       "TYPE": "Type",
       "STATUS": "Status",
-      "ACTIONS": "Actions"
+      "ACTIONS": "Actions",
+      "PARENT_OF": "Subcategory of {parent}"
     },
     "MATCH_TYPE": {
       "KEYWORD": "Keyword",
-      "AI": "AI"
+      "AI": "AI",
+      "GROUPING": "Grouping"
     },
     "STATUS": {
       "ACTIVE": "Active",
@@ -31,6 +33,9 @@
       "EDIT_TITLE": "Edit category",
       "TITLE_LABEL": "Title",
       "TITLE_PLACEHOLDER": "e.g. Mazda CX-5",
+      "PARENT_LABEL": "Parent category (optional)",
+      "PARENT_NONE": "None (top-level category)",
+      "GROUPING_NOTE": "This category groups subcategories — configure keywords or AI instructions on each subcategory instead.",
       "MATCH_TYPE_LABEL": "Matching type",
       "MATCH_TYPE": {
         "KEYWORD": "Keywords",

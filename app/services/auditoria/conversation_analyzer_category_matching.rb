@@ -46,8 +46,11 @@ module Auditoria::ConversationAnalyzerCategoryMatching
     end
   end
 
+  # .leaf: una categoria agrupadora (ej. "Competencia") nunca se ofrece
+  # como opcion clasificable al LLM -- solo sus subcategorias, que son las
+  # que de verdad tienen instructions (ver Auditoria::Category.leaf).
   def active_ai_categories
-    @active_ai_categories ||= account.auditoria_categories.active.where(match_type: :ai).order(:title)
+    @active_ai_categories ||= account.auditoria_categories.active.leaf.where(match_type: :ai).order(:title)
   end
 
   # Diffea por (categoria, dia) -- no solo por categoria -- contra las filas

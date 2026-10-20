@@ -26,10 +26,22 @@ const categories = useMapGetter('auditoriaCategories/getCategories');
 const uiFlags = useMapGetter('auditoriaCategories/getUIFlags');
 const canAddCategory = computed(() => categories.value.length < MAX_CATEGORIES);
 
-const matchTypeLabel = matchType =>
-  matchType === 'keyword'
+const titleById = computed(() =>
+  Object.fromEntries(categories.value.map(c => [c.id, c.title]))
+);
+const parentTitle = category => titleById.value[category.parent_id];
+
+// Una categoria con subcategorias es pura agrupacion -- su match_type
+// propio quedo sin efecto (ver Auditoria::Category.leaf), mostrarlo
+// confundiria.
+const matchTypeLabel = category => {
+  if (category.has_subcategories) {
+    return t('AUDITORIA_CATEGORIES.MATCH_TYPE.GROUPING');
+  }
+  return category.match_type === 'keyword'
     ? t('AUDITORIA_CATEGORIES.MATCH_TYPE.KEYWORD')
     : t('AUDITORIA_CATEGORIES.MATCH_TYPE.AI');
+};
 
 const openCreateModal = () => {
   selectedCategory.value = null;
@@ -106,12 +118,21 @@ onMounted(() => store.dispatch('auditoriaCategories/get'));
         >
           <template #default>
             <BaseTableCell>
-              <span class="text-body-main text-n-slate-12">{{
-                category.title
-              }}</span>
+              <div class="flex flex-col">
+                <span class="text-body-main text-n-slate-12">{{
+                  category.title
+                }}</span>
+                <span v-if="category.parent_id" class="text-xs text-n-slate-10">
+                  {{
+                    t('AUDITORIA_CATEGORIES.TABLE.PARENT_OF', {
+                      parent: parentTitle(category),
+                    })
+                  }}
+                </span>
+              </div>
             </BaseTableCell>
             <BaseTableCell>
-              {{ matchTypeLabel(category.match_type) }}
+              {{ matchTypeLabel(category) }}
             </BaseTableCell>
             <BaseTableCell>
               {{

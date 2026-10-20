@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_20_000001) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_20_010000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -319,8 +319,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_20_000001) do
     t.text "instructions"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "parent_id"
     t.index ["account_id", "title"], name: "index_auditoria_categories_on_account_and_title", unique: true
     t.index ["account_id"], name: "index_auditoria_categories_on_account_id"
+    t.index ["parent_id"], name: "index_auditoria_categories_on_parent_id"
   end
 
   create_table "auditoria_category_mentions", force: :cascade do |t|
@@ -1741,6 +1743,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_20_000001) do
   add_foreign_key "auditoria_ai_usage_logs", "conversations", on_delete: :nullify
   add_foreign_key "auditoria_ai_usage_logs", "messages", on_delete: :nullify
   add_foreign_key "auditoria_categories", "accounts", on_delete: :cascade
+  add_foreign_key "auditoria_categories", "auditoria_categories", column: "parent_id", on_delete: :nullify
   add_foreign_key "auditoria_category_mentions", "accounts", on_delete: :cascade
   add_foreign_key "auditoria_category_mentions", "auditoria_categories", column: "category_id", on_delete: :cascade
   add_foreign_key "auditoria_category_mentions", "conversations", on_delete: :cascade

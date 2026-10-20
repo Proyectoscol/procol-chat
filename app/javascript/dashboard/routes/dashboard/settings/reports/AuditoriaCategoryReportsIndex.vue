@@ -1,17 +1,28 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import ReportHeader from './components/ReportHeader.vue';
 import OverviewReportFilters from './components/OverviewReportFilters.vue';
 import AuditoriaReportConversationsDrawer from './components/AuditoriaReportConversationsDrawer.vue';
 import CategoryMentionsChart from './components/CategoryMentionsChart.vue';
+import CategoryBreakdownPieChart from './components/CategoryBreakdownPieChart.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
 import SummaryReportsAPI from 'dashboard/api/summaryReports';
 
 const { t } = useI18n();
 const store = useStore();
+const route = useRoute();
+
+const createCategoryRoute = computed(() => ({
+  name: 'settings_applications_integration',
+  params: { accountId: route.params.accountId, integration_id: 'openai' },
+  hash: '#categories',
+}));
 
 // Numero de categorias marcadas por defecto en la grafica -- las primeras
 // 3 son las que la paleta categorica (skill dataviz) garantiza distintas
@@ -24,7 +35,9 @@ const DEFAULT_CHECKED_COUNT = 3;
 const from = ref(0);
 const to = ref(0);
 const selectedInboxId = ref('');
+const countMode = ref('conversations');
 const checkedCategoryIds = ref(new Set());
+const expandedParentIds = ref(new Set());
 
 const uiFlags = useMapGetter('summaryReports/getUIFlags');
 const isLoading = computed(
@@ -42,12 +55,42 @@ const timeseries = useMapGetter(
   'summaryReports/getAuditoriaCategoryTimeseries'
 );
 
+// Arbol de 2 niveles a partir de la lista plana que ya trae parent_id
+// (ver V2::Reports::AuditoriaCategorySummaryBuilder) -- las filas de nivel
+// superior se muestran siempre; las hijas solo cuando su padre esta
+// expandido.
+const topLevelCategories = computed(() =>
+  categories.value.filter(c => !c.parentId)
+);
+const childrenByParentId = computed(() => {
+  const map = {};
+  categories.value.forEach(category => {
+    if (!category.parentId) return;
+    (map[category.parentId] ||= []).push(category);
+  });
+  return map;
+});
+
+const isExpanded = id => expandedParentIds.value.has(id);
+const toggleExpanded = id => {
+  const next = new Set(expandedParentIds.value);
+  if (next.has(id)) {
+    next.delete(id);
+  } else {
+    next.add(id);
+  }
+  expandedParentIds.value = next;
+};
+
 const renderCount = value => (value ? value.toLocaleString() : '--');
 
 const isChecked = id => checkedCategoryIds.value.has(id);
 
 const fetchSummary = async () => {
-  const params = { inboxId: selectedInboxId.value || undefined };
+  const params = {
+    inboxId: selectedInboxId.value || undefined,
+    countMode: countMode.value,
+  };
   try {
     await store.dispatch(
       'summaryReports/fetchAuditoriaCategorySummaryReports',
@@ -58,11 +101,13 @@ const fetchSummary = async () => {
     return;
   }
 
-  // Primera carga: marca las primeras categorias por defecto para que la
-  // grafica no arranque vacia.
-  if (checkedCategoryIds.value.size === 0 && categories.value.length) {
+  // Primera carga: marca las primeras categorias HOJA (las unicas con
+  // datos propios para graficar -- ver Auditoria::Category.leaf) por
+  // defecto para que la grafica no arranque vacia.
+  if (checkedCategoryIds.value.size === 0) {
+    const leaves = categories.value.filter(c => !c.hasSubcategories);
     checkedCategoryIds.value = new Set(
-      categories.value.slice(0, DEFAULT_CHECKED_COUNT).map(c => c.id)
+      leaves.slice(0, DEFAULT_CHECKED_COUNT).map(c => c.id)
     );
   }
 };
@@ -94,7 +139,15 @@ const toggleChecked = id => {
     next.add(id);
   }
   checkedCategoryIds.value = next;
-  fetchTimeseries();
+
+  if (next.size) {
+    fetchTimeseries();
+  } else {
+    // Vacia la grafica de inmediato -- fetchTimeseries corta temprano
+    // cuando no hay categorias marcadas, lo que antes dejaba la grafica
+    // mostrando la seleccion anterior en vez de quedar vacia al instante.
+    store.commit('summaryReports/setAuditoriaCategoryTimeseries', {});
+  }
 };
 
 const fetchAllData = async () => {
@@ -111,6 +164,10 @@ const onFilterChange = updatedFilter => {
 };
 
 const onInboxChange = () => fetchAllData();
+// Solo re-pide el resumen (tabla/totales) -- la serie de tiempo siempre
+// es a nivel de mencion por dia, el toggle no la afecta (ver
+// V2::Reports::AuditoriaCategorySummaryBuilder vs ...TimeseriesBuilder).
+const onCountModeChange = () => fetchSummary();
 
 const totalsSummary = computed(() => {
   if (!reportTotals.value) return '';
@@ -137,6 +194,12 @@ const fetchCategoryConversations = params =>
     :header-title="$t('AUDITORIA_CATEGORY_REPORTS.HEADER')"
     :header-description="$t('AUDITORIA_CATEGORY_REPORTS.DESCRIPTION')"
   />
+  <router-link
+    :to="createCategoryRoute"
+    class="text-sm text-n-blue-text hover:underline -mt-3 mb-3 inline-block"
+  >
+    {{ $t('AUDITORIA_CATEGORY_REPORTS.CREATE_CATEGORY_LINK') }}
+  </router-link>
 
   <div class="flex flex-col justify-between gap-3 md:flex-row">
     <OverviewReportFilters
@@ -144,29 +207,53 @@ const fetchCategoryConversations = params =>
       @filter-change="onFilterChange"
     />
     <div
-      class="flex items-center gap-2"
+      class="flex flex-wrap items-center gap-4"
       :class="{ 'pointer-events-none opacity-50': isLoading }"
     >
-      <label
-        for="auditoria-category-inbox-filter"
-        class="text-sm whitespace-nowrap"
-      >
-        {{ $t('AUDITORIA_CATEGORY_REPORTS.INBOX_FILTER_LABEL') }}
-      </label>
-      <select
-        id="auditoria-category-inbox-filter"
-        v-model="selectedInboxId"
-        class="reset-base !mb-0 !w-auto"
-        :disabled="isLoading"
-        @change="onInboxChange"
-      >
-        <option value="">
-          {{ $t('AUDITORIA_CATEGORY_REPORTS.INBOX_FILTER_ALL') }}
-        </option>
-        <option v-for="inbox in inboxes" :key="inbox.id" :value="inbox.id">
-          {{ inbox.name }}
-        </option>
-      </select>
+      <div class="flex items-center gap-2">
+        <label
+          for="auditoria-category-count-mode"
+          class="text-sm whitespace-nowrap"
+        >
+          {{ $t('AUDITORIA_CATEGORY_REPORTS.COUNT_MODE_LABEL') }}
+        </label>
+        <select
+          id="auditoria-category-count-mode"
+          v-model="countMode"
+          class="reset-base !mb-0 !w-auto"
+          :disabled="isLoading"
+          @change="onCountModeChange"
+        >
+          <option value="conversations">
+            {{ $t('AUDITORIA_CATEGORY_REPORTS.COUNT_MODE.CONVERSATIONS') }}
+          </option>
+          <option value="mentions">
+            {{ $t('AUDITORIA_CATEGORY_REPORTS.COUNT_MODE.MENTIONS') }}
+          </option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <label
+          for="auditoria-category-inbox-filter"
+          class="text-sm whitespace-nowrap"
+        >
+          {{ $t('AUDITORIA_CATEGORY_REPORTS.INBOX_FILTER_LABEL') }}
+        </label>
+        <select
+          id="auditoria-category-inbox-filter"
+          v-model="selectedInboxId"
+          class="reset-base !mb-0 !w-auto"
+          :disabled="isLoading"
+          @change="onInboxChange"
+        >
+          <option value="">
+            {{ $t('AUDITORIA_CATEGORY_REPORTS.INBOX_FILTER_ALL') }}
+          </option>
+          <option v-for="inbox in inboxes" :key="inbox.id" :value="inbox.id">
+            {{ inbox.name }}
+          </option>
+        </select>
+      </div>
     </div>
   </div>
 
@@ -206,27 +293,87 @@ const fetchCategoryConversations = params =>
         </tr>
       </thead>
       <tbody class="divide-y divide-n-weak text-n-slate-11">
-        <tr v-for="category in categories" :key="category.id">
-          <td class="py-3 ltr:pr-4 rtl:pl-4">
-            <input
-              type="checkbox"
-              :checked="isChecked(category.id)"
-              @change="toggleChecked(category.id)"
-            />
-          </td>
-          <td class="py-3 ltr:pr-4 rtl:pl-4 text-body-main">
-            <button
-              type="button"
-              class="text-n-blue-text hover:underline"
-              @click="openCategoryDrawer(category)"
-            >
-              {{ category.title }}
-            </button>
-          </td>
-          <td class="py-3 ltr:pr-4 rtl:pl-4 text-body-main">
-            {{ renderCount(category.conversationsCount) }}
-          </td>
-        </tr>
+        <template v-for="category in topLevelCategories" :key="category.id">
+          <tr>
+            <td class="py-3 ltr:pr-4 rtl:pl-4">
+              <!-- Una categoria agrupadora nunca tiene datos propios para
+                   graficar -- solo sus subcategorias los tienen (ver
+                   Auditoria::Category.leaf). -->
+              <Checkbox
+                v-if="!category.hasSubcategories"
+                :model-value="isChecked(category.id)"
+                @change="toggleChecked(category.id)"
+              />
+            </td>
+            <td class="py-3 ltr:pr-4 rtl:pl-4 text-body-main">
+              <div class="flex items-center gap-1">
+                <button
+                  v-if="category.hasSubcategories"
+                  type="button"
+                  class="flex items-center justify-center size-5 text-n-slate-10 hover:text-n-slate-12"
+                  @click="toggleExpanded(category.id)"
+                >
+                  <Icon
+                    :icon="
+                      isExpanded(category.id)
+                        ? 'i-lucide-chevron-up'
+                        : 'i-lucide-chevron-down'
+                    "
+                    class="size-4"
+                  />
+                </button>
+                <button
+                  type="button"
+                  class="text-n-blue-text hover:underline"
+                  @click="openCategoryDrawer(category)"
+                >
+                  {{ category.title }}
+                </button>
+              </div>
+            </td>
+            <td class="py-3 ltr:pr-4 rtl:pl-4 text-body-main">
+              {{ renderCount(category.conversationsCount) }}
+            </td>
+          </tr>
+          <tr v-if="category.hasSubcategories && isExpanded(category.id)">
+            <td colspan="3" class="pb-3 ltr:pr-4 rtl:pl-4">
+              <CategoryBreakdownPieChart
+                :segments="
+                  (childrenByParentId[category.id] || []).map(child => ({
+                    id: child.id,
+                    title: child.title,
+                    count: child.conversationsCount,
+                  }))
+                "
+              />
+            </td>
+          </tr>
+          <tr
+            v-for="child in category.hasSubcategories && isExpanded(category.id)
+              ? childrenByParentId[category.id] || []
+              : []"
+            :key="child.id"
+          >
+            <td class="py-3 ltr:pr-4 rtl:pl-4 ps-8">
+              <Checkbox
+                :model-value="isChecked(child.id)"
+                @change="toggleChecked(child.id)"
+              />
+            </td>
+            <td class="py-3 ltr:pr-4 rtl:pl-4 ps-8 text-body-main">
+              <button
+                type="button"
+                class="text-n-blue-text hover:underline"
+                @click="openCategoryDrawer(child)"
+              >
+                {{ child.title }}
+              </button>
+            </td>
+            <td class="py-3 ltr:pr-4 rtl:pl-4 text-body-main">
+              {{ renderCount(child.conversationsCount) }}
+            </td>
+          </tr>
+        </template>
       </tbody>
     </table>
   </div>

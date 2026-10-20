@@ -77,10 +77,11 @@ class SummaryReportsAPI extends ApiClient {
     });
   }
 
-  getAuditoriaCategoryReports({ inboxId } = {}) {
+  getAuditoriaCategoryReports({ inboxId, countMode } = {}) {
     return axios.get(`${this.url}/auditoria_category`, {
       params: {
         inbox_id: inboxId,
+        count_mode: countMode,
       },
     });
   }

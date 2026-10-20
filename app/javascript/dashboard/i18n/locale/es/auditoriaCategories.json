@@ -10,11 +10,13 @@
       "TITLE": "Título",
       "TYPE": "Tipo",
       "STATUS": "Estado",
-      "ACTIONS": "Acciones"
+      "ACTIONS": "Acciones",
+      "PARENT_OF": "Subcategoría de {parent}"
     },
     "MATCH_TYPE": {
       "KEYWORD": "Palabras clave",
-      "AI": "IA"
+      "AI": "IA",
+      "GROUPING": "Agrupación"
     },
     "STATUS": {
       "ACTIVE": "Activa",
@@ -31,6 +33,9 @@
       "EDIT_TITLE": "Editar categoría",
       "TITLE_LABEL": "Título",
       "TITLE_PLACEHOLDER": "ej. Mazda CX-5",
+      "PARENT_LABEL": "Categoría padre (opcional)",
+      "PARENT_NONE": "Ninguna (categoría de nivel superior)",
+      "GROUPING_NOTE": "Esta categoría agrupa subcategorías — configura las palabras clave o instrucciones de IA en cada subcategoría.",
       "MATCH_TYPE_LABEL": "Tipo de coincidencia",
       "MATCH_TYPE": {
         "KEYWORD": "Palabras clave",
