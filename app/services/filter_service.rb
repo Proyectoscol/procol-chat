@@ -1,5 +1,6 @@
 require 'json'
 
+# rubocop:disable Metrics/ClassLength -- grows by design with each new standard filter attribute type.
 class FilterService
   include Filters::FilterHelper
   include Filters::CustomAttributeFilterHelper
@@ -149,21 +150,31 @@ class FilterService
 
   # "content" no es una columna de conversations -- igual que labels arriba,
   # se resuelve con un EXISTS contra la tabla relacionada (messages) en vez
-  # del "#{table}.#{attribute_key}" generico de default_filter. El patron se
-  # guarda en @content_filter_pattern para que
-  # Conversations::FilterService pueda anotar, por conversacion, cual
-  # mensaje fue el que matcheo (ver #perform ahi) sin recalcular el patron.
+  # del "#{table}.#{attribute_key}" generico de default_filter. El patron y
+  # el operador se guardan en @content_filter_pattern/@content_filter_operator
+  # para que Conversations::FilterService pueda anotar, por conversacion,
+  # cual mensaje fue el que matcheo (ver #perform ahi) sin recalcularlos.
   def message_content_filter_query(query_hash, current_index)
     @content_filter_pattern = content_filter_pattern(query_hash)
+    @content_filter_operator = content_filter_operator(query_hash)
     @filter_values["value_#{current_index}"] = @content_filter_pattern
 
     "EXISTS (SELECT 1 FROM messages WHERE messages.conversation_id = #{filter_config[:table_name]}.id " \
-      "AND messages.content ILIKE :value_#{current_index}) #{query_hash[:query_operator]}"
+      "AND messages.content #{@content_filter_operator} :value_#{current_index}) #{query_hash[:query_operator]}"
+  end
+
+  # "contiene" usa limite de palabra (\y...\y, operador ~*) en vez de ILIKE
+  # con comodines -- mismo patron que ya usa
+  # Auditoria::KeywordCategoryMatcherService para que buscar "cx5" no
+  # traiga de arrastre "cx50" (ILIKE '%cx5%' si matchearia, porque cx50
+  # contiene cx5 como subcadena literal).
+  def content_filter_operator(query_hash)
+    query_hash[:filter_operator] == 'contains' ? '~*' : 'ILIKE'
   end
 
   def content_filter_pattern(query_hash)
     value = Array(query_hash[:values]).first.to_s.strip
-    query_hash[:filter_operator] == 'contains' ? "%#{value}%" : value
+    query_hash[:filter_operator] == 'contains' ? "\\y#{Regexp.escape(value)}\\y" : value
   end
 
   private
@@ -225,3 +236,4 @@ class FilterService
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

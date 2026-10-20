@@ -67,7 +67,7 @@ class Conversations::FilterService < FilterService
       'conversations.*',
       ActiveRecord::Base.sanitize_sql_array(
         ['(SELECT messages.id FROM messages WHERE messages.conversation_id = conversations.id ' \
-         'AND messages.content ILIKE ? ORDER BY messages.id DESC LIMIT 1) AS matched_message_id',
+         "AND messages.content #{@content_filter_operator} ? ORDER BY messages.id DESC LIMIT 1) AS matched_message_id",
          @content_filter_pattern]
       )
     )
