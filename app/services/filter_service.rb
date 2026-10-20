@@ -147,6 +147,25 @@ class FilterService
     end
   end
 
+  # "content" no es una columna de conversations -- igual que labels arriba,
+  # se resuelve con un EXISTS contra la tabla relacionada (messages) en vez
+  # del "#{table}.#{attribute_key}" generico de default_filter. El patron se
+  # guarda en @content_filter_pattern para que
+  # Conversations::FilterService pueda anotar, por conversacion, cual
+  # mensaje fue el que matcheo (ver #perform ahi) sin recalcular el patron.
+  def message_content_filter_query(query_hash, current_index)
+    @content_filter_pattern = content_filter_pattern(query_hash)
+    @filter_values["value_#{current_index}"] = @content_filter_pattern
+
+    "EXISTS (SELECT 1 FROM messages WHERE messages.conversation_id = #{filter_config[:table_name]}.id " \
+      "AND messages.content ILIKE :value_#{current_index}) #{query_hash[:query_operator]}"
+  end
+
+  def content_filter_pattern(query_hash)
+    value = Array(query_hash[:values]).first.to_s.strip
+    query_hash[:filter_operator] == 'contains' ? "%#{value}%" : value
+  end
+
   private
 
   def standard_attribute_data_type(attribute_key)

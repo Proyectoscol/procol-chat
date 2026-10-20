@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/ModuleLength -- grows by design with each new standard filter attribute type.
 module Filters::FilterHelper
   def build_condition_query(model_filters, query_hash, current_index)
     current_filter = model_filters[query_hash['attribute_key']]
@@ -65,6 +66,8 @@ module Filters::FilterHelper
       date_filter(current_filter, query_hash, filter_operator_value)
     when 'labels'
       tag_filter_query(query_hash, current_index)
+    when 'message_content'
+      message_content_filter_query(query_hash, current_index)
     when 'text_case_insensitive'
       text_case_insensitive_filter(query_hash, filter_operator_value)
     else
@@ -131,3 +134,4 @@ module Filters::FilterHelper
     values.map { |x| Message.message_types[x.to_sym] }
   end
 end
+# rubocop:enable Metrics/ModuleLength

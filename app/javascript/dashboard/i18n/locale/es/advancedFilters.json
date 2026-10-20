@@ -47,6 +47,7 @@
       "FALSE": "Falso"
     },
     "ATTRIBUTES": {
+      "CONTENT": "Contenido",
       "STATUS": "Estado",
       "ASSIGNEE_NAME": "Nombre Asignado",
       "INBOX_NAME": "Nombre de la bandeja de entrada",

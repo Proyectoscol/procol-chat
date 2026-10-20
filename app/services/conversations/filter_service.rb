@@ -9,6 +9,7 @@ class Conversations::FilterService < FilterService
   def perform
     validate_query_operator
     @conversations = query_builder(@filters['conversations'])
+    @conversations = annotate_matched_message(@conversations) if @content_filter_pattern.present?
     mine_count, unassigned_count, all_count, = set_count_for_all_conversations
     assigned_count = all_count - unassigned_count
 
@@ -54,6 +55,23 @@ class Conversations::FilterService < FilterService
   end
 
   private
+
+  # El filtro de "contenido" (ver FilterService#message_content_filter_query)
+  # solo confirma que ALGUN mensaje de la conversacion matchea -- aqui se
+  # anota, por conversacion, el ID del mensaje que matchea mas reciente
+  # (consistente con el criterio ya usado en los reportes de Auditoria IA)
+  # como un atributo "virtual" via SELECT, para que el jbuilder lo use en
+  # vez del ultimo mensaje real como vista previa y destino del click.
+  def annotate_matched_message(conversations)
+    conversations.select(
+      'conversations.*',
+      ActiveRecord::Base.sanitize_sql_array(
+        ['(SELECT messages.id FROM messages WHERE messages.conversation_id = conversations.id ' \
+         'AND messages.content ILIKE ? ORDER BY messages.id DESC LIMIT 1) AS matched_message_id',
+         @content_filter_pattern]
+      )
+    )
+  end
 
   # The planner hint only pays off when the label condition positively narrows the
   # result set: `equal_to` joined by AND. Negative/presence operators or an OR in the

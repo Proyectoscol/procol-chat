@@ -3,9 +3,18 @@ import {
   OPERATOR_TYPES_2,
   OPERATOR_TYPES_3,
   OPERATOR_TYPES_5,
+  OPERATOR_TYPES_6,
 } from '../../FilterInput/FilterOperatorTypes';
 
 const filterTypes = [
+  {
+    attributeKey: 'content',
+    attributeI18nKey: 'CONTENT',
+    inputType: 'plain_text',
+    dataType: 'text',
+    filterOperators: OPERATOR_TYPES_6,
+    attributeModel: 'standard',
+  },
   {
     attributeKey: 'status',
     attributeI18nKey: 'STATUS',
@@ -125,6 +134,10 @@ export const filterAttributeGroups = [
     name: 'Standard Filters',
     i18nGroup: 'STANDARD_FILTERS',
     attributes: [
+      {
+        key: 'content',
+        i18nKey: 'CONTENT',
+      },
       {
         key: 'status',
         i18nKey: 'STATUS',

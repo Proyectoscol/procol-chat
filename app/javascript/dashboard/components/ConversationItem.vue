@@ -55,6 +55,7 @@ const currentChat = useMapGetter('getSelectedChat');
 const inboxesList = useMapGetter('inboxes/getInboxes');
 const activeInbox = useMapGetter('getSelectedInbox');
 const accountId = useMapGetter('getCurrentAccountId');
+const appliedFilters = useMapGetter('getAppliedConversationFiltersV2');
 
 const chatMetadata = computed(() => props.source.meta || {});
 const assignee = computed(() => chatMetadata.value.assignee || {});
@@ -93,14 +94,34 @@ const conversationPath = computed(() =>
   )
 );
 
+// Cuando el filtro de "Contenido" esta activo, last_non_activity_message
+// no es el ultimo mensaje real sino el que disparo el match (ver
+// Conversations::FilterService#annotate_matched_message) -- el click debe
+// llevar a ESE mensaje puntual, no al final de la conversacion, con la
+// misma tecnica de ?messageId= que ya usan otros enlaces a mensaje (ej.
+// ContactMedia.vue).
+const hasContentFilter = computed(() =>
+  appliedFilters.value.some(filter => filter.attributeKey === 'content')
+);
+const matchedMessageId = computed(() =>
+  hasContentFilter.value
+    ? props.source.last_non_activity_message?.id
+    : undefined
+);
+
 const onCardClick = e => {
   const path = conversationPath.value;
   if (!path) return;
 
+  const query = matchedMessageId.value
+    ? { messageId: matchedMessageId.value }
+    : undefined;
+
   if (e.metaKey || e.ctrlKey) {
     e.preventDefault();
+    const queryString = query ? `?messageId=${matchedMessageId.value}` : '';
     window.open(
-      `${window.chatwootConfig.hostURL}${path}`,
+      `${window.chatwootConfig.hostURL}${path}${queryString}`,
       '_blank',
       'noopener,noreferrer'
     );
@@ -108,7 +129,7 @@ const onCardClick = e => {
   }
 
   if (isActiveChat.value) return;
-  router.push({ path });
+  router.push(query ? { path, query } : { path });
 };
 
 const onExpandedSelect = checked => {

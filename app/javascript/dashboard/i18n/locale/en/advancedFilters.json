@@ -49,6 +49,7 @@
       "FALSE": "False"
     },
     "ATTRIBUTES": {
+      "CONTENT": "Content",
       "STATUS": "Status",
       "ASSIGNEE_NAME": "Assignee name",
       "INBOX_NAME": "Inbox name",

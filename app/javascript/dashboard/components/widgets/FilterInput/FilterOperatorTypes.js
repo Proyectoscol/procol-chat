@@ -74,6 +74,17 @@ export const OPERATOR_TYPES_4 = [
   },
 ];
 
+export const OPERATOR_TYPES_6 = [
+  {
+    value: 'equal_to',
+    label: 'Equal to',
+  },
+  {
+    value: 'contains',
+    label: 'Contains',
+  },
+];
+
 export const OPERATOR_TYPES_5 = [
   {
     value: 'is_greater_than',
