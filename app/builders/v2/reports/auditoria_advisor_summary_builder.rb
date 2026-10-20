@@ -11,6 +11,12 @@
 class V2::Reports::AuditoriaAdvisorSummaryBuilder
   pattr_initialize [:account!, :params!]
 
+  # Buckets del desglose por orden de respuesta: 1-4 explicitos, 5 en
+  # adelante se agrupan en un solo bucket para no generar una fila por cada
+  # numero en conversaciones muy largas.
+  MAX_EXPLICIT_RESPONSE_ORDER = 4
+  OVERFLOW_RESPONSE_ORDER_LABEL = '5+'.freeze
+
   def build
     stats = agent_user_ids.map { |user_id| build_advisor_stats(user_id) }
     # Cuando se filtra por una bandeja puntual, la mayoria de asesores no
@@ -23,10 +29,12 @@ class V2::Reports::AuditoriaAdvisorSummaryBuilder
   private
 
   def build_advisor_stats(user_id)
+    samples = filtered_samples(response_samples_by_advisor[user_id])
     {
       id: user_id,
       conversations_count: conversation_ids_by_advisor[user_id]&.size || 0,
-      avg_response_time_seconds: average_seconds(response_samples_by_advisor[user_id])
+      avg_response_time_seconds: average_seconds(samples),
+      response_breakdown: response_breakdown(samples)
     }
   end
 
@@ -34,16 +42,47 @@ class V2::Reports::AuditoriaAdvisorSummaryBuilder
   # filas por asesor, para que el total/promedio general sea consistente con
   # lo que se ve en la tabla -- nunca una cifra distinta "por fuera".
   def totals
+    samples = filtered_samples(response_samples_by_advisor.values.flatten)
     {
       conversations_count: conversation_ids_by_advisor.values.sum(&:size),
-      avg_response_time_seconds: average_seconds(response_samples_by_advisor.values.flatten)
+      avg_response_time_seconds: average_seconds(samples),
+      response_breakdown: response_breakdown(samples)
     }
+  end
+
+  # Punto unico de filtro para que el promedio y el desglose por orden nunca
+  # queden inconsistentes entre si al prender/apagar el toggle.
+  def filtered_samples(samples)
+    return samples unless same_day_only?
+
+    samples.select { |sample| sample[:same_day] }
+  end
+
+  def same_day_only?
+    return @same_day_only if defined?(@same_day_only)
+
+    @same_day_only = ActiveModel::Type::Boolean.new.cast(params[:same_day_only])
   end
 
   def average_seconds(samples)
     return nil if samples.blank?
 
-    (samples.sum / samples.size).round
+    seconds = samples.pluck(:seconds)
+    (seconds.sum / seconds.size).round
+  end
+
+  # Agrupa por orden de respuesta dentro de la conversacion (1ra, 2da, ...),
+  # con 5+ como bucket unico. Un orden sin muestras (por ejemplo, nadie tuvo
+  # una 4ta respuesta en el rango, o el toggle "mismo dia" filtro todas las
+  # de ese orden) simplemente no aparece -- no se rellena con count: 0.
+  def response_breakdown(samples)
+    samples.group_by { |sample| response_order_bucket(sample[:order]) }
+           .map { |bucket, bucket_samples| { order: bucket, avg_response_time_seconds: average_seconds(bucket_samples), count: bucket_samples.size } }
+           .sort_by { |row| row[:order] == OVERFLOW_RESPONSE_ORDER_LABEL ? Float::INFINITY : row[:order] }
+  end
+
+  def response_order_bucket(order)
+    order > MAX_EXPLICIT_RESPONSE_ORDER ? OVERFLOW_RESPONSE_ORDER_LABEL : order
   end
 
   # Solo agentes (no administradores) -- igual que el filtro que ya aplica
@@ -71,12 +110,22 @@ class V2::Reports::AuditoriaAdvisorSummaryBuilder
     @response_samples_by_advisor
   end
 
+  # order es un contador local a esta conversacion (arranca en 0, pasa a 1 en
+  # el primer par entrante->saliente que calza, 2 en el segundo, etc) --
+  # excluir conversaciones con mas de un asesor (ver excluded_conversation_ids)
+  # garantiza que nunca hay ambiguedad sobre a quien le pertenece ese orden.
   def collect_samples(rows_in_conversation)
     prev_type = nil
     prev_created_at = nil
+    order = 0
     rows_in_conversation.each do |row|
       if row[:message_type] == 'outgoing' && row[:advisor_id] && prev_type == 'incoming'
-        @response_samples_by_advisor[row[:advisor_id]] << (row[:created_at] - prev_created_at)
+        order += 1
+        @response_samples_by_advisor[row[:advisor_id]] << {
+          seconds: row[:created_at] - prev_created_at,
+          order: order,
+          same_day: row[:created_at].to_date == prev_created_at.to_date
+        }
       end
       prev_type = row[:message_type]
       prev_created_at = row[:created_at]
@@ -98,7 +147,10 @@ class V2::Reports::AuditoriaAdvisorSummaryBuilder
 
   # pluck(:message_type) devuelve el label del enum ("incoming"/"outgoing"),
   # no el entero crudo -- Rails lo castea al leer la columna aunque sea un
-  # pluck directo.
+  # pluck directo. Lo mismo aplica a created_at: con time_zone_aware_attributes
+  # y config.time_zone = 'America/Bogota' (config/application.rb), pluck ya
+  # devuelve el valor casteado a esa zona -- el to_date en collect_samples ya
+  # refleja el dia calendario de Bogota, sin plomeria extra de timezone.
   def scoped_messages
     scope = account.messages.where(created_at: range).where.not(conversation_id: excluded_conversation_ids)
     scope = scope.where(inbox_id: inbox_id) if inbox_id.present?

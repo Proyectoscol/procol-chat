@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { formatTime } from '@chatwoot/utils';
 import SidePanel from 'dashboard/components-next/side-panel/SidePanel.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -12,6 +13,7 @@ const props = defineProps({
   open: { type: Boolean, default: false },
   advisorName: { type: String, default: '' },
   userId: { type: [String, Number], default: null },
+  responseBreakdown: { type: Array, default: () => [] },
   since: { type: Number, default: null },
   until: { type: Number, default: null },
   inboxId: { type: [String, Number], default: '' },
@@ -21,6 +23,20 @@ const emit = defineEmits(['close']);
 
 const { t } = useI18n();
 const panelRef = ref(null);
+
+// Funciona igual con claves numericas (1-4) y la clave string "5+" --
+// el acceso a objeto en JS normaliza ambas a lookup por clave.
+const ORDER_LABEL_KEYS = {
+  1: 'ORDER_1',
+  2: 'ORDER_2',
+  3: 'ORDER_3',
+  4: 'ORDER_4',
+  '5+': 'ORDER_5_PLUS',
+};
+const orderLabel = order =>
+  t(
+    `AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.${ORDER_LABEL_KEYS[order] || 'ORDER_5_PLUS'}`
+  );
 
 const fetcher = ({ userId, since, until, inboxId, page, signal }) =>
   SummaryReportsAPI.getAuditoriaAdvisorConversations({
@@ -81,6 +97,40 @@ watch(
     width="xl"
     @close="emit('close')"
   >
+    <div
+      v-if="responseBreakdown.length"
+      class="mb-4 rounded-lg border border-n-weak p-3"
+    >
+      <p class="text-sm font-medium text-n-slate-12 mb-2">
+        {{
+          t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.TITLE')
+        }}
+      </p>
+      <ul class="flex flex-col gap-1">
+        <li
+          v-for="row in responseBreakdown"
+          :key="row.order"
+          class="flex items-center justify-between text-sm"
+        >
+          <span class="text-n-slate-11">{{ orderLabel(row.order) }}</span>
+          <span class="text-n-slate-12">
+            {{ formatTime(row.avgResponseTimeSeconds) }}
+            <span class="text-n-slate-10">
+              {{
+                t(
+                  'AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.COUNT',
+                  { count: row.count }
+                )
+              }}
+            </span>
+          </span>
+        </li>
+      </ul>
+    </div>
+    <div v-else class="mb-4 text-sm text-n-slate-10">
+      {{ t('AUDITORIA_ADVISOR_REPORTS.CONVERSATIONS_DRAWER.BREAKDOWN.EMPTY') }}
+    </div>
+
     <div v-if="isFetching" class="flex h-40 items-center justify-center">
       <Spinner />
     </div>

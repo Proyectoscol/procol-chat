@@ -8,6 +8,7 @@ import ReportHeader from './components/ReportHeader.vue';
 import OverviewReportFilters from './components/OverviewReportFilters.vue';
 import AuditoriaAdvisorConversationsDrawer from './components/AuditoriaAdvisorConversationsDrawer.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import ToggleSwitch from 'dashboard/components-next/switch/Switch.vue';
 import Table from 'dashboard/components/table/Table.vue';
 import {
   useVueTable,
@@ -22,6 +23,7 @@ const store = useStore();
 const from = ref(0);
 const to = ref(0);
 const selectedInboxId = ref('');
+const sameDayOnly = ref(false);
 
 const uiFlags = useMapGetter('summaryReports/getUIFlags');
 const isLoading = computed(
@@ -69,6 +71,14 @@ const openAdvisorDrawer = row => {
 const closeAdvisorDrawer = () => {
   selectedAdvisor.value = null;
 };
+
+// Computed (no snapshot al momento del click) para que si el usuario abre
+// el drawer y luego cambia el toggle "mismo dia" en la pagina de atras, el
+// desglose dentro del drawer ya abierto se actualice solo.
+const selectedAdvisorBreakdown = computed(() => {
+  if (!selectedAdvisor.value) return [];
+  return getMetrics(selectedAdvisor.value.id).responseBreakdown || [];
+});
 
 const columns = computed(() => [
   columnHelper.accessor('name', {
@@ -129,6 +139,7 @@ const fetchReportsWithRetry = async () => {
     since: from.value,
     until: to.value,
     inboxId: selectedInboxId.value || undefined,
+    sameDayOnly: sameDayOnly.value,
   };
   try {
     await store.dispatch(
@@ -161,6 +172,7 @@ const onFilterChange = updatedFilter => {
 };
 
 const onInboxChange = () => fetchAllData();
+const onSameDayToggle = () => fetchAllData();
 
 const totalsSummary = computed(() => {
   if (!reportTotals.value) return '';
@@ -198,24 +210,42 @@ const table = useVueTable({
       :disabled="isLoading"
       @filter-change="onFilterChange"
     />
-    <div class="flex items-center gap-2">
-      <label for="auditoria-inbox-filter" class="text-sm whitespace-nowrap">
-        {{ $t('AUDITORIA_ADVISOR_REPORTS.INBOX_FILTER_LABEL') }}
-      </label>
-      <select
-        id="auditoria-inbox-filter"
-        v-model="selectedInboxId"
-        class="reset-base !mb-0 !w-auto"
-        :disabled="isLoading"
-        @change="onInboxChange"
-      >
-        <option value="">
-          {{ $t('AUDITORIA_ADVISOR_REPORTS.INBOX_FILTER_ALL') }}
-        </option>
-        <option v-for="inbox in inboxes" :key="inbox.id" :value="inbox.id">
-          {{ inbox.name }}
-        </option>
-      </select>
+    <div
+      class="flex flex-wrap items-center gap-4"
+      :class="{ 'pointer-events-none opacity-50': isLoading }"
+    >
+      <div class="flex items-center gap-2">
+        <label for="auditoria-inbox-filter" class="text-sm whitespace-nowrap">
+          {{ $t('AUDITORIA_ADVISOR_REPORTS.INBOX_FILTER_LABEL') }}
+        </label>
+        <select
+          id="auditoria-inbox-filter"
+          v-model="selectedInboxId"
+          class="reset-base !mb-0 !w-auto"
+          :disabled="isLoading"
+          @change="onInboxChange"
+        >
+          <option value="">
+            {{ $t('AUDITORIA_ADVISOR_REPORTS.INBOX_FILTER_ALL') }}
+          </option>
+          <option v-for="inbox in inboxes" :key="inbox.id" :value="inbox.id">
+            {{ inbox.name }}
+          </option>
+        </select>
+      </div>
+      <div class="flex items-center gap-2">
+        <label
+          for="auditoria-same-day-toggle"
+          class="text-sm whitespace-nowrap"
+        >
+          {{ $t('AUDITORIA_ADVISOR_REPORTS.SAME_DAY_TOGGLE_LABEL') }}
+        </label>
+        <ToggleSwitch
+          id="auditoria-same-day-toggle"
+          v-model="sameDayOnly"
+          @change="onSameDayToggle"
+        />
+      </div>
     </div>
   </div>
 
@@ -248,6 +278,7 @@ const table = useVueTable({
     :open="isDrawerOpen"
     :advisor-name="selectedAdvisor?.name"
     :user-id="selectedAdvisor?.id"
+    :response-breakdown="selectedAdvisorBreakdown"
     :since="from"
     :until="to"
     :inbox-id="selectedInboxId"

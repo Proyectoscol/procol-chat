@@ -46,12 +46,13 @@ class SummaryReportsAPI extends ApiClient {
     });
   }
 
-  getAuditoriaAdvisorReports({ since, until, inboxId } = {}) {
+  getAuditoriaAdvisorReports({ since, until, inboxId, sameDayOnly } = {}) {
     return axios.get(`${this.url}/auditoria_advisor`, {
       params: {
         since,
         until,
         inbox_id: inboxId,
+        same_day_only: sameDayOnly,
       },
     });
   }

@@ -672,12 +672,23 @@
     "DESCRIPTION": "Volumen de conversaciones y tiempo de respuesta promedio por asesor. Las conversaciones con mensajes de más de un asesor se excluyen aquí y quedan marcadas con la etiqueta \"auditoria-multiple-asesor\".",
     "INBOX_FILTER_LABEL": "Bandeja",
     "INBOX_FILTER_ALL": "Todas las bandejas",
+    "SAME_DAY_TOGGLE_LABEL": "Solo respuestas el mismo día",
     "TOTALS_SUMMARY": "Total: {conversations} conversaciones · Tiempo de respuesta promedio general: {avgResponseTime}",
     "CONVERSATIONS_DRAWER": {
       "DESCRIPTION": "Conversaciones en el rango de fechas seleccionado.",
       "RESULT_COUNT": "{count} conversación | {count} conversaciones",
       "EMPTY": "No se encontraron conversaciones de este asesor en el rango seleccionado.",
-      "ERROR": "No se pudieron cargar las conversaciones, intenta de nuevo."
+      "ERROR": "No se pudieron cargar las conversaciones, intenta de nuevo.",
+      "BREAKDOWN": {
+        "TITLE": "Tiempo de respuesta por orden",
+        "COUNT": "({count} respuesta) | ({count} respuestas)",
+        "ORDER_1": "1ra respuesta",
+        "ORDER_2": "2da respuesta",
+        "ORDER_3": "3ra respuesta",
+        "ORDER_4": "4ta respuesta",
+        "ORDER_5_PLUS": "5ta+ respuesta",
+        "EMPTY": "No hay datos de respuesta para este asesor en el rango seleccionado."
+      }
     }
   }
 }

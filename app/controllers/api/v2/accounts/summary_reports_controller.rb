@@ -58,7 +58,7 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
   end
 
   def auditoria_params
-    params.permit(:since, :until, :inbox_id)
+    params.permit(:since, :until, :inbox_id, :same_day_only)
   end
 
   def auditoria_conversations_params
