@@ -64,12 +64,21 @@ export function useConversationFilterContext() {
   const campaigns = useMapGetter('campaigns/getAllCampaigns');
 
   const {
+    operators,
     equalityOperators,
     presenceOperators,
     containmentOperators,
     dateOperators,
     getOperatorTypes,
   } = useOperators();
+
+  // Solo "igual a" y "contiene" -- explicitamente mas acotado que
+  // containmentOperators (que tambien trae los negados) a pedido del
+  // usuario, para mantener el filtro de contenido simple.
+  const contentOperators = computed(() => [
+    operators.value.equal_to,
+    operators.value.contains,
+  ]);
 
   const searchContacts = createContactSearcher();
 
@@ -110,6 +119,16 @@ export function useConversationFilterContext() {
    * @type {import('vue').ComputedRef<FilterType[]>}
    */
   const filterTypes = computed(() => [
+    {
+      attributeKey: CONVERSATION_ATTRIBUTES.CONTENT,
+      value: CONVERSATION_ATTRIBUTES.CONTENT,
+      attributeName: t('FILTER.ATTRIBUTES.CONTENT'),
+      label: t('FILTER.ATTRIBUTES.CONTENT'),
+      inputType: 'plainText',
+      dataType: 'text',
+      filterOperators: contentOperators.value,
+      attributeModel: 'standard',
+    },
     {
       attributeKey: CONVERSATION_ATTRIBUTES.STATUS,
       value: CONVERSATION_ATTRIBUTES.STATUS,

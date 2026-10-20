@@ -8,6 +8,7 @@ export const DROPDOWN_SEARCH_THRESHOLD = 8;
  * Standard attributes of the conversation model
  */
 export const CONVERSATION_ATTRIBUTES = {
+  CONTENT: 'content',
   STATUS: 'status',
   PRIORITY: 'priority',
   ASSIGNEE_ID: 'assignee_id',
