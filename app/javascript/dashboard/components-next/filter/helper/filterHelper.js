@@ -8,7 +8,10 @@ export const DROPDOWN_SEARCH_THRESHOLD = 8;
  * Standard attributes of the conversation model
  */
 export const CONVERSATION_ATTRIBUTES = {
-  CONTENT: 'content',
+  // "message_content", no "content" -- "content" ya esta en uso por las
+  // condiciones de automatizacion a nivel de mensaje (ver
+  // lib/filters/filter_keys.yml, seccion conversations.message_content).
+  CONTENT: 'message_content',
   STATUS: 'status',
   PRIORITY: 'priority',
   ASSIGNEE_ID: 'assignee_id',

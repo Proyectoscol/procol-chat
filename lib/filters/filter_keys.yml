@@ -14,7 +14,18 @@
 ### ----- Conversation Filters ----- ###
 
 conversations:
-  content:
+  # Clave propia ("message_content", no "content") a proposito: "content"
+  # ya existe bajo "messages" (mas abajo) para las condiciones de
+  # automatizacion, y AutomationRules::Condition{Validation,Filter}Service
+  # busca attribute_key primero en @conversation_filters -- si esta entrada
+  # se llamara igual, una regla de automatizacion con attribute_key:
+  # "content" (ej. la de asignacion por "Source: <agente>", ver
+  # Auditoria::AgentReconcilerService) resolveria a ESTA entrada en vez de
+  # la de messages, armando "conversations.content ILIKE ..." (columna que
+  # no existe) en vez de "messages.content" -- rompe la condicion para
+  # SIEMPRE, silenciosamente (el rescue generico de ConditionsFilterService
+  # atrapa la excepcion y devuelve false, sin ningun error visible).
+  message_content:
     attribute_type: "standard"
     data_type: "message_content"
     filter_operators:

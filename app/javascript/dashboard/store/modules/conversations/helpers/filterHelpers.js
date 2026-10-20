@@ -75,7 +75,7 @@ const getValueFromConversation = (conversation, attributeKey) => {
     // ese mismo texto aqui coincide por construccion con lo que el backend
     // ya confirmo -- sin esto, content caia al "default" (null) y
     // rechazaba toda conversacion, sin importar lo que devolviera el server.
-    case 'content':
+    case 'message_content':
       return conversation.last_non_activity_message?.content;
     case 'display_id':
       // Frontend uses 'id' but backend expects 'display_id'

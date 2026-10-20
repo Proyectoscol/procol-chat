@@ -8,7 +8,9 @@ import {
 
 const filterTypes = [
   {
-    attributeKey: 'content',
+    // "message_content", no "content" -- colisiona con la condicion de
+    // automatizacion a nivel de mensaje (ver lib/filters/filter_keys.yml).
+    attributeKey: 'message_content',
     attributeI18nKey: 'CONTENT',
     inputType: 'plain_text',
     dataType: 'text',
@@ -135,7 +137,7 @@ export const filterAttributeGroups = [
     i18nGroup: 'STANDARD_FILTERS',
     attributes: [
       {
-        key: 'content',
+        key: 'message_content',
         i18nKey: 'CONTENT',
       },
       {
