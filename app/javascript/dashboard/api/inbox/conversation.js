@@ -17,6 +17,7 @@ class ConversationApi extends ApiClient {
     sortBy,
     updatedWithin,
     hideInternalContacts,
+    hideAuditoriaMultipleAsesor,
   }) {
     return axios.get(this.url, {
       params: {
@@ -30,6 +31,8 @@ class ConversationApi extends ApiClient {
         sort_by: sortBy,
         updated_within: updatedWithin,
         hide_internal_contacts: hideInternalContacts || undefined,
+        hide_auditoria_multiple_asesor:
+          hideAuditoriaMultipleAsesor || undefined,
       },
     });
   }

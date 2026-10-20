@@ -87,6 +87,7 @@ class ConversationFinder
     filter_by_query
     filter_by_source_id
     filter_by_hide_internal_contacts
+    filter_by_hide_auditoria_multiple_asesor
   end
 
   def set_inboxes
@@ -190,6 +191,21 @@ class ConversationFinder
     return unless ActiveModel::Type::Boolean.new.cast(params[:hide_internal_contacts])
 
     @conversations = @conversations.joins(:contact).where(contacts: { internal: false })
+  end
+
+  # Equivalente de filter_by_hide_internal_contacts para Auditoria: aqui no
+  # hay contactos marcados "internal" (ver arriba), pero si conversaciones
+  # marcadas "auditoria-multiple-asesor" (ver
+  # Auditoria::MessageAnnotatorService#flag_multiple_advisors) -- un numero
+  # al que le escriben dos asesores distintos desde su propio celular. Opt-
+  # out (no opt-in) a proposito: por defecto el frontend lo manda prendido
+  # para no ensuciar el listado, ver el checkbox en ChatList.vue.
+  def filter_by_hide_auditoria_multiple_asesor
+    return unless ActiveModel::Type::Boolean.new.cast(params[:hide_auditoria_multiple_asesor])
+
+    @conversations = @conversations.tagged_with(
+      Auditoria::MessageAnnotatorService::MULTIPLE_ADVISORS_LABEL_TITLE, exclude: true
+    )
   end
 
   def set_count_for_all_conversations

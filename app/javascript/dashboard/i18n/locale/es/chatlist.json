@@ -3,6 +3,7 @@
     "LOADING": "Obteniendo conversaciones",
     "LOAD_MORE_CONVERSATIONS": "Cargar más conversaciones",
     "HIDE_INTERNAL_CONTACTS": "Ocultar contactos internos",
+    "HIDE_AUDITORIA_MULTIPLE_ASESOR": "Ocultar conversaciones con múltiples asesores",
     "EOF": "Todas las conversaciones cargadas 🎉",
     "LIST": {
       "404": "No hay conversaciones activas en este grupo."

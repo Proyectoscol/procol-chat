@@ -78,7 +78,17 @@ const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
 // Opt-in filter: hides conversations belonging to contacts marked "internal"
 // (staff/test contacts, see the toggle on the Contact page). Off by default
 // so the main inbox behaves exactly as before unless explicitly turned on.
+// Not useful on Auditoria accounts (no "internal" contacts there), so it's
+// swapped for hideAuditoriaMultipleAsesor below -- see isAuditoriaEnabled.
 const hideInternalContacts = ref(false);
+// Opt-OUT filter, the Auditoria equivalent of the one above: hides
+// conversations flagged "auditoria-multiple-asesor" (ver
+// Auditoria::MessageAnnotatorService#flag_multiple_advisors) -- a number
+// two different advisors write from. On by default (unlike the toggle
+// above) because otherwise every Auditoria inbox starts cluttered with
+// these; the checkbox stays visible and unchecked state is one click away,
+// same pattern as hideInternalContacts, so it's never a hidden/silent filter.
+const hideAuditoriaMultipleAsesor = ref(true);
 const showAdvancedFilters = ref(false);
 // chatsOnView is to store the chats that are currently visible on the screen,
 // which mirrors the conversationList.
@@ -111,6 +121,9 @@ const inboxesList = useMapGetter('inboxes/getInboxes');
 const campaigns = useMapGetter('campaigns/getAllCampaigns');
 const labels = useMapGetter('labels/getLabels');
 const currentAccountId = useMapGetter('getCurrentAccountId');
+const isFeatureEnabledonAccount = useMapGetter(
+  'accounts/isFeatureEnabledonAccount'
+);
 // We can't useFunctionGetter here since it needs to be called on setup?
 const getTeamFn = useMapGetter('teams/getTeam');
 const getConversationById = useMapGetter('getConversationById');
@@ -250,6 +263,10 @@ const conversationListPagination = computed(() => {
   return currentPage.value + 1;
 });
 
+const isAuditoriaEnabled = computed(() =>
+  isFeatureEnabledonAccount.value(currentAccountId.value, 'auditoria')
+);
+
 const conversationFilters = computed(() => {
   return {
     inboxId: props.conversationInbox ? props.conversationInbox : undefined,
@@ -260,7 +277,12 @@ const conversationFilters = computed(() => {
     labels: props.label ? [props.label] : undefined,
     teamId: props.teamId || undefined,
     conversationType: props.conversationType || undefined,
-    hideInternalContacts: hideInternalContacts.value || undefined,
+    hideInternalContacts: !isAuditoriaEnabled.value
+      ? hideInternalContacts.value || undefined
+      : undefined,
+    hideAuditoriaMultipleAsesor: isAuditoriaEnabled.value
+      ? hideAuditoriaMultipleAsesor.value || undefined
+      : undefined,
   };
 });
 
@@ -945,6 +967,7 @@ watch(conversationFilters, (newVal, oldVal) => {
     />
 
     <label
+      v-if="!isAuditoriaEnabled"
       class="flex items-center gap-1.5 px-4 py-1.5 text-xs text-n-slate-11 cursor-pointer"
     >
       <input
@@ -954,6 +977,18 @@ watch(conversationFilters, (newVal, oldVal) => {
         @change="resetAndFetchData"
       />
       {{ $t('CHAT_LIST.HIDE_INTERNAL_CONTACTS') }}
+    </label>
+    <label
+      v-else
+      class="flex items-center gap-1.5 px-4 py-1.5 text-xs text-n-slate-11 cursor-pointer"
+    >
+      <input
+        v-model="hideAuditoriaMultipleAsesor"
+        type="checkbox"
+        class="reset-base"
+        @change="resetAndFetchData"
+      />
+      {{ $t('CHAT_LIST.HIDE_AUDITORIA_MULTIPLE_ASESOR') }}
     </label>
 
     <p

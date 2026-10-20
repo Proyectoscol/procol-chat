@@ -3,6 +3,7 @@
     "LOADING": "Fetching conversations",
     "LOAD_MORE_CONVERSATIONS": "Load more conversations",
     "HIDE_INTERNAL_CONTACTS": "Hide internal contacts",
+    "HIDE_AUDITORIA_MULTIPLE_ASESOR": "Hide multiple-advisor conversations",
     "EOF": "All conversations loaded 🎉",
     "LIST": {
       "404": "There are no active conversations in this group."
