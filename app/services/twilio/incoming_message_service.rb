@@ -193,6 +193,8 @@ class Twilio::IncomingMessageService
   end
 
   def attach_files
+    return attach_vcard_contacts(@message.content) if vcard_body?
+
     num_media = params[:NumMedia].to_i
     return if num_media.zero?
 
@@ -200,6 +202,15 @@ class Twilio::IncomingMessageService
       media_url = params[:"MediaUrl#{i}"]
       attach_single_file(media_url, i) if media_url.present?
     end
+  end
+
+  # Confirmado contra produccion: este Twilio manda el vcard compartido
+  # como texto plano en Body (NumMedia=0), no como adjunto de media -- a
+  # diferencia de otras integraciones de Twilio/WhatsApp que si lo mandan
+  # como .vcf. Se maneja aqui como caso principal; vcard_media? abajo queda
+  # como red de seguridad por si algun numero si lo manda como adjunto.
+  def vcard_body?
+    @message.content.to_s.strip.start_with?('BEGIN:VCARD')
   end
 
   def attach_single_file(media_url, media_index)
@@ -212,6 +223,8 @@ class Twilio::IncomingMessageService
     ).perform
     return if attachment_file.blank?
 
+    return attach_vcard_contacts(attachment_file.read) if vcard_media?(media_index)
+
     @message.attachments.new(
       account_id: @message.account_id,
       file_type: file_type(attachment_file.content_type),
@@ -221,6 +234,38 @@ class Twilio::IncomingMessageService
         content_type: attachment_file.content_type
       }
     )
+  end
+
+  def vcard_media?(media_index)
+    params[:"MediaContentType#{media_index}"].to_s.downcase.include?('vcard')
+  end
+
+  # WhatsApp comparte contactos como vcard (RFC 2426), nunca como el JSON
+  # estructurado que si entiende
+  # Whatsapp::IncomingMessageBaseService#attach_contact -- se parsea aqui y
+  # se normaliza al mismo shape de Attachment (file_type: :contact) para que
+  # la burbuja Contact.vue ya existente lo renderice igual.
+  def attach_vcard_contacts(text)
+    contacts = Twilio::VcardContactParserService.new(text: text).call
+    return if contacts.blank?
+
+    contacts.each { |contact| attach_vcard_contact(contact) }
+    # Algunos clientes de WhatsApp duplican el vcard crudo como Body del
+    # mensaje -- si el contenido es literalmente el vcard, se limpia para no
+    # mostrar el texto crudo encima de la burbuja de contacto ya armada.
+    @message.content = nil if @message.content.to_s.strip.start_with?('BEGIN:VCARD')
+  end
+
+  def attach_vcard_contact(contact)
+    phones = contact[:phones].presence || ['Phone number is not available']
+    phones.each do |phone|
+      @message.attachments.new(
+        account_id: @message.account_id,
+        file_type: :contact,
+        fallback_title: phone,
+        meta: { firstName: contact[:name] }.compact
+      )
+    end
   end
 
   def media_retry_delays
