@@ -79,6 +79,12 @@ class Auditoria::AudioTranscriptionService < Captain::BaseTaskService
   def persist_result(result)
     audio_attachment.update!(meta: audio_attachment.meta.merge('transcribed_text' => result.text))
     message.reload.send_update_event
+    # El match de categorias de palabra clave ya corrio al crear el mensaje
+    # (ver Message#match_keyword_categories_for_auditoria), antes de que
+    # content_for_llm tuviera transcripcion -- sin este reintento, una
+    # mencion dicha solo por voz nunca entraria a auditoria_category_mentions
+    # (ver Auditoria::KeywordCategoryMatcherService#transcript_rows).
+    Auditoria::KeywordCategoryMatcherJob.perform_later(message.id)
     log_usage(result)
     { text: result.text }
   end
