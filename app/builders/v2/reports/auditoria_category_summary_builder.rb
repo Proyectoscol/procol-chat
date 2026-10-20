@@ -1,7 +1,9 @@
-# A diferencia de AuditoriaAdvisorSummaryBuilder, este reporte NO acepta
-# since/until -- es el resumen "cuantas conversaciones/menciones tiene esta
-# categoria ahora mismo", util para el drilldown. La serie de tiempo
-# (sensible a fecha) vive en AuditoriaCategoryMentionsTimeseriesBuilder.
+# since/until es opcional -- sin rango, el resumen es "cuantas
+# conversaciones/menciones tiene esta categoria en total" (acumulado
+# historico); con rango, el mismo criterio de fecha que
+# AuditoriaCategoryMentionsTimeseriesBuilder (occurred_on dentro del rango,
+# zona Bogota) para que la tabla y el drilldown respeten el filtro de fecha
+# de la pagina igual que la grafica.
 #
 # Lista TODAS las categorias configuradas (activas e inactivas, padres e
 # hijas) -- is_active solo pausa el matching de contenido nuevo, no borra
@@ -21,7 +23,7 @@ class V2::Reports::AuditoriaCategorySummaryBuilder
       has_subcategories = parent_ids.include?(category.id)
       {
         id: category.id, title: category.title, parent_id: category.parent_id,
-        has_subcategories: has_subcategories,
+        has_subcategories: has_subcategories, match_type: category.match_type,
         conversations_count: count_for(category, has_subcategories)
       }
     end
@@ -78,8 +80,15 @@ class V2::Reports::AuditoriaCategorySummaryBuilder
 
   def scoped_mentions
     scope = Auditoria::CategoryMention.where(account_id: account.id)
+    scope = scope.where(occurred_on: range) if range
     scope = scope.joins(:conversation).where(conversations: { inbox_id: inbox_id }) if inbox_id.present?
     scope
+  end
+
+  def range
+    return unless params[:since].present? && params[:until].present?
+
+    Time.zone.at(params[:since].to_i).to_date..Time.zone.at(params[:until].to_i).to_date
   end
 
   def inbox_id

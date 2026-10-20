@@ -1,6 +1,6 @@
-# Menciones por dia, para la grafica de linea de tiempo del panel de
-# categorias. A diferencia del resumen, SI es sensible a fecha --
-# occurred_on ya viene resuelto (mensaje real para palabra clave, dia
+# Menciones (o conversaciones) por dia, para la grafica de linea de tiempo
+# del panel de categorias. A diferencia del resumen, SI es sensible a fecha
+# -- occurred_on ya viene resuelto (mensaje real para palabra clave, dia
 # reportado por el LLM para IA), asi que un GROUP BY occurred_on funciona
 # igual para ambos mecanismos sin caso especial.
 class V2::Reports::AuditoriaCategoryMentionsTimeseriesBuilder
@@ -22,11 +22,24 @@ class V2::Reports::AuditoriaCategoryMentionsTimeseriesBuilder
     @points_by_category_id ||= grouped_points.transform_values { |points| points.sort_by { |p| p[:date] } }
   end
 
+  # Mismo criterio que AuditoriaCategorySummaryBuilder: en modo "menciones"
+  # cada fila de auditoria_category_mentions cuenta (crudo); en modo
+  # "conversaciones" se deduplica por conversation_id dentro de cada dia,
+  # para no doblar un dia donde la misma conversacion matcheo mas de una vez.
   def grouped_points
-    scoped_mentions.group(:category_id, :occurred_on).count.each_with_object(Hash.new { |h, k| h[k] = [] }) do |pair, acc|
+    grouped = if mentions_mode?
+                scoped_mentions.group(:category_id, :occurred_on).count
+              else
+                scoped_mentions.group(:category_id, :occurred_on).distinct.count(:conversation_id)
+              end
+    grouped.each_with_object(Hash.new { |h, k| h[k] = [] }) do |pair, acc|
       (category_id, date), count = pair
       acc[category_id] << { date: date.iso8601, count: count }
     end
+  end
+
+  def mentions_mode?
+    params[:count_mode] == 'mentions'
   end
 
   def categories

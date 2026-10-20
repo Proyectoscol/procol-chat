@@ -556,6 +556,7 @@ Rails.application.routes.draw do
               get :auditoria_category
               get :auditoria_category_timeseries
               get :auditoria_category_conversations
+              get :auditoria_category_terms
             end
           end
           resources :reports, only: [:index] do

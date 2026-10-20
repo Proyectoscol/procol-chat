@@ -77,27 +77,38 @@ class SummaryReportsAPI extends ApiClient {
     });
   }
 
-  getAuditoriaCategoryReports({ inboxId, countMode } = {}) {
+  getAuditoriaCategoryReports({ since, until, inboxId, countMode } = {}) {
     return axios.get(`${this.url}/auditoria_category`, {
       params: {
+        since,
+        until,
         inbox_id: inboxId,
         count_mode: countMode,
       },
     });
   }
 
-  getAuditoriaCategoryTimeseries({ since, until, inboxId, categoryIds } = {}) {
+  getAuditoriaCategoryTimeseries({
+    since,
+    until,
+    inboxId,
+    categoryIds,
+    countMode,
+  } = {}) {
     return axios.get(`${this.url}/auditoria_category_timeseries`, {
       params: {
         since,
         until,
         inbox_id: inboxId,
         category_ids: categoryIds,
+        count_mode: countMode,
       },
     });
   }
 
   getAuditoriaCategoryConversations({
+    since,
+    until,
     categoryId,
     inboxId,
     page,
@@ -105,11 +116,24 @@ class SummaryReportsAPI extends ApiClient {
   } = {}) {
     return axios.get(`${this.url}/auditoria_category_conversations`, {
       params: {
+        since,
+        until,
         category_id: categoryId,
         inbox_id: inboxId,
         page,
       },
       signal,
+    });
+  }
+
+  getAuditoriaCategoryTerms({ since, until, categoryId, inboxId } = {}) {
+    return axios.get(`${this.url}/auditoria_category_terms`, {
+      params: {
+        since,
+        until,
+        category_id: categoryId,
+        inbox_id: inboxId,
+      },
     });
   }
 }

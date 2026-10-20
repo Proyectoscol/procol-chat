@@ -29,11 +29,11 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
   # que esas conversaciones quedan sin representante y la tarjeta cae de
   # vuelta a la conversacion completa (ver #build).
   def representative_messages_by_conversation_id(conversations)
-    latest_message_ids = Auditoria::CategoryMention
-                         .where(conversation_id: conversations.map(&:id), category_id: category_ids_for_filter)
-                         .where.not(message_id: nil)
-                         .group(:conversation_id)
-                         .maximum(:message_id)
+    scope = Auditoria::CategoryMention
+            .where(conversation_id: conversations.map(&:id), category_id: category_ids_for_filter)
+            .where.not(message_id: nil)
+    scope = scope.where(occurred_on: range) if range
+    latest_message_ids = scope.group(:conversation_id).maximum(:message_id)
     Message.where(id: latest_message_ids.values).index_by(&:conversation_id)
   end
 
@@ -53,8 +53,15 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
                    .joins(:auditoria_category_mentions)
                    .where(auditoria_category_mentions: { category_id: category_ids_for_filter })
                    .distinct
+    scope = scope.where(auditoria_category_mentions: { occurred_on: range }) if range
     scope = scope.where(inbox_id: inbox_id) if inbox_id.present?
     scope
+  end
+
+  def range
+    return unless params[:since].present? && params[:until].present?
+
+    Time.zone.at(params[:since].to_i).to_date..Time.zone.at(params[:until].to_i).to_date
   end
 
   # Si category_id es una categoria padre (ej. "Competencia"), el drilldown

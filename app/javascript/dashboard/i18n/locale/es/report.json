@@ -716,6 +716,13 @@
       "DESCRIPTION": "Conversaciones marcadas con esta categoría.",
       "EMPTY": "No se encontraron conversaciones para esta categoría.",
       "ERROR": "No se pudieron cargar las conversaciones, intenta de nuevo."
+    },
+    "OVERALL_BREAKDOWN": {
+      "TITLE": "Distribución general"
+    },
+    "TERMS_BREAKDOWN": {
+      "TOGGLE": "Términos",
+      "EMPTY": "No se encontraron mensajes que coincidan con los términos de esta categoría."
     }
   }
 }

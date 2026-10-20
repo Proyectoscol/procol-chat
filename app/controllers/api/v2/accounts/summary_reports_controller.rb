@@ -73,6 +73,14 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     render json: builder.build
   end
 
+  # Desglose de una categoria de palabra clave por termino de busqueda.
+  def auditoria_category_terms
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaCategoryTermsBuilder.new(account: Current.account, params: auditoria_category_terms_params)
+    render json: builder.build
+  end
+
   private
 
   def check_authorization
@@ -96,15 +104,19 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
   end
 
   def auditoria_category_params
-    params.permit(:inbox_id, :count_mode)
+    params.permit(:since, :until, :inbox_id, :count_mode)
   end
 
   def auditoria_category_timeseries_params
-    params.permit(:since, :until, :inbox_id, category_ids: [])
+    params.permit(:since, :until, :inbox_id, :count_mode, category_ids: [])
   end
 
   def auditoria_category_conversations_params
-    params.permit(:category_id, :inbox_id, :page)
+    params.permit(:since, :until, :category_id, :inbox_id, :page)
+  end
+
+  def auditoria_category_terms_params
+    params.permit(:since, :until, :category_id, :inbox_id)
   end
 
   def render_report_with(builder_class, type: nil)

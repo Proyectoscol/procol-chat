@@ -1,7 +1,8 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import camelcaseKeys from 'camelcase-keys';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import ReportHeader from './components/ReportHeader.vue';
@@ -9,14 +10,17 @@ import OverviewReportFilters from './components/OverviewReportFilters.vue';
 import AuditoriaReportConversationsDrawer from './components/AuditoriaReportConversationsDrawer.vue';
 import CategoryMentionsChart from './components/CategoryMentionsChart.vue';
 import CategoryBreakdownPieChart from './components/CategoryBreakdownPieChart.vue';
+import TermsBreakdownList from './components/TermsBreakdownList.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 import SummaryReportsAPI from 'dashboard/api/summaryReports';
 
 const { t } = useI18n();
 const store = useStore();
 const route = useRoute();
+const router = useRouter();
 
 const createCategoryRoute = computed(() => ({
   name: 'settings_applications_integration',
@@ -71,6 +75,18 @@ const childrenByParentId = computed(() => {
   return map;
 });
 
+// Distribucion general entre categorias de nivel superior (rollup de sus
+// hijas cuando aplica, ver AuditoriaCategorySummaryBuilder) -- con una sola
+// categoria configurada no hay nada que comparar, asi que la seccion entera
+// se oculta (ver template).
+const topLevelPieSegments = computed(() =>
+  topLevelCategories.value.map(category => ({
+    id: category.id,
+    title: category.title,
+    count: category.conversationsCount,
+  }))
+);
+
 const isExpanded = id => expandedParentIds.value.has(id);
 const toggleExpanded = id => {
   const next = new Set(expandedParentIds.value);
@@ -82,12 +98,67 @@ const toggleExpanded = id => {
   expandedParentIds.value = next;
 };
 
+// Desglose por termino de busqueda de una categoria HOJA de palabra clave
+// (ver V2::Reports::AuditoriaCategoryTermsBuilder) -- se pide perezoso al
+// expandir, y se cachea por id para no re-pedirlo si se colapsa y se vuelve
+// a abrir la misma categoria. El cache es sensible a fecha/bandeja (ver
+// toggleTerms), asi que resetTermsState lo vacia cuando esos filtros
+// cambian para no mostrar conteos de un rango que ya no es el seleccionado.
+const expandedTermCategoryIds = ref(new Set());
+const termsByCategoryId = ref({});
+const resetTermsState = () => {
+  expandedTermCategoryIds.value = new Set();
+  termsByCategoryId.value = {};
+};
+
+const isTermsExpanded = id => expandedTermCategoryIds.value.has(id);
+const toggleTerms = async category => {
+  const next = new Set(expandedTermCategoryIds.value);
+  if (next.has(category.id)) {
+    next.delete(category.id);
+    expandedTermCategoryIds.value = next;
+    return;
+  }
+  next.add(category.id);
+  expandedTermCategoryIds.value = next;
+
+  if (termsByCategoryId.value[category.id]) return;
+
+  termsByCategoryId.value = {
+    ...termsByCategoryId.value,
+    [category.id]: { isLoading: true, terms: [] },
+  };
+  try {
+    const { data } = await SummaryReportsAPI.getAuditoriaCategoryTerms({
+      since: from.value,
+      until: to.value,
+      categoryId: category.id,
+      inboxId: selectedInboxId.value || undefined,
+    });
+    termsByCategoryId.value = {
+      ...termsByCategoryId.value,
+      [category.id]: {
+        isLoading: false,
+        terms: camelcaseKeys(data.terms, { deep: true }),
+      },
+    };
+  } catch {
+    useAlert(t('REPORT.SUMMARY_FETCHING_FAILED'));
+    termsByCategoryId.value = {
+      ...termsByCategoryId.value,
+      [category.id]: { isLoading: false, terms: [] },
+    };
+  }
+};
+
 const renderCount = value => (value ? value.toLocaleString() : '--');
 
 const isChecked = id => checkedCategoryIds.value.has(id);
 
 const fetchSummary = async () => {
   const params = {
+    since: from.value,
+    until: to.value,
     inboxId: selectedInboxId.value || undefined,
     countMode: countMode.value,
   };
@@ -120,6 +191,7 @@ const fetchTimeseries = async () => {
     until: to.value,
     inboxId: selectedInboxId.value || undefined,
     categoryIds: Array.from(checkedCategoryIds.value),
+    countMode: countMode.value,
   };
   try {
     await store.dispatch(
@@ -151,6 +223,7 @@ const toggleChecked = id => {
 };
 
 const fetchAllData = async () => {
+  resetTermsState();
   await fetchSummary();
   fetchTimeseries();
 };
@@ -164,10 +237,14 @@ const onFilterChange = updatedFilter => {
 };
 
 const onInboxChange = () => fetchAllData();
-// Solo re-pide el resumen (tabla/totales) -- la serie de tiempo siempre
-// es a nivel de mencion por dia, el toggle no la afecta (ver
-// V2::Reports::AuditoriaCategorySummaryBuilder vs ...TimeseriesBuilder).
-const onCountModeChange = () => fetchSummary();
+// Re-pide tanto el resumen (tabla/totales) como la serie de tiempo -- ambos
+// aceptan count_mode con el mismo criterio (crudo vs. distinct por
+// conversation_id), ver V2::Reports::AuditoriaCategorySummaryBuilder y
+// ...TimeseriesBuilder.
+const onCountModeChange = () => {
+  fetchSummary();
+  fetchTimeseries();
+};
 
 const totalsSummary = computed(() => {
   if (!reportTotals.value) return '';
@@ -187,6 +264,8 @@ const closeCategoryDrawer = () => {
 };
 const fetchCategoryConversations = params =>
   SummaryReportsAPI.getAuditoriaCategoryConversations(params);
+
+const goToCreateCategory = () => router.push(createCategoryRoute.value);
 </script>
 
 <template>
@@ -194,12 +273,12 @@ const fetchCategoryConversations = params =>
     :header-title="$t('AUDITORIA_CATEGORY_REPORTS.HEADER')"
     :header-description="$t('AUDITORIA_CATEGORY_REPORTS.DESCRIPTION')"
   />
-  <router-link
-    :to="createCategoryRoute"
-    class="text-sm text-n-blue-text hover:underline -mt-3 mb-3 inline-block"
-  >
-    {{ $t('AUDITORIA_CATEGORY_REPORTS.CREATE_CATEGORY_LINK') }}
-  </router-link>
+  <Button
+    size="sm"
+    class="-mt-3 mb-3"
+    :label="$t('AUDITORIA_CATEGORY_REPORTS.CREATE_CATEGORY_LINK')"
+    @click="goToCreateCategory"
+  />
 
   <div class="flex flex-col justify-between gap-3 md:flex-row">
     <OverviewReportFilters
@@ -270,10 +349,20 @@ const fetchCategoryConversations = params =>
   </div>
 
   <div
+    v-if="topLevelPieSegments.length > 1"
+    class="mt-5 rounded-xl bg-n-solid-2 p-4 shadow outline-1 outline outline-n-container"
+  >
+    <p class="text-sm font-medium text-n-slate-12 mb-3">
+      {{ $t('AUDITORIA_CATEGORY_REPORTS.OVERALL_BREAKDOWN.TITLE') }}
+    </p>
+    <CategoryBreakdownPieChart :segments="topLevelPieSegments" />
+  </div>
+
+  <div
     class="relative flex-1 overflow-auto px-2 py-2 mt-5 shadow outline-1 outline outline-n-container rounded-xl bg-n-solid-2"
   >
     <table class="min-w-full table-auto divide-y divide-n-weak">
-      <thead class="border-t border-n-weak">
+      <thead>
         <tr>
           <th
             class="py-4 ltr:pr-4 rtl:pl-4 text-start text-heading-3 text-n-slate-12"
@@ -329,6 +418,17 @@ const fetchCategoryConversations = params =>
                 >
                   {{ category.title }}
                 </button>
+                <button
+                  v-if="
+                    !category.hasSubcategories &&
+                    category.matchType === 'keyword'
+                  "
+                  type="button"
+                  class="text-xs text-n-slate-10 hover:text-n-slate-12 hover:underline"
+                  @click="toggleTerms(category)"
+                >
+                  {{ $t('AUDITORIA_CATEGORY_REPORTS.TERMS_BREAKDOWN.TOGGLE') }}
+                </button>
               </div>
             </td>
             <td class="py-3 ltr:pr-4 rtl:pl-4 text-body-main">
@@ -348,31 +448,55 @@ const fetchCategoryConversations = params =>
               />
             </td>
           </tr>
-          <tr
+          <tr v-if="!category.hasSubcategories && isTermsExpanded(category.id)">
+            <td colspan="3" class="pb-3 ltr:pr-4 rtl:pl-4">
+              <TermsBreakdownList :state="termsByCategoryId[category.id]" />
+            </td>
+          </tr>
+          <template
             v-for="child in category.hasSubcategories && isExpanded(category.id)
               ? childrenByParentId[category.id] || []
               : []"
             :key="child.id"
           >
-            <td class="py-3 ltr:pr-4 rtl:pl-4 ps-8">
-              <Checkbox
-                :model-value="isChecked(child.id)"
-                @change="toggleChecked(child.id)"
-              />
-            </td>
-            <td class="py-3 ltr:pr-4 rtl:pl-4 ps-8 text-body-main">
-              <button
-                type="button"
-                class="text-n-blue-text hover:underline"
-                @click="openCategoryDrawer(child)"
-              >
-                {{ child.title }}
-              </button>
-            </td>
-            <td class="py-3 ltr:pr-4 rtl:pl-4 text-body-main">
-              {{ renderCount(child.conversationsCount) }}
-            </td>
-          </tr>
+            <tr>
+              <td class="py-3 ltr:pr-4 rtl:pl-4 ps-8">
+                <Checkbox
+                  :model-value="isChecked(child.id)"
+                  @change="toggleChecked(child.id)"
+                />
+              </td>
+              <td class="py-3 ltr:pr-4 rtl:pl-4 ps-8 text-body-main">
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    class="text-n-blue-text hover:underline"
+                    @click="openCategoryDrawer(child)"
+                  >
+                    {{ child.title }}
+                  </button>
+                  <button
+                    v-if="child.matchType === 'keyword'"
+                    type="button"
+                    class="text-xs text-n-slate-10 hover:text-n-slate-12 hover:underline"
+                    @click="toggleTerms(child)"
+                  >
+                    {{
+                      $t('AUDITORIA_CATEGORY_REPORTS.TERMS_BREAKDOWN.TOGGLE')
+                    }}
+                  </button>
+                </div>
+              </td>
+              <td class="py-3 ltr:pr-4 rtl:pl-4 text-body-main">
+                {{ renderCount(child.conversationsCount) }}
+              </td>
+            </tr>
+            <tr v-if="isTermsExpanded(child.id)">
+              <td colspan="3" class="pb-3 ltr:pr-4 rtl:pl-4 ps-8">
+                <TermsBreakdownList :state="termsByCategoryId[child.id]" />
+              </td>
+            </tr>
+          </template>
         </template>
       </tbody>
     </table>
@@ -391,6 +515,8 @@ const fetchCategoryConversations = params =>
     :empty-text="$t('AUDITORIA_CATEGORY_REPORTS.CONVERSATIONS_DRAWER.EMPTY')"
     :error-text="$t('AUDITORIA_CATEGORY_REPORTS.CONVERSATIONS_DRAWER.ERROR')"
     :filter-params="{
+      since: from,
+      until: to,
       categoryId: selectedCategory?.id,
       inboxId: selectedInboxId,
     }"
