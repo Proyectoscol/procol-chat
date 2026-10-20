@@ -93,5 +93,8 @@ const arcs = computed(() => {
         </li>
       </ul>
     </template>
+    <p v-else class="text-sm text-n-slate-10">
+      {{ t('AUDITORIA_CATEGORY_REPORTS.CHART.EMPTY') }}
+    </p>
   </div>
 </template>
