@@ -1,13 +1,12 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useVuelidate } from '@vuelidate/core';
-import { required, minLength } from '@vuelidate/validators';
+import { required, minLength, sameAs } from '@vuelidate/validators';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Avatar from 'next/avatar/Avatar.vue';
-import Auth from '../../../../api/auth';
 import wootConstants from 'dashboard/constants/globals';
 
 const props = defineProps({
@@ -18,10 +17,6 @@ const props = defineProps({
   name: {
     type: String,
     required: true,
-  },
-  email: {
-    type: String,
-    default: '',
   },
   type: {
     type: String,
@@ -43,6 +38,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  restrictedInboxIds: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(['close']);
@@ -55,20 +54,29 @@ const { t } = useI18n();
 const agentName = ref(props.name);
 const agentAvailability = ref(props.availability);
 const selectedRoleId = ref(props.customRoleId || props.type);
-const agentCredentials = ref({ email: props.email });
 const avatarFile = ref(null);
 const avatarUrl = ref(props.thumbnail);
+const selectedInboxIds = ref([...props.restrictedInboxIds]);
+const showPasswordField = ref(false);
+const newPassword = ref('');
+const newPasswordConfirmation = ref('');
+const showPassword = ref(false);
+const isResettingPassword = ref(false);
 
 const rules = {
   agentName: { required, minLength: minLength(1) },
   selectedRoleId: { required },
   agentAvailability: { required },
+  newPassword: { minLength: minLength(6) },
+  newPasswordConfirmation: { sameAsPassword: sameAs(newPassword) },
 };
 
 const v$ = useVuelidate(rules, {
   agentName,
   selectedRoleId,
   agentAvailability,
+  newPassword,
+  newPasswordConfirmation,
 });
 
 const pageTitle = computed(
@@ -77,20 +85,26 @@ const pageTitle = computed(
 
 const uiFlags = useMapGetter('agents/getUIFlags');
 const getCustomRoles = useMapGetter('customRole/getCustomRoles');
+const inboxes = useMapGetter('inboxes/getInboxes');
+const currentUserInboxRestricted = useMapGetter(
+  'getCurrentUserInboxRestricted'
+);
 
 const roles = computed(() => {
-  const defaultRoles = [
-    {
-      id: 'administrator',
-      name: 'administrator',
-      label: t('AGENT_MGMT.AGENT_TYPES.ADMINISTRATOR'),
-    },
-    {
-      id: 'agent',
-      name: 'agent',
-      label: t('AGENT_MGMT.AGENT_TYPES.AGENT'),
-    },
-  ];
+  const defaultRoles = currentUserInboxRestricted.value
+    ? []
+    : [
+        {
+          id: 'administrator',
+          name: 'administrator',
+          label: t('AGENT_MGMT.AGENT_TYPES.ADMINISTRATOR'),
+        },
+      ];
+  defaultRoles.push({
+    id: 'agent',
+    name: 'agent',
+    label: t('AGENT_MGMT.AGENT_TYPES.AGENT'),
+  });
 
   const customRoles = getCustomRoles.value.map(role => ({
     id: role.id,
@@ -106,6 +120,10 @@ const selectedRole = computed(() =>
     role =>
       role.id === selectedRoleId.value || role.name === selectedRoleId.value
   )
+);
+
+const isAdministratorRole = computed(
+  () => selectedRole.value?.name === 'administrator'
 );
 
 const statusList = computed(() => {
@@ -158,6 +176,10 @@ const editAgent = async () => {
       payload.custom_role_id = null;
     }
 
+    if (isAdministratorRole.value) {
+      payload.restricted_inbox_ids = selectedInboxIds.value;
+    }
+
     if (avatarFile.value) {
       payload.avatar = avatarFile.value;
     }
@@ -171,11 +193,29 @@ const editAgent = async () => {
 };
 
 const resetPassword = async () => {
+  v$.value.newPassword.$touch();
+  v$.value.newPasswordConfirmation.$touch();
+  if (
+    v$.value.newPassword.$invalid ||
+    v$.value.newPasswordConfirmation.$invalid
+  ) {
+    return;
+  }
+
+  isResettingPassword.value = true;
   try {
-    await Auth.resetPassword(agentCredentials.value);
+    await store.dispatch('agents/resetPassword', {
+      id: props.id,
+      password: newPassword.value,
+    });
     useAlert(t('AGENT_MGMT.EDIT.PASSWORD_RESET.ADMIN_SUCCESS_MESSAGE'));
+    showPasswordField.value = false;
+    newPassword.value = '';
+    newPasswordConfirmation.value = '';
   } catch (error) {
     useAlert(t('AGENT_MGMT.EDIT.PASSWORD_RESET.ERROR_MESSAGE'));
+  } finally {
+    isResettingPassword.value = false;
   }
 };
 </script>
@@ -245,18 +285,91 @@ const resetPassword = async () => {
         </label>
       </div>
 
-      <div class="flex flex-row justify-start w-full gap-2 px-0 py-2">
-        <div class="w-[50%] ltr:text-left rtl:text-right">
+      <div v-if="isAdministratorRole" class="w-full mb-4">
+        <span class="text-sm font-medium text-n-slate-12">
+          {{ $t('AGENT_MGMT.EDIT.FORM.RESTRICTED_INBOXES.LABEL') }}
+        </span>
+        <p class="text-xs text-n-slate-11 mb-2">
+          {{ $t('AGENT_MGMT.EDIT.FORM.RESTRICTED_INBOXES.HINT') }}
+        </p>
+        <div class="flex flex-col gap-1.5">
+          <label
+            v-for="inbox in inboxes"
+            :key="inbox.id"
+            class="flex items-center gap-2 cursor-pointer"
+          >
+            <input
+              v-model="selectedInboxIds"
+              type="checkbox"
+              :value="inbox.id"
+            />
+            <span class="text-sm text-n-slate-11">{{ inbox.name }}</span>
+          </label>
+        </div>
+      </div>
+
+      <div v-if="provider !== 'saml'" class="w-full mb-4">
+        <Button
+          v-if="!showPasswordField"
+          ghost
+          type="button"
+          icon="i-lucide-lock-keyhole"
+          class="!px-2"
+          :label="$t('AGENT_MGMT.EDIT.PASSWORD_RESET.SHOW_FIELD_BUTTON')"
+          @click.prevent="showPasswordField = true"
+        />
+        <template v-else>
+          <label :class="{ error: v$.newPassword.$error }">
+            {{ $t('AGENT_MGMT.EDIT.PASSWORD_RESET.LABEL') }}
+            <div class="flex items-center gap-2">
+              <input
+                v-model="newPassword"
+                :type="showPassword ? 'text' : 'password'"
+                autocomplete="new-password"
+                :placeholder="$t('AGENT_MGMT.EDIT.PASSWORD_RESET.PLACEHOLDER')"
+                class="!mb-0"
+                @input="v$.newPassword.$touch"
+              />
+              <Button
+                type="button"
+                :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                slate
+                faded
+                @click="showPassword = !showPassword"
+              />
+            </div>
+            <span v-if="v$.newPassword.$error" class="message">
+              {{ $t('AGENT_MGMT.ADD.FORM.PASSWORD.ERROR') }}
+            </span>
+          </label>
+          <label
+            v-if="newPassword"
+            :class="{ error: v$.newPasswordConfirmation.$error }"
+          >
+            {{ $t('AGENT_MGMT.ADD.FORM.PASSWORD_CONFIRMATION.LABEL') }}
+            <input
+              v-model="newPasswordConfirmation"
+              :type="showPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              @input="v$.newPasswordConfirmation.$touch"
+            />
+            <span v-if="v$.newPasswordConfirmation.$error" class="message">
+              {{ $t('AGENT_MGMT.ADD.FORM.PASSWORD_CONFIRMATION.ERROR') }}
+            </span>
+          </label>
           <Button
-            v-if="provider !== 'saml'"
-            ghost
             type="button"
-            icon="i-lucide-lock-keyhole"
-            class="!px-2"
-            :label="$t('AGENT_MGMT.EDIT.PASSWORD_RESET.ADMIN_RESET_BUTTON')"
+            size="sm"
+            :label="$t('AGENT_MGMT.EDIT.PASSWORD_RESET.SUBMIT_BUTTON')"
+            :is-loading="isResettingPassword"
+            :disabled="!newPassword || v$.newPasswordConfirmation.$invalid"
             @click.prevent="resetPassword"
           />
-        </div>
+        </template>
+      </div>
+
+      <div class="flex flex-row justify-start w-full gap-2 px-0 py-2">
+        <div class="w-[50%] ltr:text-left rtl:text-right" />
         <div class="w-[50%] flex justify-end items-center gap-2">
           <Button
             faded

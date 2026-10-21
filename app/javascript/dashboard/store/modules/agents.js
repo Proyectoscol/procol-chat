@@ -97,6 +97,9 @@ export const actions = {
     await AgentAPI.deleteAvatar(agentId);
     commit(types.default.UPDATE_AGENT_AVATAR, { id: agentId, thumbnail: '' });
   },
+  resetPassword: async (_, { id, password }) => {
+    await AgentAPI.resetPassword(id, password);
+  },
 };
 
 export const mutations = {

@@ -75,6 +75,23 @@ export const getters = {
     return currentAccount.custom_role_id;
   },
 
+  // Administrador restringido a inbox(es) -- ver AccountUser#inbox_restricted?
+  getCurrentUserInboxRestricted($state, $getters) {
+    const { accounts = [] } = $state.currentUser;
+    const [currentAccount = {}] = accounts.filter(
+      account => account.id === $getters.getCurrentAccountId
+    );
+    return !!currentAccount.inbox_restricted;
+  },
+
+  getCurrentUserRestrictedInboxIds($state, $getters) {
+    const { accounts = [] } = $state.currentUser;
+    const [currentAccount = {}] = accounts.filter(
+      account => account.id === $getters.getCurrentAccountId
+    );
+    return currentAccount.restricted_inbox_ids || [];
+  },
+
   getCurrentUser($state) {
     return $state.currentUser;
   },

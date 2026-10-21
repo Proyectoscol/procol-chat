@@ -68,6 +68,9 @@ const isMobile = computed(() => windowWidth.value < 768);
 const accountId = useMapGetter('getCurrentAccountId');
 const currentUser = useMapGetter('getCurrentUser');
 const currentUserId = useMapGetter('getCurrentUserID');
+const currentUserInboxRestricted = useMapGetter(
+  'getCurrentUserInboxRestricted'
+);
 
 // A custom role's permissions fully replace the base agent/administrator
 // permissions (see Enterprise::AccountUser#permissions), so holding only
@@ -356,6 +359,9 @@ const newReportRoutes = () => [
     name: 'Reports Label',
     label: t('SIDEBAR.REPORTS_LABEL'),
     to: accountScopedRoute('label_reports_index'),
+    // No tiene relacion limpia con inbox -- bloqueado en el backend para un
+    // admin restringido (ver ReportsController), se oculta aqui tambien.
+    hidden: currentUserInboxRestricted.value,
   },
   {
     name: 'Reports Inbox',
@@ -368,6 +374,7 @@ const newReportRoutes = () => [
     label: t('SIDEBAR.REPORTS_TEAM'),
     to: accountScopedRoute('team_reports_index'),
     activeOn: ['team_reports_show'],
+    hidden: currentUserInboxRestricted.value,
   },
   {
     name: 'Reports Auditoria Advisors',

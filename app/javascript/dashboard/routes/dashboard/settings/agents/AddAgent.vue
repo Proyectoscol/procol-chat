@@ -4,7 +4,7 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useVuelidate } from '@vuelidate/core';
-import { required, email } from '@vuelidate/validators';
+import { required, email, sameAs, minLength } from '@vuelidate/validators';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Avatar from 'next/avatar/Avatar.vue';
 
@@ -18,35 +18,52 @@ const agentEmail = ref('');
 const selectedRoleId = ref('agent');
 const avatarFile = ref(null);
 const avatarUrl = ref('');
+const password = ref('');
+const passwordConfirmation = ref('');
+const showPassword = ref(false);
+const selectedInboxIds = ref([]);
 
 const rules = {
   agentName: { required },
   agentEmail: { required, email },
   selectedRoleId: { required },
+  password: { minLength: minLength(6) },
+  passwordConfirmation: { sameAsPassword: sameAs(password) },
 };
 
 const v$ = useVuelidate(rules, {
   agentName,
   agentEmail,
   selectedRoleId,
+  password,
+  passwordConfirmation,
 });
 
 const uiFlags = useMapGetter('agents/getUIFlags');
 const getCustomRoles = useMapGetter('customRole/getCustomRoles');
+const inboxes = useMapGetter('inboxes/getInboxes');
+// Un admin restringido a inbox(es) nunca puede crear otro administrator
+// (ver AccountUser#inbox_restricted? y la regla D1 del backend) -- se oculta
+// la opcion en vez de dejarla y que el servidor la rechace sin explicacion.
+const currentUserInboxRestricted = useMapGetter(
+  'getCurrentUserInboxRestricted'
+);
 
 const roles = computed(() => {
-  const defaultRoles = [
-    {
-      id: 'administrator',
-      name: 'administrator',
-      label: t('AGENT_MGMT.AGENT_TYPES.ADMINISTRATOR'),
-    },
-    {
-      id: 'agent',
-      name: 'agent',
-      label: t('AGENT_MGMT.AGENT_TYPES.AGENT'),
-    },
-  ];
+  const defaultRoles = currentUserInboxRestricted.value
+    ? []
+    : [
+        {
+          id: 'administrator',
+          name: 'administrator',
+          label: t('AGENT_MGMT.AGENT_TYPES.ADMINISTRATOR'),
+        },
+      ];
+  defaultRoles.push({
+    id: 'agent',
+    name: 'agent',
+    label: t('AGENT_MGMT.AGENT_TYPES.AGENT'),
+  });
 
   const customRoles = getCustomRoles.value.map(role => ({
     id: role.id,
@@ -62,6 +79,10 @@ const selectedRole = computed(() =>
     role =>
       role.id === selectedRoleId.value || role.name === selectedRoleId.value
   )
+);
+
+const isAdministratorRole = computed(
+  () => selectedRole.value?.name === 'administrator'
 );
 
 const handleImageUpload = ({ file, url }) => {
@@ -92,6 +113,17 @@ const addAgent = async () => {
 
     if (avatarFile.value) {
       payload.avatar = avatarFile.value;
+    }
+
+    // Opcional: deja la contrasena vacia y se usa el flujo normal de
+    // invitacion por correo (ver AgentBuilder) -- se asigna directo solo si
+    // el admin la escribe aqui, para agentes sin email funcional.
+    if (password.value) {
+      payload.password = password.value;
+    }
+
+    if (isAdministratorRole.value && selectedInboxIds.value.length) {
+      payload.restricted_inbox_ids = selectedInboxIds.value;
     }
 
     await store.dispatch('agents/create', payload);
@@ -176,6 +208,73 @@ const addAgent = async () => {
             @input="v$.agentEmail.$touch"
           />
         </label>
+      </div>
+
+      <div class="w-full">
+        <label :class="{ error: v$.password.$error }">
+          {{ $t('AGENT_MGMT.ADD.FORM.PASSWORD.LABEL') }}
+          <div class="flex items-center gap-2">
+            <input
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              :placeholder="$t('AGENT_MGMT.ADD.FORM.PASSWORD.PLACEHOLDER')"
+              class="!mb-0"
+              @input="v$.password.$touch"
+            />
+            <Button
+              type="button"
+              :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+              slate
+              faded
+              @click="showPassword = !showPassword"
+            />
+          </div>
+          <span v-if="v$.password.$error" class="message">
+            {{ $t('AGENT_MGMT.ADD.FORM.PASSWORD.ERROR') }}
+          </span>
+        </label>
+      </div>
+
+      <div v-if="password" class="w-full">
+        <label :class="{ error: v$.passwordConfirmation.$error }">
+          {{ $t('AGENT_MGMT.ADD.FORM.PASSWORD_CONFIRMATION.LABEL') }}
+          <input
+            v-model="passwordConfirmation"
+            :type="showPassword ? 'text' : 'password'"
+            autocomplete="new-password"
+            :placeholder="
+              $t('AGENT_MGMT.ADD.FORM.PASSWORD_CONFIRMATION.PLACEHOLDER')
+            "
+            @input="v$.passwordConfirmation.$touch"
+          />
+          <span v-if="v$.passwordConfirmation.$error" class="message">
+            {{ $t('AGENT_MGMT.ADD.FORM.PASSWORD_CONFIRMATION.ERROR') }}
+          </span>
+        </label>
+      </div>
+
+      <div v-if="isAdministratorRole" class="w-full mb-4">
+        <span class="text-sm font-medium text-n-slate-12">
+          {{ $t('AGENT_MGMT.ADD.FORM.RESTRICTED_INBOXES.LABEL') }}
+        </span>
+        <p class="text-xs text-n-slate-11 mb-2">
+          {{ $t('AGENT_MGMT.ADD.FORM.RESTRICTED_INBOXES.HINT') }}
+        </p>
+        <div class="flex flex-col gap-1.5">
+          <label
+            v-for="inbox in inboxes"
+            :key="inbox.id"
+            class="flex items-center gap-2 cursor-pointer"
+          >
+            <input
+              v-model="selectedInboxIds"
+              type="checkbox"
+              :value="inbox.id"
+            />
+            <span class="text-sm text-n-slate-11">{{ inbox.name }}</span>
+          </label>
+        </div>
       </div>
 
       <div class="flex flex-row justify-end w-full gap-2 px-0 py-2">
