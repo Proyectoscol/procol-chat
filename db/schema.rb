@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_20_010000) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_21_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -52,10 +52,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_20_010000) do
     t.boolean "auto_offline", default: true, null: false
     t.bigint "custom_role_id"
     t.bigint "agent_capacity_policy_id"
+    t.integer "restricted_inbox_ids", default: [], null: false, array: true
     t.index ["account_id", "user_id"], name: "uniq_user_id_per_account_id", unique: true
     t.index ["account_id"], name: "index_account_users_on_account_id"
     t.index ["agent_capacity_policy_id"], name: "index_account_users_on_agent_capacity_policy_id"
     t.index ["custom_role_id"], name: "index_account_users_on_custom_role_id"
+    t.index ["restricted_inbox_ids"], name: "index_account_users_on_restricted_inbox_ids", using: :gin
     t.index ["user_id"], name: "index_account_users_on_user_id"
   end
 
@@ -638,6 +640,316 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_20_010000) do
     t.index ["assistant_id", "enabled"], name: "index_captain_scenarios_on_assistant_id_and_enabled"
     t.index ["assistant_id"], name: "index_captain_scenarios_on_assistant_id"
     t.index ["enabled"], name: "index_captain_scenarios_on_enabled"
+  end
+
+  create_table "cartera_alertas", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "tipo", null: false
+    t.bigint "cliente_id"
+    t.bigint "factura_id"
+    t.decimal "valor_en_riesgo", precision: 18, scale: 2
+    t.datetime "fecha_limite"
+    t.text "mensaje", null: false
+    t.boolean "leida", default: false, null: false
+    t.boolean "util"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "tipo", "factura_id"], name: "index_cartera_alertas_on_account_id_and_tipo_and_factura_id", unique: true
+    t.index ["account_id"], name: "index_cartera_alertas_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_alertas_on_cliente_id"
+    t.index ["factura_id"], name: "index_cartera_alertas_on_factura_id"
+  end
+
+  create_table "cartera_aplicaciones_pago", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pago_id", null: false
+    t.bigint "factura_id", null: false
+    t.decimal "valor_aplicado", precision: 18, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_cartera_aplicaciones_pago_on_account_id"
+    t.index ["factura_id"], name: "index_cartera_aplicaciones_pago_on_factura_id"
+    t.index ["pago_id"], name: "index_cartera_aplicaciones_pago_on_pago_id"
+  end
+
+  create_table "cartera_campana_reglas", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "campana_id", null: false
+    t.integer "orden", null: false
+    t.string "accion", default: "enviar", null: false
+    t.jsonb "condiciones", default: {}, null: false
+    t.string "plantilla_whatsapp_content_sid"
+    t.bigint "plantilla_email_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_cartera_campana_reglas_on_account_id"
+    t.index ["campana_id", "orden"], name: "index_cartera_campana_reglas_on_campana_id_and_orden", unique: true
+    t.index ["campana_id"], name: "index_cartera_campana_reglas_on_campana_id"
+    t.index ["plantilla_email_id"], name: "index_cartera_campana_reglas_on_plantilla_email_id"
+  end
+
+  create_table "cartera_campanas", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "nombre", null: false
+    t.string "estado", default: "borrador", null: false
+    t.bigint "inbox_whatsapp_id"
+    t.bigint "inbox_email_id"
+    t.bigint "captain_assistant_id"
+    t.integer "dias_envio", default: [], null: false, array: true
+    t.string "autorizacion_fuente"
+    t.text "autorizacion_detalle"
+    t.bigint "autorizacion_confirmada_por_user_id"
+    t.datetime "autorizacion_confirmada_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "activada_en"
+    t.jsonb "horas_envio", default: {}, null: false
+    t.index ["account_id"], name: "idx_cartera_campanas_una_activa_por_cuenta", unique: true, where: "((estado)::text = 'activa'::text)"
+    t.index ["account_id"], name: "index_cartera_campanas_on_account_id"
+    t.index ["captain_assistant_id"], name: "index_cartera_campanas_on_captain_assistant_id"
+    t.index ["inbox_email_id"], name: "index_cartera_campanas_on_inbox_email_id"
+    t.index ["inbox_whatsapp_id"], name: "index_cartera_campanas_on_inbox_whatsapp_id"
+  end
+
+  create_table "cartera_canales_bloqueados", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "cliente_id", null: false
+    t.string "canal", null: false
+    t.string "razon", null: false
+    t.string "codigo_error"
+    t.text "detalle"
+    t.datetime "bloqueado_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "cliente_id", "canal"], name: "idx_on_account_id_cliente_id_canal_356d270b46", unique: true
+    t.index ["account_id"], name: "index_cartera_canales_bloqueados_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_canales_bloqueados_on_cliente_id"
+  end
+
+  create_table "cartera_casos", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "cliente_id", null: false
+    t.string "estado", default: "abierto", null: false
+    t.jsonb "factores_score"
+    t.string "nivel_escalamiento", default: "persuasivo", null: false
+    t.boolean "no_cobrar", default: false, null: false
+    t.string "razon_no_cobrar"
+    t.boolean "revisado", default: false, null: false
+    t.boolean "descartado", default: false, null: false
+    t.decimal "saldo_abierto", precision: 18, scale: 2
+    t.integer "puntaje_riesgo"
+    t.integer "score_credito"
+    t.decimal "total_facturado_historico", precision: 18, scale: 2
+    t.integer "facturas_abiertas_cantidad"
+    t.datetime "fecha_primera_factura"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "tramo"
+    t.integer "dias_vencido_max"
+    t.datetime "excluido_hasta"
+    t.string "excluido_motivo"
+    t.bigint "excluido_por_user_id"
+    t.index ["account_id", "cliente_id"], name: "index_cartera_casos_on_account_id_and_cliente_id", unique: true
+    t.index ["account_id"], name: "index_cartera_casos_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_casos_on_cliente_id"
+    t.index ["excluido_por_user_id"], name: "index_cartera_casos_on_excluido_por_user_id"
+    t.index ["puntaje_riesgo"], name: "index_cartera_casos_on_puntaje_riesgo"
+    t.index ["saldo_abierto"], name: "index_cartera_casos_on_saldo_abierto"
+    t.index ["tramo"], name: "index_cartera_casos_on_tramo"
+  end
+
+  create_table "cartera_clientes", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "contact_id"
+    t.string "external_id", null: false
+    t.integer "tipo_deudor", null: false
+    t.string "identificacion", null: false
+    t.string "nombre", null: false
+    t.string "email"
+    t.string "telefono"
+    t.string "sucursal"
+    t.decimal "cupo_asignado", precision: 18, scale: 2
+    t.boolean "es_estrategico", default: false, null: false
+    t.integer "grupo_control"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "external_id"], name: "index_cartera_clientes_on_account_id_and_external_id", unique: true
+    t.index ["account_id"], name: "index_cartera_clientes_on_account_id"
+    t.index ["contact_id"], name: "index_cartera_clientes_on_contact_id"
+  end
+
+  create_table "cartera_corridas_sync", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "conector", null: false
+    t.datetime "inicio", null: false
+    t.datetime "fin"
+    t.string "estado", default: "en_progreso", null: false
+    t.integer "registros_procesados", default: 0, null: false
+    t.jsonb "errores"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_cartera_corridas_sync_on_account_id"
+  end
+
+  create_table "cartera_envios", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "campana_id", null: false
+    t.bigint "campana_regla_id"
+    t.bigint "cliente_id", null: false
+    t.bigint "factura_ids", default: [], null: false, array: true
+    t.decimal "saldo_al_enviar", precision: 18, scale: 2
+    t.string "tramo_al_enviar"
+    t.integer "dias_vencido_max_al_enviar"
+    t.string "canal"
+    t.bigint "message_id"
+    t.string "estado", default: "programado", null: false
+    t.text "razon_omision"
+    t.string "resultado"
+    t.string "categoria_plantilla"
+    t.decimal "costo_estimado", precision: 10, scale: 4
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "modo_prueba", default: false, null: false
+    t.index ["account_id", "cliente_id", "created_at"], name: "idx_on_account_id_cliente_id_created_at_4dba3b5ef9"
+    t.index ["account_id"], name: "index_cartera_envios_on_account_id"
+    t.index ["campana_id"], name: "index_cartera_envios_on_campana_id"
+    t.index ["campana_regla_id"], name: "index_cartera_envios_on_campana_regla_id"
+    t.index ["cliente_id"], name: "index_cartera_envios_on_cliente_id"
+    t.index ["factura_ids"], name: "index_cartera_envios_on_factura_ids", using: :gin
+    t.index ["message_id"], name: "index_cartera_envios_on_message_id"
+  end
+
+  create_table "cartera_eventos_radian", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "factura_id", null: false
+    t.integer "tipo_evento", null: false
+    t.datetime "fecha", null: false
+    t.string "fuente", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "factura_id", "tipo_evento"], name: "idx_cartera_eventos_radian_account_factura_tipo", unique: true
+    t.index ["account_id"], name: "index_cartera_eventos_radian_on_account_id"
+    t.index ["factura_id"], name: "index_cartera_eventos_radian_on_factura_id"
+  end
+
+  create_table "cartera_facturas", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "cliente_id", null: false
+    t.string "external_id", null: false
+    t.string "numero", null: false
+    t.string "cufe"
+    t.datetime "fecha_emision", null: false
+    t.datetime "fecha_vencimiento", null: false
+    t.decimal "valor_total", precision: 18, scale: 2, null: false
+    t.decimal "saldo_pendiente", precision: 18, scale: 2, null: false
+    t.integer "ultimo_tramo_notificado"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "cliente_id"], name: "index_cartera_facturas_on_account_id_and_cliente_id"
+    t.index ["account_id", "external_id"], name: "index_cartera_facturas_on_account_id_and_external_id", unique: true
+    t.index ["account_id", "fecha_vencimiento"], name: "index_cartera_facturas_on_account_id_and_fecha_vencimiento"
+    t.index ["account_id"], name: "index_cartera_facturas_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_facturas_on_cliente_id"
+  end
+
+  create_table "cartera_notas_credito", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "factura_id", null: false
+    t.string "external_id", null: false
+    t.decimal "valor", precision: 18, scale: 2, null: false
+    t.datetime "fecha", null: false
+    t.string "motivo"
+    t.datetime "created_at", null: false
+    t.index ["account_id", "external_id"], name: "index_cartera_notas_credito_on_account_id_and_external_id", unique: true
+    t.index ["account_id"], name: "index_cartera_notas_credito_on_account_id"
+    t.index ["factura_id"], name: "index_cartera_notas_credito_on_factura_id"
+  end
+
+  create_table "cartera_pagos", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "cliente_id", null: false
+    t.string "external_id", null: false
+    t.datetime "fecha", null: false
+    t.decimal "valor", precision: 18, scale: 2, null: false
+    t.string "medio_pago"
+    t.datetime "created_at", null: false
+    t.index ["account_id", "external_id"], name: "index_cartera_pagos_on_account_id_and_external_id", unique: true
+    t.index ["account_id"], name: "index_cartera_pagos_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_pagos_on_cliente_id"
+  end
+
+  create_table "cartera_pesos_riesgo", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.decimal "mora_actual", precision: 5, scale: 4, default: "0.2", null: false
+    t.decimal "pagos_tardios", precision: 5, scale: 4, default: "0.25", null: false
+    t.decimal "saldo_abierto", precision: 5, scale: 4, default: "0.2", null: false
+    t.decimal "cupo_utilizado", precision: 5, scale: 4, default: "0.1", null: false
+    t.decimal "antiguedad_relacion", precision: 5, scale: 4, default: "0.1", null: false
+    t.decimal "cartera_vencida_pct", precision: 5, scale: 4, default: "0.1", null: false
+    t.decimal "total_facturado", precision: 5, scale: 4, default: "0.05", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_cartera_pesos_riesgo_on_account_id", unique: true
+  end
+
+  create_table "cartera_plantillas_email", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "nombre", null: false
+    t.string "asunto", null: false
+    t.text "cuerpo_html", null: false
+    t.jsonb "variables", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "nombre"], name: "index_cartera_plantillas_email_on_account_id_and_nombre", unique: true
+    t.index ["account_id"], name: "index_cartera_plantillas_email_on_account_id"
+  end
+
+  create_table "cartera_plantillas_whatsapp", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "nombre", null: false
+    t.string "categoria", null: false
+    t.string "tipo", default: "text", null: false
+    t.string "idioma", default: "es", null: false
+    t.text "cuerpo", null: false
+    t.jsonb "variables", default: {}
+    t.string "content_sid"
+    t.string "estado", default: "borrador", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "nombre"], name: "index_cartera_plantillas_whatsapp_on_account_id_and_nombre", unique: true
+    t.index ["account_id"], name: "index_cartera_plantillas_whatsapp_on_account_id"
+    t.index ["content_sid"], name: "index_cartera_plantillas_whatsapp_on_content_sid"
+  end
+
+  create_table "cartera_snapshots_cliente", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "cliente_id", null: false
+    t.datetime "fecha_snapshot", null: false
+    t.decimal "saldo_abierto", precision: 18, scale: 2
+    t.string "tramo"
+    t.integer "dias_vencido_max"
+    t.integer "puntaje_riesgo"
+    t.integer "score_credito"
+    t.integer "facturas_abiertas_cantidad"
+    t.decimal "total_facturado_historico", precision: 18, scale: 2
+    t.boolean "no_cobrar", default: false, null: false
+    t.string "nivel_escalamiento"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "cliente_id", "fecha_snapshot"], name: "idx_snapshots_cliente_unico_por_fecha", unique: true
+    t.index ["account_id"], name: "index_cartera_snapshots_cliente_on_account_id"
+    t.index ["cliente_id"], name: "index_cartera_snapshots_cliente_on_cliente_id"
+  end
+
+  create_table "cartera_tarifas_mensajeria", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "categoria", null: false
+    t.decimal "costo", precision: 10, scale: 4, null: false
+    t.datetime "actualizado_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "categoria"], name: "index_cartera_tarifas_mensajeria_on_account_id_and_categoria", unique: true
+    t.index ["account_id"], name: "index_cartera_tarifas_mensajeria_on_account_id"
   end
 
   create_table "categories", force: :cascade do |t|
@@ -1754,6 +2066,45 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_20_010000) do
   add_foreign_key "campaign_recipients", "campaigns", on_delete: :cascade
   add_foreign_key "campaign_recipients", "contacts", on_delete: :cascade
   add_foreign_key "campaign_recipients", "inboxes", on_delete: :cascade
+  add_foreign_key "cartera_alertas", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_alertas", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_alertas", "cartera_facturas", column: "factura_id", on_delete: :cascade
+  add_foreign_key "cartera_aplicaciones_pago", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_aplicaciones_pago", "cartera_facturas", column: "factura_id", on_delete: :cascade
+  add_foreign_key "cartera_aplicaciones_pago", "cartera_pagos", column: "pago_id", on_delete: :cascade
+  add_foreign_key "cartera_campana_reglas", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_campana_reglas", "cartera_campanas", column: "campana_id", on_delete: :cascade
+  add_foreign_key "cartera_campana_reglas", "cartera_plantillas_email", column: "plantilla_email_id", on_delete: :nullify
+  add_foreign_key "cartera_campanas", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_campanas", "captain_assistants", on_delete: :nullify
+  add_foreign_key "cartera_campanas", "inboxes", column: "inbox_email_id", on_delete: :nullify
+  add_foreign_key "cartera_campanas", "inboxes", column: "inbox_whatsapp_id", on_delete: :nullify
+  add_foreign_key "cartera_canales_bloqueados", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_canales_bloqueados", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_casos", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_casos", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_casos", "users", column: "excluido_por_user_id", on_delete: :nullify
+  add_foreign_key "cartera_clientes", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_clientes", "contacts", on_delete: :nullify
+  add_foreign_key "cartera_corridas_sync", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_envios", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_envios", "cartera_campana_reglas", column: "campana_regla_id", on_delete: :nullify
+  add_foreign_key "cartera_envios", "cartera_campanas", column: "campana_id", on_delete: :cascade
+  add_foreign_key "cartera_envios", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_eventos_radian", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_eventos_radian", "cartera_facturas", column: "factura_id", on_delete: :cascade
+  add_foreign_key "cartera_facturas", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_facturas", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_notas_credito", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_notas_credito", "cartera_facturas", column: "factura_id", on_delete: :cascade
+  add_foreign_key "cartera_pagos", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_pagos", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_pesos_riesgo", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_plantillas_email", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_plantillas_whatsapp", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_snapshots_cliente", "accounts", on_delete: :cascade
+  add_foreign_key "cartera_snapshots_cliente", "cartera_clientes", column: "cliente_id", on_delete: :cascade
+  add_foreign_key "cartera_tarifas_mensajeria", "accounts", on_delete: :cascade
   add_foreign_key "inboxes", "portals"
   add_foreign_key "teams", "inboxes", on_delete: :cascade
   add_foreign_key "user_sessions", "users"

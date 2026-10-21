@@ -9,7 +9,9 @@ class Conversations::PermissionFilterService
   end
 
   def perform
-    return conversations if user_role == 'administrator'
+    if user_role == 'administrator'
+      return account_user.inbox_restricted? ? conversations.where(inbox_id: account_user.restricted_inbox_ids) : conversations
+    end
 
     accessible_conversations
   end

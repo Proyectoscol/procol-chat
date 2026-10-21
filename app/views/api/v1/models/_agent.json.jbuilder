@@ -13,6 +13,7 @@ json.role resource.role
 json.thumbnail resource.avatar_url
 json.teams(resource.teams.where(account_id: Current.account&.id).map { |team| { id: team.id, name: team.name } })
 json.custom_role_id resource.current_account_user&.custom_role_id if ChatwootApp.enterprise?
+json.restricted_inbox_ids resource.current_account_user&.restricted_inbox_ids
 if ChatwootApp.enterprise?
   sip = resource.sip_identities.find { |s| s.account_id == Current.account.id }
   json.sip_extension sip&.sip_extension

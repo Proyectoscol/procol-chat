@@ -1,6 +1,21 @@
 class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseController
+  AUDITORIA_INBOX_SCOPED_ACTIONS = %i[
+    auditoria_advisor auditoria_advisor_conversations auditoria_category
+    auditoria_category_timeseries auditoria_category_conversations auditoria_category_terms
+  ].freeze
+
   before_action :check_authorization
   before_action :prepare_builder_params, only: [:agent, :team, :inbox, :label, :channel]
+  # Sin filtro de inbox propio hoy (ver prepare_builder_params) -- bloqueadas
+  # para un admin restringido en vez de dejarlas sin filtrar (mismo criterio
+  # que el resto de reportes no soportados en esta fase).
+  before_action -> { render_unauthorized('You are not authorized to do this action') },
+                only: [:agent, :team, :inbox, :label, :channel], if: -> { Current.account_user.inbox_restricted? }
+  # Los builders de Auditoria ya aceptan inbox_id (filtro existente para
+  # cualquier admin) -- para un admin restringido se fuerza al servidor,
+  # nunca se confia en lo que mande el cliente.
+  before_action -> { params[:inbox_id] = Current.account_user.restricted_inbox_ids },
+                only: AUDITORIA_INBOX_SCOPED_ACTIONS, if: -> { Current.account_user.inbox_restricted? }
 
   def agent
     render_report_with(V2::Reports::AgentSummaryBuilder, type: :agent)
@@ -95,28 +110,31 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     }
   end
 
+  # inbox_id acepta escalar (dropdown normal) O arreglo (admin restringido a
+  # varios inboxes, forzado arriba) -- declarar ambas formas a proposito, o
+  # permit() descarta en silencio el valor si llega como el otro tipo.
   def auditoria_params
-    params.permit(:since, :until, :inbox_id, :same_day_only)
+    params.permit(:since, :until, :inbox_id, :same_day_only, inbox_id: [])
   end
 
   def auditoria_conversations_params
-    params.permit(:since, :until, :inbox_id, :user_id, :page)
+    params.permit(:since, :until, :inbox_id, :user_id, :page, inbox_id: [])
   end
 
   def auditoria_category_params
-    params.permit(:since, :until, :inbox_id, :count_mode)
+    params.permit(:since, :until, :inbox_id, :count_mode, inbox_id: [])
   end
 
   def auditoria_category_timeseries_params
-    params.permit(:since, :until, :inbox_id, :count_mode, category_ids: [])
+    params.permit(:since, :until, :inbox_id, :count_mode, category_ids: [], inbox_id: [])
   end
 
   def auditoria_category_conversations_params
-    params.permit(:since, :until, :category_id, :inbox_id, :page)
+    params.permit(:since, :until, :category_id, :inbox_id, :page, inbox_id: [])
   end
 
   def auditoria_category_terms_params
-    params.permit(:since, :until, :category_id, :inbox_id, :count_mode)
+    params.permit(:since, :until, :category_id, :inbox_id, :count_mode, inbox_id: [])
   end
 
   def render_report_with(builder_class, type: nil)

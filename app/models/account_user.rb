@@ -6,6 +6,7 @@
 #  active_at                :datetime
 #  auto_offline             :boolean          default(TRUE), not null
 #  availability             :integer          default("online"), not null
+#  restricted_inbox_ids     :integer          default([]), not null, is an Array
 #  role                     :integer          default("agent")
 #  created_at               :datetime         not null
 #  updated_at               :datetime         not null
@@ -20,6 +21,7 @@
 #  index_account_users_on_account_id                (account_id)
 #  index_account_users_on_agent_capacity_policy_id  (agent_capacity_policy_id)
 #  index_account_users_on_custom_role_id            (custom_role_id)
+#  index_account_users_on_restricted_inbox_ids      (restricted_inbox_ids) USING gin
 #  index_account_users_on_user_id                   (user_id)
 #  uniq_user_id_per_account_id                      (account_id,user_id) UNIQUE
 #
@@ -35,6 +37,11 @@ class AccountUser < ApplicationRecord
   enum availability: { online: 0, offline: 1, busy: 2 }
 
   accepts_nested_attributes_for :account
+
+  # Solo tiene sentido para administrator (un agent ya tiene su alcance via
+  # InboxMember) -- si el rol cambia a agent, se limpia para no dejar un
+  # estado inconsistente si mas tarde vuelve a ser administrator.
+  before_validation :clear_restricted_inbox_ids_unless_administrator
 
   after_create_commit :notify_creation, :create_notification_setting, :create_auditoria_assignment_rule
   after_destroy :notify_deletion, :remove_user_from_account
@@ -71,6 +78,18 @@ class AccountUser < ApplicationRecord
     administrator? ? ['administrator'] : ['agent']
   end
 
+  def inbox_restricted?
+    administrator? && restricted_inbox_ids.present?
+  end
+
+  def accessible_inboxes
+    inbox_restricted? ? account.inboxes.where(id: restricted_inbox_ids) : account.inboxes
+  end
+
+  def user_in_scope?(target_user)
+    !inbox_restricted? || InboxMember.exists?(user_id: target_user.id, inbox_id: restricted_inbox_ids)
+  end
+
   def push_event_data
     {
       id: id,
@@ -81,6 +100,10 @@ class AccountUser < ApplicationRecord
   end
 
   private
+
+  def clear_restricted_inbox_ids_unless_administrator
+    self.restricted_inbox_ids = [] unless administrator?
+  end
 
   # Si el agente ya tuvo una regla antes (por ejemplo, removido y
   # re-agregado a la cuenta) comparamos ignorando tildes/mayusculas/espacios

@@ -43,15 +43,15 @@ class InboxPolicy < ApplicationPolicy
   end
 
   def create?
-    @account_user.administrator?
+    manageable_inbox?
   end
 
   def update?
-    @account_user.administrator?
+    manageable_inbox?
   end
 
   def destroy?
-    @account_user.administrator?
+    manageable_inbox?
   end
 
   def set_agent_bot?
@@ -88,5 +88,11 @@ class InboxPolicy < ApplicationPolicy
 
   def set_inbound_calls?
     @account_user.administrator?
+  end
+
+  private
+
+  def manageable_inbox?
+    @account_user.administrator? && (!@account_user.inbox_restricted? || @account_user.restricted_inbox_ids.include?(record.id))
   end
 end

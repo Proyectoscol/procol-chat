@@ -19,7 +19,8 @@ class AgentBuilder
   # @param auto_offline [Boolean] the auto offline status of the user.
   # @param custom_role_id [Integer] the custom role to assign, if any.
   pattr_initialize [
-    :email, { name: '' }, :inviter, :account, { role: :agent }, { custom_role_id: nil }, { availability: :offline }, { auto_offline: false }
+    :email, { name: '' }, :inviter, :account, { role: :agent }, { custom_role_id: nil }, { availability: :offline },
+    { auto_offline: false }, { password: nil }, { restricted_inbox_ids: nil }
   ]
 
   # Creates a user and account user in a transaction.
@@ -52,12 +53,13 @@ class AgentBuilder
     return user if user
 
     @name = email.split('@').first if @name.blank?
-    temp_password = "1!aA#{SecureRandom.alphanumeric(12)}"
-    User.new(email: email, name: @name, password: temp_password, password_confirmation: temp_password).tap do |new_user|
+    assigned_password = password.presence || "1!aA#{SecureRandom.alphanumeric(12)}"
+    User.new(email: email, name: @name, password: assigned_password, password_confirmation: assigned_password).tap do |new_user|
       new_user.skip_confirmation_notification!
-      # Auditoria agents are internal proxies for a WhatsApp source, not real
-      # invited users - skip email confirmation so they're assignable right away.
-      new_user.skip_confirmation! if account.feature_enabled?('auditoria')
+      # Auditoria agents (proxies de WhatsApp) y usuarios con password asignado
+      # directo por el admin no tienen flujo de invitacion por correo que
+      # confirmar -- se asumen listos para loguear de inmediato.
+      new_user.skip_confirmation! if account.feature_enabled?('auditoria') || password.present?
       new_user.save!
       @new_user = true
     end
@@ -85,7 +87,8 @@ class AgentBuilder
       role: role,
       custom_role_id: custom_role_id,
       availability: availability,
-      auto_offline: auto_offline
+      auto_offline: auto_offline,
+      restricted_inbox_ids: restricted_inbox_ids
     }.compact))
   end
 end

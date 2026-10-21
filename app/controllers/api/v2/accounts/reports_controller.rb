@@ -1,8 +1,10 @@
+# rubocop:disable Metrics/ClassLength
 class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   include Api::V2::Accounts::ReportsHelper
   include Api::V2::Accounts::HeatmapHelper
 
   before_action :check_authorization
+  before_action :enforce_inbox_restriction!, if: -> { Current.account_user.inbox_restricted? }
 
   def index
     builder = V2::Reports::Conversations::ReportBuilder.new(Current.account, report_params)
@@ -104,6 +106,49 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
 
   def check_authorization
     authorize :report, :view?
+  end
+
+  # Un admin restringido a inbox(es) solo ve: cuenta (reinterpretada como su
+  # unico inbox permitido), inbox (el suyo) y agente (de su equipo) -- el
+  # resto de dimensiones/CSVs (label, team, drilldown, bot_metrics, etc.) y
+  # cualquier otra accion de este controller quedan bloqueadas en esta fase,
+  # nunca visibles sin filtrar. Ver plan: scoping de admins por inbox.
+  INBOX_SCOPED_REPORT_ACTIONS = %w[index summary bot_summary].freeze
+
+  def enforce_inbox_restriction!
+    return render_unauthorized('You are not authorized to do this action') unless INBOX_SCOPED_REPORT_ACTIONS.include?(action_name)
+
+    case params[:type].to_s
+    when 'account' then enforce_account_dimension_scope!
+    when 'inbox' then enforce_inbox_dimension_scope!
+    when 'agent' then enforce_agent_dimension_scope!
+    else render_unauthorized('You are not authorized to do this action')
+    end
+  end
+
+  # No existe hoy una forma limpia de agregar varios inboxes en un solo
+  # "scope" de Reports::DataSource (espera un unico registro con
+  # .conversations/.messages) -- con un solo inbox permitido se reescribe
+  # transparentemente a la dimension inbox ya soportada; con varios, se
+  # bloquea en vez de armar una agregacion fragil sobre codigo compartido.
+  def enforce_account_dimension_scope!
+    allowed_ids = Current.account_user.restricted_inbox_ids
+    return render_unauthorized('You are not authorized to do this action') unless allowed_ids.size == 1
+
+    params[:type] = 'inbox'
+    params[:id] = allowed_ids.first
+  end
+
+  def enforce_inbox_dimension_scope!
+    return if Current.account_user.restricted_inbox_ids.include?(params[:id].to_i)
+
+    render_unauthorized('You are not authorized to do this action')
+  end
+
+  def enforce_agent_dimension_scope!
+    return if Current.account_user.user_in_scope?(User.find(params[:id]))
+
+    render_unauthorized('You are not authorized to do this action')
   end
 
   def common_params
@@ -212,3 +257,4 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
     }
   end
 end
+# rubocop:enable Metrics/ClassLength

@@ -7,29 +7,24 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
   end
 
   def create
-    builder = AgentBuilder.new(
-      email: new_agent_params['email'],
-      name: new_agent_params['name'],
-      role: new_agent_params['role'],
-      custom_role_id: new_agent_params['custom_role_id'],
-      availability: new_agent_params['availability'],
-      auto_offline: new_agent_params['auto_offline'],
-      inviter: current_user,
-      account: Current.account
-    )
+    return render_unauthorized('You are not authorized to do this action') unless manageable_agent?(role: new_agent_params['role'])
 
-    @agent = builder.perform
+    @agent = new_agent_builder.perform
     @agent.update!(avatar: new_agent_params[:avatar]) if new_agent_params[:avatar].present?
   rescue AgentBuilder::LimitExceededError => e
     render_payment_required(e.message)
   end
 
   def update
+    return render_unauthorized('You are not authorized to do this action') unless manageable_agent?(target: @agent, role: agent_params['role'])
+
     @agent.update!(agent_params.slice(:name, :avatar).compact)
     @agent.current_account_user.update!(account_user_params)
   end
 
   def destroy
+    return render_unauthorized('You are not authorized to do this action') unless manageable_agent?(target: @agent)
+
     @agent.current_account_user.destroy!
     delete_user_record(@agent)
     head :ok
@@ -37,6 +32,21 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
 
   def avatar
     @agent.avatar.purge if @agent.avatar.attached?
+  end
+
+  # Reemplaza el flujo de "te mando un correo para restablecer la contrasena"
+  # (Auth.resetPassword, Devise estandar) para agentes sin email funcional:
+  # el admin la escribe directamente aqui, usando el setter nativo de Devise
+  # (corre password_has_required_content y re-encripta) en vez de un UPDATE
+  # SQL manual.
+  def reset_password
+    return render_unauthorized('You are not authorized to do this action') unless manageable_agent?(target: @agent)
+
+    @agent.password = params[:password]
+    @agent.password_confirmation = params[:password]
+    @agent.confirm unless @agent.confirmed?
+    @agent.save!
+    head :ok
   end
 
   def bulk_create
@@ -62,7 +72,7 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
   end
 
   def account_user_attributes
-    [:role, :availability, :auto_offline]
+    [:role, :availability, :auto_offline, :restricted_inbox_ids]
   end
 
   # An admin manually setting an agent's availability must stick even if the
@@ -77,6 +87,9 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
     params = agent_params.slice(*account_user_attributes).compact
     params[:auto_offline] = false if params.key?(:availability)
     params[:custom_role_id] = agent_params[:custom_role_id] if agent_params.key?(:custom_role_id)
+    # multipart no manda un arreglo vacio nativamente -- el placeholder en
+    # blanco (ver buildAgentFormData) sobrevive hasta aqui y se descarta.
+    params[:restricted_inbox_ids] = params[:restricted_inbox_ids].reject(&:blank?) if params.key?(:restricted_inbox_ids)
     params
   end
 
@@ -85,15 +98,51 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
   end
 
   def agent_params
-    params.require(:agent).permit(allowed_agent_params)
+    params.require(:agent).permit(allowed_agent_params, restricted_inbox_ids: [])
+  end
+
+  def new_agent_builder
+    AgentBuilder.new(
+      email: new_agent_params['email'],
+      name: new_agent_params['name'],
+      role: new_agent_params['role'],
+      custom_role_id: new_agent_params['custom_role_id'],
+      availability: new_agent_params['availability'],
+      auto_offline: new_agent_params['auto_offline'],
+      password: new_agent_params['password'],
+      restricted_inbox_ids: new_agent_params[:restricted_inbox_ids]&.reject(&:blank?),
+      inviter: current_user,
+      account: Current.account
+    )
   end
 
   def new_agent_params
-    params.require(:agent).permit(:email, :name, :role, :custom_role_id, :availability, :auto_offline, :avatar)
+    params.require(:agent).permit(
+      :email, :name, :role, :custom_role_id, :availability, :auto_offline, :avatar, :password, restricted_inbox_ids: []
+    )
+  end
+
+  # Un admin restringido a inbox(es) nunca puede crear/editar/eliminar otro
+  # administrator (restringido o no) -- solo agentes dentro de su scope. Sin
+  # restriccion, se comporta exactamente igual que antes (true siempre).
+  def manageable_agent?(target: nil, role: nil)
+    return true unless Current.account_user.inbox_restricted?
+    return false if role == 'administrator'
+    return true if target.nil?
+
+    target.current_account_user&.agent?
   end
 
   def agents
-    @agents ||= Current.account.users.order_by_full_name.includes(:account_users, :teams, { avatar_attachment: [:blob] })
+    @agents ||= begin
+      scope = Current.account.users.order_by_full_name.includes(:account_users, :teams, { avatar_attachment: [:blob] })
+      if Current.account_user.inbox_restricted?
+        member_ids = InboxMember.where(inbox_id: Current.account_user.restricted_inbox_ids).pluck(:user_id)
+        scope.where(id: member_ids + [Current.user.id])
+      else
+        scope
+      end
+    end
   end
 
   def bulk_create_agents(emails)
