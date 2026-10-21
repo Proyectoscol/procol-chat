@@ -101,7 +101,7 @@ const conversationPath = computed(() =>
 // misma tecnica de ?messageId= que ya usan otros enlaces a mensaje (ej.
 // ContactMedia.vue).
 const hasContentFilter = computed(() =>
-  appliedFilters.value.some(filter => filter.attributeKey === 'content')
+  appliedFilters.value.some(filter => filter.attributeKey === 'message_content')
 );
 const matchedMessageId = computed(() =>
   hasContentFilter.value
