@@ -6,12 +6,15 @@
 #
 # summary_date es parametro (default ayer, lo que usa el cron real) para que
 # rake auditoria:run_daily_advisor_rollup pueda pedir una fecha especifica
-# en una corrida manual -- ver lib/tasks/auditoria.rake.
+# en una corrida manual -- ver lib/tasks/auditoria.rake. account_id es
+# opcional por el mismo motivo que en DailyConversationAnalysisSchedulerJob
+# -- ver Api::V1::Accounts::Auditoria::DailyJobsController.
 class Auditoria::AdvisorDailyRollupSchedulerJob < ApplicationJob
   queue_as :scheduled_jobs
 
-  def perform(summary_date: Date.yesterday)
-    Account.find_each do |account|
+  def perform(summary_date: Date.yesterday, account_id: nil)
+    accounts = account_id ? Account.where(id: account_id) : Account.all
+    accounts.find_each do |account|
       next unless account.feature_enabled?('auditoria')
 
       agent_ids_with_activity(account, summary_date).each_with_index do |user_id, index|

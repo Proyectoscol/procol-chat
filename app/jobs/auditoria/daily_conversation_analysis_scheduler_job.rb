@@ -16,8 +16,13 @@ class Auditoria::DailyConversationAnalysisSchedulerJob < ApplicationJob
 
   RECENT_ACTIVITY_WINDOW = 3.days
 
-  def perform
-    Account.find_each do |account|
+  # account_id es opcional (default: todas las cuentas, lo que usa el cron
+  # real) para que un admin pueda disparar la corrida solo de SU cuenta
+  # desde Settings sin afectar otras cuentas con el feature activo -- ver
+  # Api::V1::Accounts::Auditoria::DailyJobsController.
+  def perform(account_id: nil)
+    accounts = account_id ? Account.where(id: account_id) : Account.all
+    accounts.find_each do |account|
       next unless account.feature_enabled?('auditoria')
 
       # Escalonado (perform_in con offset creciente) en vez de perform_later

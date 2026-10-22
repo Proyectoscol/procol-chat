@@ -213,6 +213,8 @@ Rails.application.routes.draw do
             get 'ai_usage/summary', to: 'ai_usage#summary'
             get 'ai_usage', to: 'ai_usage#index'
             patch 'ai_usage/settings', to: 'ai_usage#update_settings'
+            post 'daily_jobs/run_conversation_analysis', to: 'daily_jobs#run_conversation_analysis'
+            post 'daily_jobs/run_advisor_rollup', to: 'daily_jobs#run_advisor_rollup'
           end
 
           resources :search, only: [:index] do
