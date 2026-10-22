@@ -213,7 +213,8 @@ const resetPassword = async () => {
     newPassword.value = '';
     newPasswordConfirmation.value = '';
   } catch (error) {
-    useAlert(t('AGENT_MGMT.EDIT.PASSWORD_RESET.ERROR_MESSAGE'));
+    const message = error?.response?.data?.message;
+    useAlert(message || t('AGENT_MGMT.EDIT.PASSWORD_RESET.ERROR_MESSAGE'));
   } finally {
     isResettingPassword.value = false;
   }
@@ -341,6 +342,9 @@ const resetPassword = async () => {
             <span v-if="v$.newPassword.$error" class="message">
               {{ $t('AGENT_MGMT.ADD.FORM.PASSWORD.ERROR') }}
             </span>
+            <p v-else-if="newPassword" class="text-xs text-n-slate-11 mt-1">
+              {{ $t('AGENT_MGMT.EDIT.PASSWORD_RESET.HINT') }}
+            </p>
           </label>
           <label
             v-if="newPassword"

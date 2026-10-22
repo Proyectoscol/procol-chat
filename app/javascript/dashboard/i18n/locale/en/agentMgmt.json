@@ -48,6 +48,7 @@
         "PASSWORD": {
           "LABEL": "Password (optional)",
           "PLACEHOLDER": "Leave blank to invite by email instead",
+          "HINT": "At least 6 characters, with 1 uppercase, 1 lowercase, 1 number and 1 special character",
           "ERROR": "Password must be at least 6 characters"
         },
         "PASSWORD_CONFIRMATION": {
@@ -116,6 +117,7 @@
       "PASSWORD_RESET": {
         "LABEL": "Set a new password",
         "PLACEHOLDER": "Leave blank to keep the current password",
+        "HINT": "At least 6 characters, with 1 uppercase, 1 lowercase, 1 number and 1 special character",
         "SHOW_FIELD_BUTTON": "Set new password",
         "SUBMIT_BUTTON": "Save new password",
         "ADMIN_SUCCESS_MESSAGE": "Password updated successfully",

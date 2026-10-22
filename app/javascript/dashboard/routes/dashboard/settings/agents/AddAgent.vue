@@ -233,6 +233,9 @@ const addAgent = async () => {
           <span v-if="v$.password.$error" class="message">
             {{ $t('AGENT_MGMT.ADD.FORM.PASSWORD.ERROR') }}
           </span>
+          <p v-else-if="password" class="text-xs text-n-slate-11 mt-1">
+            {{ $t('AGENT_MGMT.ADD.FORM.PASSWORD.HINT') }}
+          </p>
         </label>
       </div>
 
