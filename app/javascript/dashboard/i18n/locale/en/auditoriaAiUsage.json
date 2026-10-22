@@ -11,7 +11,8 @@
     "FEATURE_SUMMARY": "{cost} · {tokens} tokens",
     "FEATURE": {
       "CONVERSATION_ANALYSIS": "Conversation analysis",
-      "AUDIO_TRANSCRIPTION": "Audio transcription"
+      "AUDIO_TRANSCRIPTION": "Audio transcription",
+      "ADVISOR_DAILY_ROLLUP": "Daily advisor rollup"
     },
     "TRIGGERED_BY": {
       "MANUAL": "Manual",
@@ -34,6 +35,14 @@
       "TOKENS": "Tokens (in/out)",
       "COST": "Cost",
       "TRIGGERED_BY": "Triggered by"
-    }
+    },
+    "MANUAL_RUN_HEADER": "Run the daily pipeline now",
+    "MANUAL_RUN_HINT": "Runs for this account only. Each step queues background work; spend appears here once it completes.",
+    "RUN_ANALYSIS_BUTTON": "Run conversation analysis now",
+    "RUN_ANALYSIS_SUCCESS": "Conversation analysis queued",
+    "RUN_ANALYSIS_ERROR": "Could not queue the conversation analysis. Try again.",
+    "RUN_ROLLUP_BUTTON": "Run advisor rollup now",
+    "RUN_ROLLUP_SUCCESS": "Advisor rollup queued",
+    "RUN_ROLLUP_ERROR": "Could not queue the advisor rollup. Try again."
   }
 }

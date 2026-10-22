@@ -7,8 +7,10 @@ import { es } from 'date-fns/locale';
 import { useAlert } from 'dashboard/composables';
 import { useCamelCase } from 'dashboard/composables/useTransformKeys';
 import { useAccount } from 'dashboard/composables/useAccount';
+import { useMapGetter } from 'dashboard/composables/store';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import AuditoriaAiUsageAPI from 'dashboard/api/auditoriaAiUsage';
+import AuditoriaDailyJobsAPI from 'dashboard/api/auditoriaDailyJobs';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
@@ -25,8 +27,23 @@ const MIN_COST_DEBOUNCE_MS = 400;
 const { t } = useI18n();
 const { accountId } = useAccount();
 
+// Correr el pipeline a mano gasta IA de toda la cuenta -- reservado al
+// administrator SIN restriccion (ver Auditoria::DailyJobsPolicy), aunque
+// esta pantalla la pueda VER cualquier agent/admin restringido. Se oculta
+// en vez de mostrar un boton que siempre devolveria 403.
+const currentRole = useMapGetter('getCurrentRole');
+const currentUserInboxRestricted = useMapGetter(
+  'getCurrentUserInboxRestricted'
+);
+const canRunDailyJobs = computed(
+  () =>
+    currentRole.value === 'administrator' && !currentUserInboxRestricted.value
+);
+
 const isLoading = ref(false);
 const isSaving = ref(false);
+const isRunningAnalysis = ref(false);
+const isRunningRollup = ref(false);
 const summary = ref(null);
 const logs = ref([]);
 const totalLogs = ref(0);
@@ -60,10 +77,16 @@ const formatTokensInOut = (promptTokens, completionTokens) =>
 const formatDate = unixTime =>
   format(fromUnixTime(unixTime), "d 'de' MMM yyyy, HH:mm", { locale: es });
 
-const featureLabel = feature =>
-  feature === 'conversation_analysis'
-    ? t('AUDITORIA_AI_USAGE.FEATURE.CONVERSATION_ANALYSIS')
-    : t('AUDITORIA_AI_USAGE.FEATURE.AUDIO_TRANSCRIPTION');
+// Cada rama llama a t() con una clave literal a proposito (regla
+// no-dynamic-keys) -- el mapa resultante ya tiene los textos traducidos,
+// featureLabel solo busca por el valor crudo del enum.
+const featureLabels = computed(() => ({
+  conversation_analysis: t('AUDITORIA_AI_USAGE.FEATURE.CONVERSATION_ANALYSIS'),
+  audio_transcription: t('AUDITORIA_AI_USAGE.FEATURE.AUDIO_TRANSCRIPTION'),
+  advisor_daily_rollup: t('AUDITORIA_AI_USAGE.FEATURE.ADVISOR_DAILY_ROLLUP'),
+}));
+
+const featureLabel = feature => featureLabels.value[feature] || feature;
 
 const logLink = log => {
   if (!log.conversationId) return null;
@@ -91,6 +114,9 @@ const conversationAnalysisTotals = computed(
 );
 const audioTranscriptionTotals = computed(
   () => summary.value?.byFeature?.audioTranscription || {}
+);
+const advisorDailyRollupTotals = computed(
+  () => summary.value?.byFeature?.advisorDailyRollup || {}
 );
 
 const fetchSummary = async () => {
@@ -163,6 +189,35 @@ const saveSettings = async () => {
   }
 };
 
+// Fire-and-forget a proposito: los jobs encolan trabajo en background (cola
+// "low" de Sidekiq), no hay un resultado unico que esperar aqui -- a
+// diferencia de "Analizar ahora" (una sola conversacion, con polling), esto
+// puede encolar decenas. El gasto aparece en esta misma pantalla cuando el
+// trabajo en background termine, no al instante.
+const runConversationAnalysisNow = async () => {
+  isRunningAnalysis.value = true;
+  try {
+    await AuditoriaDailyJobsAPI.runConversationAnalysis();
+    useAlert(t('AUDITORIA_AI_USAGE.RUN_ANALYSIS_SUCCESS'));
+  } catch (error) {
+    useAlert(t('AUDITORIA_AI_USAGE.RUN_ANALYSIS_ERROR'));
+  } finally {
+    isRunningAnalysis.value = false;
+  }
+};
+
+const runAdvisorRollupNow = async () => {
+  isRunningRollup.value = true;
+  try {
+    await AuditoriaDailyJobsAPI.runAdvisorRollup();
+    useAlert(t('AUDITORIA_AI_USAGE.RUN_ROLLUP_SUCCESS'));
+  } catch (error) {
+    useAlert(t('AUDITORIA_AI_USAGE.RUN_ROLLUP_ERROR'));
+  } finally {
+    isRunningRollup.value = false;
+  }
+};
+
 onMounted(fetchAll);
 </script>
 
@@ -215,7 +270,7 @@ onMounted(fetchAll);
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div
           class="flex flex-col gap-1 p-4 rounded-xl outline outline-1 outline-n-weak bg-n-solid-1"
         >
@@ -241,6 +296,49 @@ onMounted(fetchAll);
               tokens: formatTokens(audioTranscriptionTotals.totalTokens),
             })
           }}</span>
+        </div>
+        <div
+          class="flex flex-col gap-1 p-4 rounded-xl outline outline-1 outline-n-weak bg-n-solid-1"
+        >
+          <span class="text-sm font-medium text-n-slate-12">{{
+            t('AUDITORIA_AI_USAGE.FEATURE.ADVISOR_DAILY_ROLLUP')
+          }}</span>
+          <span class="text-sm text-n-slate-11">{{
+            t('AUDITORIA_AI_USAGE.FEATURE_SUMMARY', {
+              cost: formatCost(advisorDailyRollupTotals.costUsd),
+              tokens: formatTokens(advisorDailyRollupTotals.totalTokens),
+            })
+          }}</span>
+        </div>
+      </div>
+
+      <div
+        v-if="canRunDailyJobs"
+        class="flex flex-col gap-3 p-4 rounded-xl outline outline-1 outline-n-weak bg-n-solid-1"
+      >
+        <span class="text-sm font-medium text-n-slate-12">{{
+          t('AUDITORIA_AI_USAGE.MANUAL_RUN_HEADER')
+        }}</span>
+        <p class="text-xs text-n-slate-11">
+          {{ t('AUDITORIA_AI_USAGE.MANUAL_RUN_HINT') }}
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <Button
+            :label="t('AUDITORIA_AI_USAGE.RUN_ANALYSIS_BUTTON')"
+            size="sm"
+            faded
+            slate
+            :is-loading="isRunningAnalysis"
+            @click="runConversationAnalysisNow"
+          />
+          <Button
+            :label="t('AUDITORIA_AI_USAGE.RUN_ROLLUP_BUTTON')"
+            size="sm"
+            faded
+            slate
+            :is-loading="isRunningRollup"
+            @click="runAdvisorRollupNow"
+          />
         </div>
       </div>
 

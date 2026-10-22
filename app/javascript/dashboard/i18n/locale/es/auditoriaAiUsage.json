@@ -11,7 +11,8 @@
     "FEATURE_SUMMARY": "{cost} · {tokens} tokens",
     "FEATURE": {
       "CONVERSATION_ANALYSIS": "Análisis de conversación",
-      "AUDIO_TRANSCRIPTION": "Transcripción de audio"
+      "AUDIO_TRANSCRIPTION": "Transcripción de audio",
+      "ADVISOR_DAILY_ROLLUP": "Rollup diario por asesor"
     },
     "TRIGGERED_BY": {
       "MANUAL": "Manual",
@@ -34,6 +35,14 @@
       "TOKENS": "Tokens (entrada/salida)",
       "COST": "Costo",
       "TRIGGERED_BY": "Disparado por"
-    }
+    },
+    "MANUAL_RUN_HEADER": "Correr el pipeline diario ahora",
+    "MANUAL_RUN_HINT": "Corre solo para esta cuenta. Cada paso encola trabajo en segundo plano; el gasto aparece aquí cuando termine.",
+    "RUN_ANALYSIS_BUTTON": "Correr análisis de conversaciones ahora",
+    "RUN_ANALYSIS_SUCCESS": "Análisis de conversaciones encolado",
+    "RUN_ANALYSIS_ERROR": "No se pudo encolar el análisis de conversaciones. Inténtalo de nuevo.",
+    "RUN_ROLLUP_BUTTON": "Correr rollup por asesor ahora",
+    "RUN_ROLLUP_SUCCESS": "Rollup por asesor encolado",
+    "RUN_ROLLUP_ERROR": "No se pudo encolar el rollup por asesor. Inténtalo de nuevo."
   }
 }
