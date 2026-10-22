@@ -2,6 +2,7 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
   AUDITORIA_INBOX_SCOPED_ACTIONS = %i[
     auditoria_advisor auditoria_advisor_conversations auditoria_category
     auditoria_category_timeseries auditoria_category_conversations auditoria_category_terms
+    auditoria_advisor_daily_rollup
   ].freeze
 
   before_action :check_authorization
@@ -96,6 +97,16 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     render json: builder.build
   end
 
+  # Rollup diario por asesor (generado por Auditoria::AdvisorDailyRollupJob,
+  # ver config/schedule.yml) -- lee lo ya sintetizado, no corre IA en el
+  # request.
+  def auditoria_advisor_daily_rollup
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaAdvisorDailyRollupBuilder.new(account: Current.account, params: auditoria_advisor_daily_rollup_params)
+    render json: builder.build
+  end
+
   private
 
   def check_authorization
@@ -135,6 +146,10 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
 
   def auditoria_category_terms_params
     params.permit(:since, :until, :category_id, :inbox_id, :count_mode, inbox_id: [])
+  end
+
+  def auditoria_advisor_daily_rollup_params
+    params.permit(:since, :until, :inbox_id, :user_id, inbox_id: [], user_id: [])
   end
 
   def render_report_with(builder_class, type: nil)
