@@ -94,5 +94,19 @@ namespace :auditoria do
     puts "Campos creados: #{created}"
     puts "Total de campos en la cuenta: #{account.auditoria_ai_field_configs.count}"
   end
+
+  desc 'Corre manualmente la etapa 1 (analisis automatico de conversaciones recientes) del pipeline diario de Auditor IA'
+  task run_daily_conversation_analysis: :environment do
+    Auditoria::DailyConversationAnalysisSchedulerJob.perform_now
+    puts 'Encolados los analisis pendientes (cola "low" de Sidekiq) -- cada uno corre en background, esto no espera a que terminen.'
+  end
+
+  desc 'Corre manualmente la etapa 2 (rollup diario por asesor) del pipeline diario de Auditor IA (DATE=AAAA-MM-DD, por defecto ayer)'
+  task run_daily_advisor_rollup: :environment do
+    date_arg = ENV.fetch('DATE', nil)
+    summary_date = date_arg.presence ? Date.parse(date_arg) : Date.yesterday
+    Auditoria::AdvisorDailyRollupSchedulerJob.perform_now(summary_date: summary_date)
+    puts "Encolados los rollups de #{summary_date} (cola \"low\" de Sidekiq) -- cada uno corre en background, esto no espera a que terminen."
+  end
 end
 # rubocop:enable Metrics/BlockLength

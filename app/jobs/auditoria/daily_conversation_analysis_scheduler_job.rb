@@ -27,7 +27,7 @@ class Auditoria::DailyConversationAnalysisSchedulerJob < ApplicationJob
       # persista su log (TOCTOU). Un segundo de separacion es suficiente para
       # que casi siempre se procesen una a la vez sin montar un lock nuevo.
       candidate_conversation_ids(account).each_with_index do |conversation_id, index|
-        Auditoria::ConversationAnalyzerJob.perform_in(index.seconds, conversation_id, triggered_by: :batch)
+        Auditoria::ConversationAnalyzerJob.set(wait: index.seconds).perform_later(conversation_id, triggered_by: :batch)
       end
     end
   end
