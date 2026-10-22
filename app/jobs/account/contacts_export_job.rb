@@ -61,10 +61,14 @@ class Account::ContactsExportJob < ApplicationJob
       result = ::Contacts::FilterService.new(@account, @account_user, @params).perform
       result[:contacts]
     elsif @params[:label].present?
-      @account.contacts.resolved_contacts(use_crm_v2: @account.feature_enabled?('crm_v2')).tagged_with(@params[:label], any: true)
+      scoped_contacts(@account.contacts.resolved_contacts(use_crm_v2: @account.feature_enabled?('crm_v2')).tagged_with(@params[:label], any: true))
     else
-      @account.contacts.resolved_contacts(use_crm_v2: @account.feature_enabled?('crm_v2'))
+      scoped_contacts(@account.contacts.resolved_contacts(use_crm_v2: @account.feature_enabled?('crm_v2')))
     end
+  end
+
+  def scoped_contacts(contacts)
+    ::Contacts::PermissionFilterService.new(contacts, @account_user, @account).perform
   end
 
   def valid_headers(column_names)
