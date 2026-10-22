@@ -81,3 +81,19 @@ apply_agent_availability_schedule_job:
   cron: '*/5 * * * *'
   class: 'Agents::ApplyAvailabilityScheduleJob'
   queue: scheduled_jobs
+
+# executed daily at 0700 UTC (0200 America/Bogota, fixed UTC-5, no DST)
+# Auditoria stage 1: analyzes recently active conversations so stage 2 has
+# fresh per-conversation data to roll up by advisor
+auditoria_daily_conversation_analysis_job:
+  cron: '0 7 * * *'
+  class: 'Auditoria::DailyConversationAnalysisSchedulerJob'
+  queue: scheduled_jobs
+
+# executed daily at 1000 UTC (0500 America/Bogota), 3h after stage 1
+# Auditoria stage 2: rolls up each advisor's analyzed conversations into a
+# daily AI-synthesized summary
+auditoria_advisor_daily_rollup_job:
+  cron: '0 10 * * *'
+  class: 'Auditoria::AdvisorDailyRollupSchedulerJob'
+  queue: scheduled_jobs
