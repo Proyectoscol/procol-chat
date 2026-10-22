@@ -382,6 +382,7 @@
     "REPORTS_TEAM": "Team",
     "REPORTS_AUDITORIA_ADVISORS": "Advisors (Auditoría)",
     "REPORTS_AUDITORIA_CATEGORIES": "Categories (Auditoría)",
+    "REPORTS_AUDITORIA_DAILY_ROLLUP": "Daily Rollup (Auditoría)",
     "AGENT_ASSIGNMENT": "Agent Assignment",
     "SET_AVAILABILITY_TITLE": "Set yourself as",
     "SET_YOUR_AVAILABILITY": "Set your availability",

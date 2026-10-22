@@ -37,6 +37,17 @@ const typeMap = {
     apiMethod: 'getAuditoriaCategoryTimeseries',
     mutationKey: 'setAuditoriaCategoryTimeseries',
   },
+  // skipCamelCase: category_counts trae titulos de categoria en texto
+  // libre como KEYS del hash (ej. "Tiempo de decision") -- camelcaseKeys
+  // deep:true los mutila (los espacios se vuelven camelCase:
+  // "tiempoDeDecision"). El resto de tipos en este mapa solo tienen
+  // nombres de columna conocidos como keys, nunca texto libre del usuario.
+  auditoriaAdvisorDailyRollup: {
+    flagKey: 'isFetchingAuditoriaAdvisorDailyRollup',
+    apiMethod: 'getAuditoriaAdvisorDailyRollup',
+    mutationKey: 'setAuditoriaAdvisorDailyRollup',
+    skipCamelCase: true,
+  },
 };
 
 async function fetchSummaryReports(type, params, { commit }) {
@@ -47,7 +58,10 @@ async function fetchSummaryReports(type, params, { commit }) {
   try {
     commit('setUIFlags', { [config.flagKey]: true });
     const response = await SummaryReportsAPI[config.apiMethod](params);
-    commit(config.mutationKey, camelcaseKeys(response.data, { deep: true }));
+    const payload = config.skipCamelCase
+      ? response.data
+      : camelcaseKeys(response.data, { deep: true });
+    commit(config.mutationKey, payload);
   } catch (e) {
     error = e;
   } finally {
@@ -66,6 +80,7 @@ export const initialState = {
   auditoriaCategorySummaryReports: [],
   auditoriaCategorySummaryTotals: null,
   auditoriaCategoryTimeseries: [],
+  auditoriaAdvisorDailyRollupSummaries: [],
   uiFlags: {
     isFetchingInboxSummaryReports: false,
     isFetchingAgentSummaryReports: false,
@@ -74,6 +89,7 @@ export const initialState = {
     isFetchingAuditoriaAdvisorSummaryReports: false,
     isFetchingAuditoriaCategorySummaryReports: false,
     isFetchingAuditoriaCategoryTimeseries: false,
+    isFetchingAuditoriaAdvisorDailyRollup: false,
   },
 };
 
@@ -104,6 +120,9 @@ export const getters = {
   },
   getAuditoriaCategoryTimeseries(state) {
     return state.auditoriaCategoryTimeseries;
+  },
+  getAuditoriaAdvisorDailyRollupSummaries(state) {
+    return state.auditoriaAdvisorDailyRollupSummaries;
   },
   getUIFlags(state) {
     return state.uiFlags;
@@ -140,6 +159,12 @@ export const actions = {
       commit,
     });
   },
+
+  fetchAuditoriaAdvisorDailyRollup({ commit }, params) {
+    return fetchSummaryReports('auditoriaAdvisorDailyRollup', params, {
+      commit,
+    });
+  },
 };
 
 export const mutations = {
@@ -171,6 +196,29 @@ export const mutations = {
   // {date, count} listos para el chart.
   setAuditoriaCategoryTimeseries(state, data) {
     state.auditoriaCategoryTimeseries = data.series || [];
+  },
+  // El endpoint devuelve { summaries } (no una lista plana) -- cada fila ya
+  // es un resumen completo (asesor + dia + narrativa), sin totales
+  // agregados como el reporte de advisors en vivo. Transform manual (no
+  // camelcaseKeys, ver skipCamelCase arriba): category_counts se deja tal
+  // cual, solo se transforman los campos que SI son nombres de columna.
+  setAuditoriaAdvisorDailyRollup(state, data) {
+    state.auditoriaAdvisorDailyRollupSummaries = (data.summaries || []).map(
+      row => ({
+        userId: row.user_id,
+        summaryDate: row.summary_date,
+        conversationsCount: row.conversations_count,
+        categoryCounts: row.category_counts || {},
+        generatedAt: row.generated_at,
+        results: row.results
+          ? {
+              summary: row.results.summary,
+              toneOverview: row.results.tone_overview,
+              recommendation: row.results.recommendation,
+            }
+          : null,
+      })
+    );
   },
   setUIFlags(state, uiFlag) {
     state.uiFlags = { ...state.uiFlags, ...uiFlag };

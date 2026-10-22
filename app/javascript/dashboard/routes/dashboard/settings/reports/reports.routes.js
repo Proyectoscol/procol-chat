@@ -6,6 +6,7 @@ import Index from './Index.vue';
 
 import AgentReportsIndex from './AgentReportsIndex.vue';
 import AuditoriaAdvisorReportsIndex from './AuditoriaAdvisorReportsIndex.vue';
+import AuditoriaAdvisorDailyRollupReportsIndex from './AuditoriaAdvisorDailyRollupReportsIndex.vue';
 import AuditoriaCategoryReportsIndex from './AuditoriaCategoryReportsIndex.vue';
 import InboxReportsIndex from './InboxReportsIndex.vue';
 import TeamReportsIndex from './TeamReportsIndex.vue';
@@ -76,6 +77,12 @@ const revisedReportRoutes = [
     name: 'auditoria_category_reports_index',
     meta,
     component: AuditoriaCategoryReportsIndex,
+  },
+  {
+    path: 'auditoria_advisor_daily_rollup',
+    name: 'auditoria_advisor_daily_rollup_reports_index',
+    meta,
+    component: AuditoriaAdvisorDailyRollupReportsIndex,
   },
   {
     path: 'agents/:id',

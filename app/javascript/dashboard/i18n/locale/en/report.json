@@ -696,6 +696,21 @@
       }
     }
   },
+  "AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS": {
+    "HEADER": "Daily Rollup",
+    "DESCRIPTION": "How each advisor's day went, in plain language — synthesized daily from their conversation analyses. Generated automatically overnight, or on demand from Settings > Integrations > OpenAI > Usage.",
+    "ADVISOR_FILTER_LABEL": "Advisor",
+    "ADVISOR_FILTER_ALL": "All advisors",
+    "INBOX_FILTER_LABEL": "Inbox",
+    "INBOX_FILTER_ALL": "All inboxes",
+    "CONVERSATIONS_COUNT": "{count} conversation | {count} conversations",
+    "SUMMARY_LABEL": "Summary",
+    "TONE_LABEL": "Tone",
+    "RECOMMENDATION_LABEL": "Recommendation",
+    "CATEGORIES_LABEL": "Categories detected that day",
+    "EMPTY_TITLE": "No daily rollups yet",
+    "EMPTY_MESSAGE": "No summaries found for the selected filters. They're generated automatically overnight, or you can run them manually from Settings > Integrations > OpenAI > Usage."
+  },
   "AUDITORIA_CATEGORY_REPORTS": {
     "HEADER": "Categories Overview",
     "DESCRIPTION": "Track whether the team is mentioning what you asked them to — a promotion, a launch, a product line — and since when. Compare categories over time to bring concrete data to management.",

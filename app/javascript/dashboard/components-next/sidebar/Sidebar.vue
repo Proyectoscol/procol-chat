@@ -391,6 +391,12 @@ const newReportRoutes = () => [
     to: accountScopedRoute('auditoria_category_reports_index'),
     hidden: !isFeatureEnabledonAccount.value(accountId.value, 'auditoria'),
   },
+  {
+    name: 'Reports Auditoria Daily Rollup',
+    label: t('SIDEBAR.REPORTS_AUDITORIA_DAILY_ROLLUP'),
+    to: accountScopedRoute('auditoria_advisor_daily_rollup_reports_index'),
+    hidden: !isFeatureEnabledonAccount.value(accountId.value, 'auditoria'),
+  },
 ];
 
 const reportRoutes = computed(() => newReportRoutes());

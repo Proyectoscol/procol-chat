@@ -691,6 +691,21 @@
       }
     }
   },
+  "AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS": {
+    "HEADER": "Resumen diario",
+    "DESCRIPTION": "Cómo le fue a cada asesor en su día, en lenguaje sencillo — sintetizado diariamente a partir de los análisis de sus conversaciones. Se genera automáticamente cada noche, o bajo demanda desde Ajustes > Integraciones > OpenAI > Uso.",
+    "ADVISOR_FILTER_LABEL": "Asesor",
+    "ADVISOR_FILTER_ALL": "Todos los asesores",
+    "INBOX_FILTER_LABEL": "Bandeja de entrada",
+    "INBOX_FILTER_ALL": "Todos los inboxes",
+    "CONVERSATIONS_COUNT": "{count} conversación | {count} conversaciones",
+    "SUMMARY_LABEL": "Resumen",
+    "TONE_LABEL": "Tono",
+    "RECOMMENDATION_LABEL": "Recomendación",
+    "CATEGORIES_LABEL": "Categorías detectadas ese día",
+    "EMPTY_TITLE": "Aún no hay resúmenes diarios",
+    "EMPTY_MESSAGE": "No se encontraron resúmenes para los filtros seleccionados. Se generan automáticamente cada noche, o puedes correrlos manualmente desde Ajustes > Integraciones > OpenAI > Uso."
+  },
   "AUDITORIA_CATEGORY_REPORTS": {
     "HEADER": "Resumen de categorías",
     "DESCRIPTION": "Rastrea si el equipo está mencionando lo que se les pidió — una promoción, un lanzamiento, una línea de producto — y desde cuándo. Compara categorías en el tiempo para llevarle datos concretos a la gerencia.",
