@@ -61,7 +61,12 @@ class Auditoria::BacklogEstimateService
   def cost_projection(feature, unit_count)
     scope = account.auditoria_ai_usage_logs.where(feature: feature)
     sample_size = scope.count
-    avg_cost_usd = sample_size.positive? ? scope.average(:cost_usd).to_f.round(6) : nil
+    # .average puede devolver nil con sample_size > 0 si todos los logs de
+    # esa feature tienen cost_usd nil (modelo configurado sin tabla de
+    # precios en RubyLLM, ver Auditoria::AiCostCalculator) -- .to_f sin &.
+    # convertiria ese nil en 0.0 silenciosamente, mostrando "gratis" en vez
+    # de "costo desconocido".
+    avg_cost_usd = scope.average(:cost_usd)&.round(6)&.to_f
 
     {
       sample_size: sample_size,
