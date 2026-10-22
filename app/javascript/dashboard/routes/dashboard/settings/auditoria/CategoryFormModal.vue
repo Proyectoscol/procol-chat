@@ -7,6 +7,7 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import MultiInboxCheckboxSelector from 'dashboard/components/widgets/MultiInboxCheckboxSelector.vue';
 
 const props = defineProps({
   category: { type: Object, default: null }, // null => crear, objeto => editar
@@ -16,6 +17,7 @@ const emit = defineEmits(['close']);
 const { t } = useI18n();
 const store = useStore();
 const allCategories = useMapGetter('auditoriaCategories/getCategories');
+const inboxes = useMapGetter('inboxes/getInboxes');
 
 const isEditMode = computed(() => !!props.category);
 // Una categoria que YA tiene subcategorias es pura agrupacion visual (ver
@@ -29,6 +31,7 @@ const isActive = ref(true);
 const searchTerms = ref('');
 const instructions = ref('');
 const parentId = ref('');
+const selectedInboxIds = ref([]);
 const isSaving = ref(false);
 
 const matchTypeOptions = computed(() => [
@@ -56,8 +59,30 @@ const setFormValues = () => {
   searchTerms.value = props.category?.search_terms || '';
   instructions.value = props.category?.instructions || '';
   parentId.value = props.category?.parent_id ?? '';
+  selectedInboxIds.value = [...(props.category?.inbox_ids || [])];
 };
 watch(() => props.category, setFormValues, { immediate: true });
+
+// Pista de UX anticipada -- la validacion real (bloqueante) la hace el
+// backend (ver Auditoria::Category#inbox_ids_within_parent_scope). Si el
+// padre elegido esta restringido, esta categoria no puede quedar en "todos
+// los inboxes" ni incluir uno fuera de ese alcance.
+const selectedParentCategory = computed(() =>
+  allCategories.value.find(c => c.id === parentId.value)
+);
+const parentScopeHint = computed(() => {
+  const parent = selectedParentCategory.value;
+  if (!parent || !parent.inbox_ids?.length) return '';
+
+  const parentInboxNames = inboxes.value
+    .filter(inbox => parent.inbox_ids.includes(inbox.id))
+    .map(inbox => inbox.name)
+    .join(', ');
+  return t('AUDITORIA_CATEGORIES.FORM.PARENT_SCOPE_HINT', {
+    parentTitle: parent.title,
+    inboxNames: parentInboxNames,
+  });
+});
 
 const isFormInvalid = computed(() => !title.value.trim());
 
@@ -77,6 +102,7 @@ const submit = async () => {
     search_terms: searchTerms.value,
     instructions: instructions.value,
     parent_id: isGroupingCategory.value ? null : parentId.value || null,
+    inbox_ids: selectedInboxIds.value,
   };
   try {
     if (isEditMode.value) {
@@ -91,8 +117,13 @@ const submit = async () => {
     }
     onClose();
   } catch (error) {
+    // El backend (RequestExceptionHandler#render_record_invalid, compartido
+    // por todos los controllers) manda el mensaje de validacion bajo
+    // `message`, no `errors` -- sin esto, cualquier validacion real (esta
+    // jerarquia, el limite de categorias, el titulo duplicado...) caia
+    // siempre al mensaje generico de abajo.
     useAlert(
-      error?.response?.data?.errors?.[0] || t('AUDITORIA_CATEGORIES.FORM.ERROR')
+      error?.response?.data?.message || t('AUDITORIA_CATEGORIES.FORM.ERROR')
     );
   } finally {
     isSaving.value = false;
@@ -126,12 +157,24 @@ const submit = async () => {
         :label="t('AUDITORIA_CATEGORIES.FORM.TITLE_LABEL')"
         :placeholder="t('AUDITORIA_CATEGORIES.FORM.TITLE_PLACEHOLDER')"
       />
+      <MultiInboxCheckboxSelector
+        v-model="selectedInboxIds"
+        :inboxes="inboxes"
+        :label="t('AUDITORIA_CATEGORIES.FORM.INBOX_SCOPE_LABEL')"
+        :hint="t('AUDITORIA_CATEGORIES.FORM.INBOX_SCOPE_HINT')"
+      />
       <div v-if="!isGroupingCategory" class="flex flex-col gap-1">
         <label class="text-sm font-medium text-n-slate-12">
           {{ t('AUDITORIA_CATEGORIES.FORM.PARENT_LABEL') }}
         </label>
         <Select v-model="parentId" :options="parentOptions" />
       </div>
+      <p
+        v-if="!isGroupingCategory && parentScopeHint"
+        class="text-sm text-n-slate-11 rounded-lg bg-n-alpha-1 p-3"
+      >
+        {{ parentScopeHint }}
+      </p>
       <p
         v-if="isGroupingCategory"
         class="text-sm text-n-slate-11 rounded-lg bg-n-alpha-1 p-3"

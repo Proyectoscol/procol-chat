@@ -7,13 +7,15 @@ class Api::V1::Accounts::Auditoria::CategoriesController < Api::V1::Accounts::Ba
   # Sus columnas (name, slug, icon...) no calzan con las nuestras, el hash
   # envuelto quedaria vacio, y create/update explotarian con ParameterMissing
   # siempre. wrap_parameters explicito evita la adivinanza.
-  wrap_parameters :category, include: %i[title match_type is_active search_terms instructions parent_id]
+  wrap_parameters :category, include: %i[title match_type is_active search_terms instructions parent_id inbox_ids]
 
   before_action :check_authorization
   before_action :fetch_category, only: [:update, :destroy]
 
   def index
-    render json: Current.account.auditoria_categories.order(:title).map { |category| serialize(category) }
+    categories = Current.account.auditoria_categories.order(:title)
+    categories = categories.select { |category| visible_to_current_account_user?(category) } if Current.account_user.inbox_restricted?
+    render json: categories.map { |category| serialize(category) }
   end
 
   def create
@@ -25,7 +27,7 @@ class Api::V1::Accounts::Auditoria::CategoriesController < Api::V1::Accounts::Ba
 
   def update
     @category.assign_attributes(category_params)
-    needs_reconcile = @category.match_type_changed? || @category.search_terms_changed?
+    needs_reconcile = @category.match_type_changed? || @category.search_terms_changed? || @category.inbox_ids_changed?
     @category.save!
     reconcile_new_parent_mentions(@category)
     Auditoria::KeywordCategoryBackfillJob.perform_later(@category.id) if needs_reconcile
@@ -46,7 +48,12 @@ class Api::V1::Accounts::Auditoria::CategoriesController < Api::V1::Accounts::Ba
   end
 
   def category_params
-    params.require(:category).permit(:title, :match_type, :is_active, :search_terms, :instructions, :parent_id)
+    params.require(:category).permit(:title, :match_type, :is_active, :search_terms, :instructions, :parent_id,
+                                     :inbox_ids, inbox_ids: [])
+  end
+
+  def visible_to_current_account_user?(category)
+    Current.account_user.restricted_inbox_ids.any? { |inbox_id| category.applies_to_inbox?(inbox_id) }
   end
 
   # Si esta categoria acaba de convertirse en padre (gano su primera
@@ -80,7 +87,7 @@ class Api::V1::Accounts::Auditoria::CategoriesController < Api::V1::Accounts::Ba
     {
       id: category.id, title: category.title, match_type: category.match_type,
       is_active: category.is_active, search_terms: category.search_terms, instructions: category.instructions,
-      parent_id: category.parent_id, has_subcategories: category.subcategories?
+      parent_id: category.parent_id, has_subcategories: category.subcategories?, inbox_ids: category.inbox_ids
     }
   end
 

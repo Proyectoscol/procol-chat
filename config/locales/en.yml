@@ -488,6 +488,8 @@ en:
   auditoria:
     ai_spend_limit_reached: 'The configured monthly AI spend limit has been reached. Contact your administrator.'
     max_categories_reached: 'You can create a maximum of %{limit} categories per account.'
+    category_scope_narrower_than_parent_required: 'Must stay within the inbox scope of the parent category "%{parent_title}".'
+    category_scope_conflicts_with_subcategories: 'Cannot restrict this scope: subcategories "%{titles}" would fall outside of it.'
   public_portal:
     search:
       search_placeholder: Search for article by title or body...

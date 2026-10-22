@@ -15,6 +15,7 @@ class V2::Reports::AuditoriaCategoryTermsBuilder
 
   def terms_with_counts
     return [] unless category&.match_type_keyword?
+    return [] unless category_visible?(category)
 
     rows = category.search_terms_list.map do |term|
       { term: term, mentions_count: count_for_term(term) }
@@ -71,5 +72,13 @@ class V2::Reports::AuditoriaCategoryTermsBuilder
 
   def inbox_id
     params[:inbox_id]
+  end
+
+  # inbox_id llega forzado a los inboxes permitidos para un admin restringido
+  # -- mismo criterio que AuditoriaCategoryConversationsBuilder.
+  def category_visible?(category)
+    return true if inbox_id.blank?
+
+    Array(inbox_id).map(&:to_i).any? { |id| category.applies_to_inbox?(id) }
   end
 end

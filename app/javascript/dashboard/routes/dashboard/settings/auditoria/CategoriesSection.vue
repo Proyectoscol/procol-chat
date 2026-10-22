@@ -24,12 +24,39 @@ const deletingId = ref(null);
 
 const categories = useMapGetter('auditoriaCategories/getCategories');
 const uiFlags = useMapGetter('auditoriaCategories/getUIFlags');
+const inboxes = useMapGetter('inboxes/getInboxes');
 const canAddCategory = computed(() => categories.value.length < MAX_CATEGORIES);
+
+// Gestionar categorias (crear/editar/borrar) es exclusivo del administrador
+// SIN restriccion (ver Auditoria::CategoriesPolicy) -- un admin restringido
+// solo ve la lista ya filtrada por el backend, nunca los controles.
+const currentRole = useMapGetter('getCurrentRole');
+const currentUserInboxRestricted = useMapGetter(
+  'getCurrentUserInboxRestricted'
+);
+const canManageCategories = computed(
+  () =>
+    currentRole.value === 'administrator' && !currentUserInboxRestricted.value
+);
 
 const titleById = computed(() =>
   Object.fromEntries(categories.value.map(c => [c.id, c.title]))
 );
 const parentTitle = category => titleById.value[category.parent_id];
+
+const inboxNamesById = computed(() =>
+  Object.fromEntries(inboxes.value.map(inbox => [inbox.id, inbox.name]))
+);
+// inbox_ids vacio = aplica a todos los inboxes (ver Auditoria::Category
+// #scoped_to_all_inboxes?) -- sin badge, es el caso por defecto.
+const scopeLabel = category => {
+  if (!category.inbox_ids?.length) return '';
+
+  return category.inbox_ids
+    .map(id => inboxNamesById.value[id])
+    .filter(Boolean)
+    .join(', ');
+};
 
 // Una categoria con subcategorias es pura agrupacion -- su match_type
 // propio quedo sin efecto (ver Auditoria::Category.leaf), mostrarlo
@@ -78,12 +105,16 @@ const confirmDeletion = async () => {
   }
 };
 
-const tableHeaders = computed(() => [
-  t('AUDITORIA_CATEGORIES.TABLE.TITLE'),
-  t('AUDITORIA_CATEGORIES.TABLE.TYPE'),
-  t('AUDITORIA_CATEGORIES.TABLE.STATUS'),
-  t('AUDITORIA_CATEGORIES.TABLE.ACTIONS'),
-]);
+const tableHeaders = computed(() => {
+  const headers = [
+    t('AUDITORIA_CATEGORIES.TABLE.TITLE'),
+    t('AUDITORIA_CATEGORIES.TABLE.TYPE'),
+    t('AUDITORIA_CATEGORIES.TABLE.STATUS'),
+  ];
+  if (canManageCategories.value)
+    headers.push(t('AUDITORIA_CATEGORIES.TABLE.ACTIONS'));
+  return headers;
+});
 
 onMounted(() => store.dispatch('auditoriaCategories/get'));
 </script>
@@ -98,6 +129,7 @@ onMounted(() => store.dispatch('auditoriaCategories/get'));
         {{ t('AUDITORIA_CATEGORIES.DESCRIPTION') }}
       </p>
       <Button
+        v-if="canManageCategories"
         :label="t('AUDITORIA_CATEGORIES.ADD_BUTTON')"
         size="sm"
         :disabled="!canAddCategory"
@@ -129,6 +161,16 @@ onMounted(() => store.dispatch('auditoriaCategories/get'));
                     })
                   }}
                 </span>
+                <span
+                  v-if="scopeLabel(category)"
+                  class="text-xs text-n-slate-10"
+                >
+                  {{
+                    t('AUDITORIA_CATEGORIES.TABLE.INBOX_SCOPE', {
+                      inboxes: scopeLabel(category),
+                    })
+                  }}
+                </span>
               </div>
             </BaseTableCell>
             <BaseTableCell>
@@ -141,7 +183,7 @@ onMounted(() => store.dispatch('auditoriaCategories/get'));
                   : t('AUDITORIA_CATEGORIES.STATUS.INACTIVE')
               }}
             </BaseTableCell>
-            <BaseTableCell align="end">
+            <BaseTableCell v-if="canManageCategories" align="end">
               <div class="flex gap-2 justify-end">
                 <Button
                   icon="i-woot-edit-pen"

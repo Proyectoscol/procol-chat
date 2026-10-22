@@ -11,7 +11,8 @@
       "TYPE": "Type",
       "STATUS": "Status",
       "ACTIONS": "Actions",
-      "PARENT_OF": "Subcategory of {parent}"
+      "PARENT_OF": "Subcategory of {parent}",
+      "INBOX_SCOPE": "Scoped to: {inboxes}"
     },
     "MATCH_TYPE": {
       "KEYWORD": "Keyword",
@@ -36,6 +37,9 @@
       "PARENT_LABEL": "Parent category (optional)",
       "PARENT_NONE": "None (top-level category)",
       "GROUPING_NOTE": "This category groups subcategories — configure keywords or AI instructions on each subcategory instead.",
+      "INBOX_SCOPE_LABEL": "Track in which inboxes?",
+      "INBOX_SCOPE_HINT": "Leave all unchecked to apply this category to every inbox. A subcategory's scope must stay within its parent's scope.",
+      "PARENT_SCOPE_HINT": "The parent category \"{parentTitle}\" is scoped to: {inboxNames}. This subcategory's scope must stay within that.",
       "MATCH_TYPE_LABEL": "Matching type",
       "MATCH_TYPE": {
         "KEYWORD": "Keywords",

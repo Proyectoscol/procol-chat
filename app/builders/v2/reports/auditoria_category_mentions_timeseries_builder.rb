@@ -43,11 +43,22 @@ class V2::Reports::AuditoriaCategoryMentionsTimeseriesBuilder
   end
 
   def categories
-    @categories ||= category_ids.present? ? account.auditoria_categories.where(id: category_ids) : account.auditoria_categories
+    @categories ||= begin
+      scope = category_ids.present? ? account.auditoria_categories.where(id: category_ids) : account.auditoria_categories
+      scope.to_a.select { |category| category_visible?(category) }
+    end
+  end
+
+  # Mismo criterio que AuditoriaCategorySummaryBuilder: inbox_id llega forzado
+  # a los inboxes permitidos para un admin restringido.
+  def category_visible?(category)
+    return true if inbox_id.blank?
+
+    Array(inbox_id).map(&:to_i).any? { |id| category.applies_to_inbox?(id) }
   end
 
   def scoped_mentions
-    scope = Auditoria::CategoryMention.where(account_id: account.id, category_id: categories.ids, occurred_on: range)
+    scope = Auditoria::CategoryMention.where(account_id: account.id, category_id: categories.map(&:id), occurred_on: range)
     scope = scope.joins(:conversation).where(conversations: { inbox_id: inbox_id }) if inbox_id.present?
     scope
   end

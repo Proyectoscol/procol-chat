@@ -46,7 +46,17 @@ class V2::Reports::AuditoriaCategorySummaryBuilder
   end
 
   def all_categories
-    @all_categories ||= account.auditoria_categories.order(:title).to_a
+    @all_categories ||= account.auditoria_categories.order(:title).to_a.select { |category| category_visible?(category) }
+  end
+
+  # inbox_id llega forzado a los inboxes permitidos cuando el admin esta
+  # restringido (ver SummaryReportsController::AUDITORIA_INBOX_SCOPED_ACTIONS)
+  # -- una categoria sin scope para NINGUNO de esos inboxes no debe aparecer
+  # en la tabla, igual que ya no aparece en Settings > Categories.
+  def category_visible?(category)
+    return true if inbox_id.blank?
+
+    Array(inbox_id).map(&:to_i).any? { |id| category.applies_to_inbox?(id) }
   end
 
   def parent_ids

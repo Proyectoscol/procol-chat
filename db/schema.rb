@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_22_000000) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_23_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -337,8 +337,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_22_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "parent_id"
+    t.integer "inbox_ids", default: [], null: false, array: true
     t.index ["account_id", "title"], name: "index_auditoria_categories_on_account_and_title", unique: true
     t.index ["account_id"], name: "index_auditoria_categories_on_account_id"
+    t.index ["inbox_ids"], name: "index_auditoria_categories_on_inbox_ids", using: :gin
     t.index ["parent_id"], name: "index_auditoria_categories_on_parent_id"
   end
 

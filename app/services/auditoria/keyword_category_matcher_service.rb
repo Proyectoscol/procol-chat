@@ -29,7 +29,7 @@ class Auditoria::KeywordCategoryMatcherService
     terms = category.search_terms_list
     return if terms.blank?
 
-    rows = (text_rows(terms) + transcript_rows(terms)).uniq { |row| row[:message_id] }
+    rows = (text_rows(terms, category) + transcript_rows(terms, category)).uniq { |row| row[:message_id] }
     return if rows.blank?
 
     rows = rows.map { |row| row.merge(category_id: category.id, created_at: Time.current) }
@@ -41,11 +41,11 @@ class Auditoria::KeywordCategoryMatcherService
   end
 
   # Mensajes con texto propio -- SQL directo sobre content, como antes.
-  def text_rows(terms)
+  def text_rows(terms, category)
     patterns = terms.map { |term| "\\y#{Regexp.escape(term)}\\y" }
-    candidate_messages.where('content ~* ANY(ARRAY[?])', patterns)
-                      .pluck(:id, :account_id, :conversation_id, :created_at)
-                      .map { |id, account_id, conversation_id, created_at| row_for(id, account_id, conversation_id, created_at) }
+    candidate_messages(category).where('content ~* ANY(ARRAY[?])', patterns)
+                                .pluck(:id, :account_id, :conversation_id, :created_at)
+                                .map { |id, account_id, conversation_id, created_at| row_for(id, account_id, conversation_id, created_at) }
   end
 
   # Notas de voz: el texto transcrito vive en attachments.meta['transcribed_text']
@@ -56,9 +56,9 @@ class Auditoria::KeywordCategoryMatcherService
   # se puede filtrar por SQL puro contra el jsonb sin duplicar el regex en
   # dos dialectos distintos, asi que el universo ya viene acotado por SQL
   # (solo audio + sin texto propio) y el regex final corre en Ruby.
-  def transcript_rows(terms)
+  def transcript_rows(terms, category)
     regexes = terms.map { |term| /\b#{Regexp.escape(term)}\b/i }
-    audio_candidate_messages.filter_map { |message| transcript_row(message, regexes) }
+    audio_candidate_messages(category).filter_map { |message| transcript_row(message, regexes) }
   end
 
   def transcript_row(message, regexes)
@@ -73,8 +73,11 @@ class Auditoria::KeywordCategoryMatcherService
     message.attachments.find { |a| a.file_type == 'audio' }&.meta&.dig('transcribed_text')
   end
 
-  def candidate_messages
-    messages.where(message_type: [:incoming, :outgoing])
+  def candidate_messages(category)
+    scope = messages.where(message_type: [:incoming, :outgoing])
+    return scope if category.scoped_to_all_inboxes?
+
+    scope.joins(:conversation).where(conversations: { inbox_id: category.inbox_ids })
   end
 
   # Subquery (IN) en vez de joins(:attachments)+distinct a proposito:
@@ -84,10 +87,10 @@ class Auditoria::KeywordCategoryMatcherService
   # solo serviria para evitar filas repetidas si un mensaje tuviera mas de
   # un adjunto de audio; el IN evita el problema de raiz sin necesitar
   # distinct para nada.
-  def audio_candidate_messages
-    candidate_messages.where(content: [nil, ''])
-                      .where(id: Attachment.where(file_type: :audio).select(:message_id))
-                      .includes(:attachments)
+  def audio_candidate_messages(category)
+    candidate_messages(category).where(content: [nil, ''])
+                                .where(id: Attachment.where(file_type: :audio).select(:message_id))
+                                .includes(:attachments)
   end
 
   def row_for(message_id, account_id, conversation_id, created_at)

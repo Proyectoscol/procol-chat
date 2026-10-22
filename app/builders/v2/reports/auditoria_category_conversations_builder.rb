@@ -70,8 +70,23 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
   def category_ids_for_filter
     @category_ids_for_filter ||= begin
       category = account.auditoria_categories.find_by(id: category_id)
-      category.present? ? [category.id] + category.descendant_ids : [category_id]
+      if category.present? && !category_visible?(category)
+        []
+      elsif category.present?
+        [category.id] + category.descendant_ids
+      else
+        [category_id]
+      end
     end
+  end
+
+  # inbox_id llega forzado a los inboxes permitidos para un admin restringido
+  # -- pedir el drilldown de una categoria fuera de su scope no debe devolver
+  # conversaciones, igual que ya no aparece en Settings > Categories.
+  def category_visible?(category)
+    return true if inbox_id.blank?
+
+    Array(inbox_id).map(&:to_i).any? { |id| category.applies_to_inbox?(id) }
   end
 
   def category_id

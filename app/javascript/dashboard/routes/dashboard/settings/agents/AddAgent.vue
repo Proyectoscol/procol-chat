@@ -7,6 +7,7 @@ import { useVuelidate } from '@vuelidate/core';
 import { required, email, sameAs, minLength } from '@vuelidate/validators';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Avatar from 'next/avatar/Avatar.vue';
+import MultiInboxCheckboxSelector from 'dashboard/components/widgets/MultiInboxCheckboxSelector.vue';
 
 const emit = defineEmits(['close']);
 
@@ -257,28 +258,13 @@ const addAgent = async () => {
         </label>
       </div>
 
-      <div v-if="isAdministratorRole" class="w-full mb-4">
-        <span class="text-sm font-medium text-n-slate-12">
-          {{ $t('AGENT_MGMT.ADD.FORM.RESTRICTED_INBOXES.LABEL') }}
-        </span>
-        <p class="text-xs text-n-slate-11 mb-2">
-          {{ $t('AGENT_MGMT.ADD.FORM.RESTRICTED_INBOXES.HINT') }}
-        </p>
-        <div class="flex flex-col gap-1.5">
-          <label
-            v-for="inbox in inboxes"
-            :key="inbox.id"
-            class="flex items-center gap-2 cursor-pointer"
-          >
-            <input
-              v-model="selectedInboxIds"
-              type="checkbox"
-              :value="inbox.id"
-            />
-            <span class="text-sm text-n-slate-11">{{ inbox.name }}</span>
-          </label>
-        </div>
-      </div>
+      <MultiInboxCheckboxSelector
+        v-if="isAdministratorRole"
+        v-model="selectedInboxIds"
+        :inboxes="inboxes"
+        :label="$t('AGENT_MGMT.ADD.FORM.RESTRICTED_INBOXES.LABEL')"
+        :hint="$t('AGENT_MGMT.ADD.FORM.RESTRICTED_INBOXES.HINT')"
+      />
 
       <div class="flex flex-row justify-end w-full gap-2 px-0 py-2">
         <Button

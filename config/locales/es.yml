@@ -457,6 +457,8 @@ es:
   auditoria:
     ai_spend_limit_reached: 'Se alcanzó el límite mensual de gasto en IA configurado. Contacta a tu administrador.'
     max_categories_reached: 'Puedes crear un máximo de %{limit} categorías por cuenta.'
+    category_scope_narrower_than_parent_required: 'Debe quedar dentro del alcance de inbox de la categoría padre "%{parent_title}".'
+    category_scope_conflicts_with_subcategories: 'No se puede restringir este alcance: las subcategorías "%{titles}" quedarían fuera de él.'
   public_portal:
     search:
       search_placeholder: Buscar artículo por título o cuerpo...

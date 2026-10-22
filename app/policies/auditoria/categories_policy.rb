@@ -4,14 +4,24 @@ class Auditoria::CategoriesPolicy < ApplicationPolicy
   end
 
   def create?
-    @account_user.administrator?
+    unrestricted_administrator?
   end
 
   def update?
-    @account_user.administrator?
+    unrestricted_administrator?
   end
 
   def destroy?
-    @account_user.administrator?
+    unrestricted_administrator?
+  end
+
+  private
+
+  # Gestionar categorias (crear/editar/borrar) es una accion de configuracion
+  # de cuenta, no de inbox -- reservada al administrador SIN restriccion,
+  # igual que Auditoria::DailyJobsPolicy. Un admin restringido solo VE la
+  # lista ya filtrada por CategoriesController#index.
+  def unrestricted_administrator?
+    @account_user.administrator? && !@account_user.inbox_restricted?
   end
 end

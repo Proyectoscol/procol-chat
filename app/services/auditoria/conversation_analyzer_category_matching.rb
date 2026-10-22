@@ -50,7 +50,9 @@ module Auditoria::ConversationAnalyzerCategoryMatching
   # como opcion clasificable al LLM -- solo sus subcategorias, que son las
   # que de verdad tienen instructions (ver Auditoria::Category.leaf).
   def active_ai_categories
-    @active_ai_categories ||= account.auditoria_categories.active.leaf.where(match_type: :ai).order(:title)
+    @active_ai_categories ||= account.auditoria_categories.active.leaf.where(match_type: :ai)
+                                     .where("inbox_ids = '{}' OR inbox_ids @> ARRAY[?]::integer[]", conversation.inbox_id)
+                                     .order(:title)
   end
 
   # Diffea por (categoria, dia) -- no solo por categoria -- contra las filas

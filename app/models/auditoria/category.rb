@@ -3,6 +3,7 @@
 # Table name: auditoria_categories
 #
 #  id           :bigint           not null, primary key
+#  inbox_ids    :integer          default([]), not null, is an Array
 #  instructions :text
 #  is_active    :boolean          default(TRUE), not null
 #  match_type   :integer          default("keyword"), not null
@@ -17,6 +18,7 @@
 #
 #  index_auditoria_categories_on_account_and_title  (account_id,title) UNIQUE
 #  index_auditoria_categories_on_account_id         (account_id)
+#  index_auditoria_categories_on_inbox_ids          (inbox_ids) USING gin
 #  index_auditoria_categories_on_parent_id          (parent_id)
 #
 # Foreign Keys
@@ -41,6 +43,8 @@ class Auditoria::Category < ApplicationRecord
   validate :max_categories_per_account, on: :create
   validate :parent_cannot_be_self
   validate :parent_must_be_top_level
+  validate :inbox_ids_within_parent_scope
+  validate :inbox_ids_cover_subcategories
 
   scope :active, -> { where(is_active: true) }
   scope :top_level, -> { where(parent_id: nil) }
@@ -71,6 +75,14 @@ class Auditoria::Category < ApplicationRecord
     search_terms.to_s.split(/[\n,]/).map(&:strip).reject(&:blank?)
   end
 
+  def scoped_to_all_inboxes?
+    inbox_ids.blank?
+  end
+
+  def applies_to_inbox?(inbox_id)
+    scoped_to_all_inboxes? || inbox_ids.include?(inbox_id)
+  end
+
   private
 
   def max_categories_per_account
@@ -90,5 +102,27 @@ class Auditoria::Category < ApplicationRecord
   # top_level; esto cubre llamadas directas a la API.
   def parent_must_be_top_level
     errors.add(:parent, :invalid) if parent.present? && parent.parent_id.present?
+  end
+
+  # El scope de una subcategoria siempre debe ser subconjunto del scope de
+  # su padre -- si el padre esta restringido a ciertos inbox, la subcategoria
+  # no puede ser "todos los inboxes" ni incluir uno fuera de ese conjunto.
+  def inbox_ids_within_parent_scope
+    return if parent.blank? || parent.scoped_to_all_inboxes?
+    return if !scoped_to_all_inboxes? && (inbox_ids - parent.inbox_ids).empty?
+
+    errors.add(:inbox_ids, I18n.t('auditoria.category_scope_narrower_than_parent_required', parent_title: parent.title))
+  end
+
+  # El inverso: si una categoria ya tiene subcategorias, achicar su scope no
+  # puede dejar a alguna de ellas por fuera (ej. padre pasa de "todos" a solo
+  # inbox X mientras una subcategoria sigue en "todos" o en el inbox Y).
+  def inbox_ids_cover_subcategories
+    return if scoped_to_all_inboxes? || !persisted?
+
+    conflicting = subcategories.reject { |child| !child.scoped_to_all_inboxes? && (child.inbox_ids - inbox_ids).empty? }
+    return if conflicting.empty?
+
+    errors.add(:inbox_ids, I18n.t('auditoria.category_scope_conflicts_with_subcategories', titles: conflicting.map(&:title).join(', ')))
   end
 end

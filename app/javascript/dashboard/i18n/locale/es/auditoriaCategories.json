@@ -11,7 +11,8 @@
       "TYPE": "Tipo",
       "STATUS": "Estado",
       "ACTIONS": "Acciones",
-      "PARENT_OF": "Subcategoría de {parent}"
+      "PARENT_OF": "Subcategoría de {parent}",
+      "INBOX_SCOPE": "Alcance: {inboxes}"
     },
     "MATCH_TYPE": {
       "KEYWORD": "Palabras clave",
@@ -36,6 +37,9 @@
       "PARENT_LABEL": "Categoría padre (opcional)",
       "PARENT_NONE": "Ninguna (categoría de nivel superior)",
       "GROUPING_NOTE": "Esta categoría agrupa subcategorías — configura las palabras clave o instrucciones de IA en cada subcategoría.",
+      "INBOX_SCOPE_LABEL": "¿En qué inbox(es) se debe rastrear?",
+      "INBOX_SCOPE_HINT": "Déjalo sin marcar para aplicar esta categoría a todos los inboxes. El alcance de una subcategoría debe quedar dentro del alcance de su padre.",
+      "PARENT_SCOPE_HINT": "La categoría padre \"{parentTitle}\" tiene alcance: {inboxNames}. Esta subcategoría debe quedar dentro de ese alcance.",
       "MATCH_TYPE_LABEL": "Tipo de coincidencia",
       "MATCH_TYPE": {
         "KEYWORD": "Palabras clave",
