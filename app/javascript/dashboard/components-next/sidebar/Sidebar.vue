@@ -71,6 +71,9 @@ const currentUserId = useMapGetter('getCurrentUserID');
 const currentUserInboxRestricted = useMapGetter(
   'getCurrentUserInboxRestricted'
 );
+const currentUserRestrictedInboxIds = useMapGetter(
+  'getCurrentUserRestrictedInboxIds'
+);
 
 // A custom role's permissions fully replace the base agent/administrator
 // permissions (see Enterprise::AccountUser#permissions), so holding only
@@ -1024,9 +1027,20 @@ const rawMenuItems = computed(() => {
 
 // Custom env-configured sidebar entries (CUSTOM_MENU_ITEM_n_*), sorted by
 // their configured 1-based position so they splice in a stable order.
+// inboxIds vacio = visible para todos (igual que antes); si no esta vacio,
+// solo lo ve un admin sin restriccion o uno restringido a alguno de esos
+// inboxes -- mismo criterio que el resto del scoping por inbox.
+const isCustomMenuItemVisible = entry => {
+  if (!currentUserInboxRestricted.value) return true;
+  if (!entry.inboxIds?.length) return true;
+  return entry.inboxIds.some(id =>
+    currentUserRestrictedInboxIds.value.includes(id)
+  );
+};
+
 const customMenuItemsToInsert = computed(() =>
   customMenuItems
-    .filter(entry => entry.label && entry.url)
+    .filter(entry => entry.label && entry.url && isCustomMenuItemVisible(entry))
     .slice()
     .sort((a, b) => a.position - b.position)
     .map((entry, index) => ({

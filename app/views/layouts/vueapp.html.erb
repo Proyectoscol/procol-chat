@@ -64,7 +64,11 @@
           url = ENV["CUSTOM_MENU_ITEM_#{i}_URL"]
           next unless label.present? && url.present?
 
-          { label: label, url: url, position: ENV.fetch("CUSTOM_MENU_ITEM_#{i}_POSITION", '999').to_i }
+          # inboxIds vacio (sin la variable) = visible para todos, igual que
+          # hoy -- solo lo filtra el frontend para un admin restringido a
+          # inbox(es) que no incluyan ninguno de los listados aqui.
+          inbox_ids = ENV.fetch("CUSTOM_MENU_ITEM_#{i}_INBOX_IDS", '').split(',').map(&:strip).filter_map { |id| id.to_i if id.match?(/\A\d+\z/) }
+          { label: label, url: url, position: ENV.fetch("CUSTOM_MENU_ITEM_#{i}_POSITION", '999').to_i, inboxIds: inbox_ids }
         }.to_json.html_safe %>
       }
       window.globalConfig = <%= raw @global_config.to_json %>

@@ -50,7 +50,10 @@ export function useConfig() {
 
   /**
    * Custom external sidebar entries for this deployment (CUSTOM_MENU_ITEM_n_*).
-   * @type {Array<{label: string, url: string, position: number}>}
+   * inboxIds is empty when CUSTOM_MENU_ITEM_n_INBOX_IDS is unset (visible to
+   * everyone); Sidebar.vue filters it against the current user's
+   * restricted_inbox_ids when they're an inbox-restricted administrator.
+   * @type {Array<{label: string, url: string, position: number, inboxIds: number[]}>}
    */
   const customMenuItems = config.customMenuItems || [];
 
