@@ -43,6 +43,24 @@
     "RUN_ANALYSIS_ERROR": "Could not queue the conversation analysis. Try again.",
     "RUN_ROLLUP_BUTTON": "Run advisor rollup now",
     "RUN_ROLLUP_SUCCESS": "Advisor rollup queued",
-    "RUN_ROLLUP_ERROR": "Could not queue the advisor rollup. Try again."
+    "RUN_ROLLUP_ERROR": "Could not queue the advisor rollup. Try again.",
+    "RUN_BACKLOG_BUTTON": "Run full backlog",
+    "RUN_BACKLOG_SUCCESS": "Full backlog run queued",
+    "RUN_BACKLOG_ERROR": "Could not queue the backlog run. Try again.",
+    "BACKLOG_ESTIMATE_ERROR": "Could not load the backlog estimate. Try again.",
+    "BACKLOG_MODAL_TITLE": "Backlog run estimate",
+    "BACKLOG_MODAL_EMPTY": "Nothing pending — every conversation is already analyzed.",
+    "BACKLOG_MODAL_CANDIDATES": "{count} conversations never analyzed or with messages newer than their last analysis.",
+    "BACKLOG_MODAL_PENDING_AUDIO": "{count} of those have audio messages still pending transcription.",
+    "BACKLOG_MODAL_ESTIMATED_TOKENS": "~{tokens} estimated input tokens (text only, rough character-based estimate).",
+    "BACKLOG_MODAL_TEXT_COST_WITH_HISTORY": "Text analysis: based on your historical average of {avg} per conversation (sample size: {n}) → ~{estimated}",
+    "BACKLOG_MODAL_TEXT_COST_NO_HISTORY": "Text analysis: no historical data yet for this account — real cost unknown until the first run.",
+    "BACKLOG_MODAL_AUDIO_COST_WITH_HISTORY": "Audio transcription: based on your historical average of {avg} per message (sample size: {n}) → ~{estimated}",
+    "BACKLOG_MODAL_AUDIO_COST_NO_HISTORY": "Audio transcription: no historical data yet for this account — real cost unknown until the first run.",
+    "BACKLOG_MODAL_TOTAL": "Estimated total: ~{total}",
+    "BACKLOG_MODAL_TOTAL_UNKNOWN": "Estimated total: unknown (no historical data yet for either feature)",
+    "BACKLOG_MODAL_DISCLAIMER": "This is an estimate, not an exact cost — it projects your account's own historical average. The configured monthly limit still applies and the run stops early if it's reached.",
+    "BACKLOG_MODAL_CANCEL": "Cancel",
+    "BACKLOG_MODAL_CONFIRM": "Run now"
   }
 }

@@ -16,6 +16,15 @@ class Api::V1::Accounts::Auditoria::DailyJobsController < Api::V1::Accounts::Bas
     head :ok
   end
 
+  def backlog_estimate
+    render json: Auditoria::BacklogEstimateService.new(account: Current.account).call
+  end
+
+  def run_full_backlog
+    Auditoria::DailyConversationAnalysisSchedulerJob.perform_later(account_id: Current.account.id, unbounded: true)
+    head :ok
+  end
+
   private
 
   def summary_date

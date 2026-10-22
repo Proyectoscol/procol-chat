@@ -20,7 +20,15 @@ class Auditoria::DailyConversationAnalysisSchedulerJob < ApplicationJob
   # real) para que un admin pueda disparar la corrida solo de SU cuenta
   # desde Settings sin afectar otras cuentas con el feature activo -- ver
   # Api::V1::Accounts::Auditoria::DailyJobsController.
-  def perform(account_id: nil)
+  #
+  # unbounded: true quita el limite de RECENT_ACTIVITY_WINDOW (usa
+  # Auditoria::BacklogCandidateFinder en su lugar) -- SOLO para un catch-up
+  # manual puntual de una cuenta especifica (ver #run_full_backlog en el
+  # controller), nunca para el cron real. El guard de abajo evita que
+  # unbounded combinado con "todas las cuentas" se cuele por error algun dia.
+  def perform(account_id: nil, unbounded: false)
+    return if unbounded && account_id.blank?
+
     accounts = account_id ? Account.where(id: account_id) : Account.all
     accounts.find_each do |account|
       next unless account.feature_enabled?('auditoria')
@@ -31,7 +39,7 @@ class Auditoria::DailyConversationAnalysisSchedulerJob < ApplicationJob
       # el chequeo de limite mensual a varias antes de que cualquiera
       # persista su log (TOCTOU). Un segundo de separacion es suficiente para
       # que casi siempre se procesen una a la vez sin montar un lock nuevo.
-      candidate_conversation_ids(account).each_with_index do |conversation_id, index|
+      candidate_conversation_ids(account, unbounded: unbounded).each_with_index do |conversation_id, index|
         Auditoria::ConversationAnalyzerJob.set(wait: index.seconds).perform_later(conversation_id, triggered_by: :batch)
       end
     end
@@ -39,7 +47,9 @@ class Auditoria::DailyConversationAnalysisSchedulerJob < ApplicationJob
 
   private
 
-  def candidate_conversation_ids(account)
+  def candidate_conversation_ids(account, unbounded:)
+    return Auditoria::BacklogCandidateFinder.conversation_ids(account) if unbounded
+
     account.conversations
            .joins(:messages)
            .where(messages: { message_type: [:incoming, :outgoing], created_at: RECENT_ACTIVITY_WINDOW.ago.. })

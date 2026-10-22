@@ -20,6 +20,7 @@ import {
   BaseTableRow,
   BaseTableCell,
 } from 'dashboard/components-next/table';
+import BacklogEstimateModal from './BacklogEstimateModal.vue';
 
 const LOGS_PER_PAGE = 25;
 const MIN_COST_DEBOUNCE_MS = 400;
@@ -44,6 +45,10 @@ const isLoading = ref(false);
 const isSaving = ref(false);
 const isRunningAnalysis = ref(false);
 const isRunningRollup = ref(false);
+const showBacklogModal = ref(false);
+const isLoadingBacklogEstimate = ref(false);
+const isRunningBacklog = ref(false);
+const backlogEstimate = ref(null);
 const summary = ref(null);
 const logs = ref([]);
 const totalLogs = ref(0);
@@ -218,6 +223,41 @@ const runAdvisorRollupNow = async () => {
   }
 };
 
+// El estimado se pide primero y se muestra en un modal -- el usuario
+// aprueba explicitamente el gasto proyectado antes de que esto encole
+// nada (a diferencia de los 2 botones de arriba, que corren directo).
+const openBacklogModal = async () => {
+  showBacklogModal.value = true;
+  isLoadingBacklogEstimate.value = true;
+  try {
+    const response = await AuditoriaDailyJobsAPI.getBacklogEstimate();
+    backlogEstimate.value = useCamelCase(response.data, { deep: true });
+  } catch (error) {
+    useAlert(t('AUDITORIA_AI_USAGE.BACKLOG_ESTIMATE_ERROR'));
+    showBacklogModal.value = false;
+  } finally {
+    isLoadingBacklogEstimate.value = false;
+  }
+};
+
+const closeBacklogModal = () => {
+  showBacklogModal.value = false;
+  backlogEstimate.value = null;
+};
+
+const confirmRunBacklog = async () => {
+  isRunningBacklog.value = true;
+  try {
+    await AuditoriaDailyJobsAPI.runFullBacklog();
+    useAlert(t('AUDITORIA_AI_USAGE.RUN_BACKLOG_SUCCESS'));
+    closeBacklogModal();
+  } catch (error) {
+    useAlert(t('AUDITORIA_AI_USAGE.RUN_BACKLOG_ERROR'));
+  } finally {
+    isRunningBacklog.value = false;
+  }
+};
+
 onMounted(fetchAll);
 </script>
 
@@ -338,6 +378,13 @@ onMounted(fetchAll);
             slate
             :is-loading="isRunningRollup"
             @click="runAdvisorRollupNow"
+          />
+          <Button
+            :label="t('AUDITORIA_AI_USAGE.RUN_BACKLOG_BUTTON')"
+            size="sm"
+            faded
+            slate
+            @click="openBacklogModal"
           />
         </div>
       </div>
@@ -461,5 +508,15 @@ onMounted(fetchAll);
         />
       </div>
     </template>
+
+    <woot-modal v-model:show="showBacklogModal" :on-close="closeBacklogModal">
+      <BacklogEstimateModal
+        :estimate="backlogEstimate"
+        :is-loading-estimate="isLoadingBacklogEstimate"
+        :is-running="isRunningBacklog"
+        @confirm="confirmRunBacklog"
+        @close="closeBacklogModal"
+      />
+    </woot-modal>
   </div>
 </template>

@@ -15,6 +15,14 @@ class AuditoriaDailyJobsAPI extends ApiClient {
       summary_date: summaryDate || undefined,
     });
   }
+
+  getBacklogEstimate() {
+    return axios.get(`${this.url}/backlog_estimate`);
+  }
+
+  runFullBacklog() {
+    return axios.post(`${this.url}/run_full_backlog`);
+  }
 }
 
 export default new AuditoriaDailyJobsAPI();

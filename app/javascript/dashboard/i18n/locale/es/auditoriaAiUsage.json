@@ -43,6 +43,24 @@
     "RUN_ANALYSIS_ERROR": "No se pudo encolar el análisis de conversaciones. Inténtalo de nuevo.",
     "RUN_ROLLUP_BUTTON": "Correr rollup por asesor ahora",
     "RUN_ROLLUP_SUCCESS": "Rollup por asesor encolado",
-    "RUN_ROLLUP_ERROR": "No se pudo encolar el rollup por asesor. Inténtalo de nuevo."
+    "RUN_ROLLUP_ERROR": "No se pudo encolar el rollup por asesor. Inténtalo de nuevo.",
+    "RUN_BACKLOG_BUTTON": "Correr todo el backlog pendiente",
+    "RUN_BACKLOG_SUCCESS": "Corrida de backlog completo encolada",
+    "RUN_BACKLOG_ERROR": "No se pudo encolar la corrida de backlog. Inténtalo de nuevo.",
+    "BACKLOG_ESTIMATE_ERROR": "No se pudo cargar el estimado del backlog. Inténtalo de nuevo.",
+    "BACKLOG_MODAL_TITLE": "Estimado de la corrida de backlog",
+    "BACKLOG_MODAL_EMPTY": "No hay nada pendiente — todas las conversaciones ya están analizadas.",
+    "BACKLOG_MODAL_CANDIDATES": "{count} conversaciones nunca analizadas o con mensajes más nuevos que su último análisis.",
+    "BACKLOG_MODAL_PENDING_AUDIO": "{count} de esas tienen mensajes de audio sin transcribir todavía.",
+    "BACKLOG_MODAL_ESTIMATED_TOKENS": "~{tokens} tokens de entrada estimados (solo texto, estimado por caracteres, no exacto).",
+    "BACKLOG_MODAL_TEXT_COST_WITH_HISTORY": "Análisis de texto: basado en tu promedio histórico de {avg} por conversación (tamaño de muestra: {n}) → ~{estimated}",
+    "BACKLOG_MODAL_TEXT_COST_NO_HISTORY": "Análisis de texto: aún no hay datos históricos para esta cuenta — el costo real se sabrá hasta la primera corrida.",
+    "BACKLOG_MODAL_AUDIO_COST_WITH_HISTORY": "Transcripción de audio: basado en tu promedio histórico de {avg} por mensaje (tamaño de muestra: {n}) → ~{estimated}",
+    "BACKLOG_MODAL_AUDIO_COST_NO_HISTORY": "Transcripción de audio: aún no hay datos históricos para esta cuenta — el costo real se sabrá hasta la primera corrida.",
+    "BACKLOG_MODAL_TOTAL": "Total estimado: ~{total}",
+    "BACKLOG_MODAL_TOTAL_UNKNOWN": "Total estimado: desconocido (sin datos históricos aún para ninguna de las 2)",
+    "BACKLOG_MODAL_DISCLAIMER": "Esto es un estimado, no un costo exacto — proyecta el promedio histórico real de tu cuenta. El límite mensual configurado sigue aplicando y la corrida se detiene si lo alcanza.",
+    "BACKLOG_MODAL_CANCEL": "Cancelar",
+    "BACKLOG_MODAL_CONFIRM": "Correr ahora"
   }
 }
