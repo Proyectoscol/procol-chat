@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_21_000000) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_22_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -280,6 +280,21 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_21_000000) do
     t.jsonb "meta", default: {}
     t.index ["account_id"], name: "index_attachments_on_account_id"
     t.index ["message_id"], name: "index_attachments_on_message_id"
+  end
+
+  create_table "auditoria_advisor_daily_summaries", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.date "summary_date", null: false
+    t.integer "conversations_count", default: 0, null: false
+    t.jsonb "category_counts", default: {}, null: false
+    t.jsonb "results", default: {}, null: false
+    t.datetime "generated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "user_id", "summary_date"], name: "idx_auditoria_advisor_summary_unique", unique: true
+    t.index ["account_id"], name: "index_auditoria_advisor_daily_summaries_on_account_id"
+    t.index ["user_id"], name: "index_auditoria_advisor_daily_summaries_on_user_id"
   end
 
   create_table "auditoria_ai_field_configs", force: :cascade do |t|
@@ -2050,6 +2065,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_21_000000) do
   add_foreign_key "agent_availability_schedules", "accounts", on_delete: :cascade
   add_foreign_key "agent_availability_schedules", "users", column: "created_by_id", on_delete: :nullify
   add_foreign_key "agent_availability_schedules", "users", on_delete: :cascade
+  add_foreign_key "auditoria_advisor_daily_summaries", "accounts"
+  add_foreign_key "auditoria_advisor_daily_summaries", "users"
   add_foreign_key "auditoria_ai_field_configs", "accounts", on_delete: :cascade
   add_foreign_key "auditoria_ai_usage_logs", "accounts", on_delete: :cascade
   add_foreign_key "auditoria_ai_usage_logs", "conversations", on_delete: :nullify

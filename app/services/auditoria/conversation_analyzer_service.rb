@@ -10,7 +10,7 @@
 class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
   include Auditoria::ConversationAnalyzerCategoryMatching
 
-  pattr_initialize [:account!, :conversation_display_id!]
+  pattr_initialize [:account!, :conversation_display_id!, { triggered_by: :manual }]
 
   def perform
     return skipped_result unless needs_analysis?
@@ -67,7 +67,7 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
     pending_audio_messages.each do |message|
       next unless Auditoria::AiUsageLogger.within_limit?(account)
 
-      result = Auditoria::AudioTranscriptionService.new(account: account, message: message).perform
+      result = Auditoria::AudioTranscriptionService.new(account: account, message: message, triggered_by: triggered_by).perform
       next unless result[:error]
 
       Rails.logger.error(
@@ -100,7 +100,7 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
     )
     Auditoria::AiUsageLogger.log!(
       account: account, conversation: conversation, feature: :conversation_analysis,
-      model: response[:model], usage: response[:usage], cost_usd: cost_usd, triggered_by: :manual
+      model: response[:model], usage: response[:usage], cost_usd: cost_usd, triggered_by: triggered_by
     )
   end
 

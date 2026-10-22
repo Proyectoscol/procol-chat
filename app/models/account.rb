@@ -23,6 +23,7 @@
 #  index_accounts_on_status  (status)
 #
 
+# rubocop:disable Metrics/ClassLength
 class Account < ApplicationRecord
   # used for multi-flag bitset columns
   include FlagShihTzu
@@ -74,6 +75,7 @@ class Account < ApplicationRecord
   has_many :auditoria_ai_usage_logs, dependent: :destroy_async, class_name: 'Auditoria::AiUsageLog'
   has_many :auditoria_categories, dependent: :destroy_async, class_name: 'Auditoria::Category'
   has_many :auditoria_category_mentions, dependent: :destroy_async, class_name: 'Auditoria::CategoryMention'
+  has_many :auditoria_advisor_daily_summaries, dependent: :destroy_async, class_name: 'Auditoria::AdvisorDailySummary'
   has_many :automation_rules, dependent: :destroy_async
   has_many :automation_rule_pending_executions, dependent: :delete_all
   has_many :macros, dependent: :destroy_async
@@ -243,6 +245,7 @@ class Account < ApplicationRecord
     ActiveRecord::Base.connection.exec_query("drop sequence IF EXISTS conv_dpid_seq_#{id}")
   end
 end
+# rubocop:enable Metrics/ClassLength
 
 Account.prepend_mod_with('Account')
 Account.prepend_mod_with('Account::PlanUsageAndLimits')

@@ -10,7 +10,7 @@
 # key (cuenta propia via hook de OpenAI) -- no usa make_api_call (es para
 # chat, no transcripcion), llama a RubyLLM.transcribe directo.
 class Auditoria::AudioTranscriptionService < Captain::BaseTaskService
-  pattr_initialize [:account!, :message!]
+  pattr_initialize [:account!, :message!, { triggered_by: :manual }]
 
   DEFAULT_MODEL = 'gpt-4o-mini-transcribe'.freeze
 
@@ -97,7 +97,7 @@ class Auditoria::AudioTranscriptionService < Captain::BaseTaskService
     )
     Auditoria::AiUsageLogger.log!(
       account: account, conversation: message.conversation, message: message, feature: :audio_transcription,
-      model: model, usage: usage, cost_usd: cost_usd, triggered_by: :manual
+      model: model, usage: usage, cost_usd: cost_usd, triggered_by: triggered_by
     )
   end
 

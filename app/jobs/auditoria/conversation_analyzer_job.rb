@@ -8,13 +8,14 @@
 class Auditoria::ConversationAnalyzerJob < ApplicationJob
   queue_as :low
 
-  def perform(conversation_id)
+  def perform(conversation_id, triggered_by: :manual)
     conversation = Conversation.find_by(id: conversation_id)
     return unless conversation
 
     result = Auditoria::ConversationAnalyzerService.new(
       account: conversation.account,
-      conversation_display_id: conversation.display_id
+      conversation_display_id: conversation.display_id,
+      triggered_by: triggered_by
     ).perform
 
     Redis::Alfred.set(error_key(conversation_id), result[:error], ex: 5.minutes) if result[:error]
