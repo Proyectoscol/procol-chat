@@ -1027,12 +1027,15 @@ const rawMenuItems = computed(() => {
 
 // Custom env-configured sidebar entries (CUSTOM_MENU_ITEM_n_*), sorted by
 // their configured 1-based position so they splice in a stable order.
-// inboxIds vacio = visible para todos (igual que antes); si no esta vacio,
-// solo lo ve un admin sin restriccion o uno restringido a alguno de esos
-// inboxes -- mismo criterio que el resto del scoping por inbox.
+// Un admin SIN restriccion ve todos los items, igual que siempre. Un admin
+// RESTRINGIDO a inbox(es) ve solo los items cuyo inboxIds incluya alguno de
+// los suyos -- lista blanca estricta, no al reves: un item sin inboxIds
+// definido queda OCULTO para el admin restringido (no "visible por
+// defecto"), porque el pedido es "solo vea su inbox y su item", no "vea su
+// item ademas de todo lo que nadie restringio explicitamente".
 const isCustomMenuItemVisible = entry => {
   if (!currentUserInboxRestricted.value) return true;
-  if (!entry.inboxIds?.length) return true;
+  if (!entry.inboxIds?.length) return false;
   return entry.inboxIds.some(id =>
     currentUserRestrictedInboxIds.value.includes(id)
   );
