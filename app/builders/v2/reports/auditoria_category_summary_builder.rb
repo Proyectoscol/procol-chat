@@ -35,7 +35,7 @@ class V2::Reports::AuditoriaCategorySummaryBuilder
   def count_for(category, has_subcategories)
     return counts_by_category_id[category.id] || 0 unless has_subcategories
 
-    rollup_ids = [category.id] + children_by_parent_id[category.id].map(&:id)
+    rollup_ids = [category.id] + visible_children_ids(category)
     return rollup_ids.sum { |id| counts_by_category_id[id] || 0 } if mentions_mode?
 
     # Modo "conversaciones" (no menciones): sumar los conteos DISTINTOS de
@@ -59,12 +59,25 @@ class V2::Reports::AuditoriaCategorySummaryBuilder
     Array(inbox_id).map(&:to_i).any? { |id| category.applies_to_inbox?(id) }
   end
 
+  # SIN el filtro de inbox a proposito -- "tiene subcategorias" debe ser la
+  # verdad completa, no depender de cuales de esas subcategorias sean
+  # visibles bajo el filtro actual. Calcularlo desde all_categories (ya
+  # filtrada por category_visible?) hacia una categoria padre que SI es
+  # visible pero cuyas hijas quedan todas fuera del inbox filtrado -- el
+  # boton de expandir desaparecia aunque la categoria si tuviera hijas.
   def parent_ids
-    @parent_ids ||= all_categories.filter_map(&:parent_id).to_set
+    @parent_ids ||= account.auditoria_categories.where.not(parent_id: nil).pluck(:parent_id).to_set
   end
 
   def children_by_parent_id
     @children_by_parent_id ||= all_categories.group_by(&:parent_id)
+  end
+
+  # children_by_parent_id sigue derivado de all_categories (filtrada por
+  # inbox a proposito, ver su comentario) -- un padre visible cuyas hijas
+  # quedan TODAS fuera del filtro no tiene entrada en el hash.
+  def visible_children_ids(category)
+    (children_by_parent_id[category.id] || []).map(&:id)
   end
 
   # group(:category_id).distinct.count(:conversation_id) ya es un conteo de
