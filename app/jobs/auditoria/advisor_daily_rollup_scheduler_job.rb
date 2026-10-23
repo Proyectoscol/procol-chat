@@ -12,20 +12,29 @@
 class Auditoria::AdvisorDailyRollupSchedulerJob < ApplicationJob
   queue_as :scheduled_jobs
 
-  def perform(summary_date: Date.yesterday, account_id: nil)
+  KIND = 'advisor_rollup'.freeze
+
+  # track_progress: true solo lo pasa una corrida manual (ver
+  # Auditoria::PipelineRunTracker) -- el cron real nunca lo activa.
+  def perform(summary_date: Date.yesterday, account_id: nil, track_progress: false)
     accounts = account_id ? Account.where(id: account_id) : Account.all
     accounts.find_each do |account|
       next unless account.feature_enabled?('auditoria')
 
-      agent_ids_with_activity(account, summary_date).each_with_index do |user_id, index|
-        Auditoria::AdvisorDailyRollupJob.set(wait: index.seconds).perform_later(account.id, user_id, summary_date, triggered_by: :batch)
+      agent_ids = self.class.agent_ids_with_activity(account, summary_date)
+      Auditoria::PipelineRunTracker.start!(account, KIND, total: agent_ids.size) if track_progress
+
+      agent_ids.each_with_index do |user_id, index|
+        Auditoria::AdvisorDailyRollupJob.set(wait: index.seconds)
+                                        .perform_later(account.id, user_id, summary_date, triggered_by: :batch,
+                                                                                          pipeline_run_kind: track_progress ? KIND : nil)
       end
     end
   end
 
-  private
-
-  def agent_ids_with_activity(account, summary_date)
+  # Clase, no instancia -- reusado por Auditoria::ManualRunEstimateService
+  # para calcular el mismo universo de candidatos sin duplicar logica.
+  def self.agent_ids_with_activity(account, summary_date)
     account.messages
            .where(created_at: summary_date.all_day)
            .where.not(conversation_id: excluded_conversation_ids(account))
@@ -35,7 +44,7 @@ class Auditoria::AdvisorDailyRollupSchedulerJob < ApplicationJob
            .map(&:to_i)
   end
 
-  def excluded_conversation_ids(account)
+  def self.excluded_conversation_ids(account)
     account.conversations.tagged_with(Auditoria::MessageAnnotatorService::MULTIPLE_ADVISORS_LABEL_TITLE).ids
   end
 end

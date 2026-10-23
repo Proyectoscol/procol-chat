@@ -26,28 +26,22 @@ class Auditoria::DailyConversationAnalysisSchedulerJob < ApplicationJob
   # manual puntual de una cuenta especifica (ver #run_full_backlog en el
   # controller), nunca para el cron real. El guard de abajo evita que
   # unbounded combinado con "todas las cuentas" se cuele por error algun dia.
-  def perform(account_id: nil, unbounded: false)
+  #
+  # track_progress: true solo lo pasa una corrida manual (ver
+  # Auditoria::PipelineRunTracker) -- el cron real nunca lo activa, no hay
+  # nadie viendo una pantalla esperando el progreso de la corrida nocturna.
+  def perform(account_id: nil, unbounded: false, track_progress: false)
     return if unbounded && account_id.blank?
 
+    kind = unbounded ? 'backlog' : 'conversation_analysis'
     accounts = account_id ? Account.where(id: account_id) : Account.all
-    accounts.find_each do |account|
-      next unless account.feature_enabled?('auditoria')
-
-      # Escalonado (perform_in con offset creciente) en vez de perform_later
-      # puro -- el log de gasto se escribe DESPUES de la llamada a OpenAI, asi
-      # que Sidekiq procesando muchas de golpe en paralelo podria dejar pasar
-      # el chequeo de limite mensual a varias antes de que cualquiera
-      # persista su log (TOCTOU). Un segundo de separacion es suficiente para
-      # que casi siempre se procesen una a la vez sin montar un lock nuevo.
-      candidate_conversation_ids(account, unbounded: unbounded).each_with_index do |conversation_id, index|
-        Auditoria::ConversationAnalyzerJob.set(wait: index.seconds).perform_later(conversation_id, triggered_by: :batch)
-      end
-    end
+    accounts.find_each { |account| enqueue_for_account(account, unbounded, kind, track_progress) }
   end
 
-  private
-
-  def candidate_conversation_ids(account, unbounded:)
+  # Clase, no instancia -- reusado por Auditoria::ManualRunEstimateService
+  # para calcular el mismo universo de candidatos sin duplicar la logica de
+  # la ventana de 3 dias.
+  def self.candidate_conversation_ids(account, unbounded:)
     return Auditoria::BacklogCandidateFinder.conversation_ids(account) if unbounded
 
     account.conversations
@@ -55,6 +49,27 @@ class Auditoria::DailyConversationAnalysisSchedulerJob < ApplicationJob
            .where(messages: { message_type: [:incoming, :outgoing], created_at: RECENT_ACTIVITY_WINDOW.ago.. })
            .distinct
            .pluck(:id)
+  end
+
+  private
+
+  def enqueue_for_account(account, unbounded, kind, track_progress)
+    return unless account.feature_enabled?('auditoria')
+
+    candidate_ids = self.class.candidate_conversation_ids(account, unbounded: unbounded)
+    Auditoria::PipelineRunTracker.start!(account, kind, total: candidate_ids.size) if track_progress
+
+    # Escalonado (perform_in con offset creciente) en vez de perform_later
+    # puro -- el log de gasto se escribe DESPUES de la llamada a OpenAI, asi
+    # que Sidekiq procesando muchas de golpe en paralelo podria dejar pasar
+    # el chequeo de limite mensual a varias antes de que cualquiera
+    # persista su log (TOCTOU). Un segundo de separacion es suficiente para
+    # que casi siempre se procesen una a la vez sin montar un lock nuevo.
+    candidate_ids.each_with_index do |conversation_id, index|
+      Auditoria::ConversationAnalyzerJob.set(wait: index.seconds)
+                                        .perform_later(conversation_id, triggered_by: :batch,
+                                                                        pipeline_run_kind: track_progress ? kind : nil)
+    end
   end
 end
 

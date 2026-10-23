@@ -215,8 +215,9 @@ Rails.application.routes.draw do
             patch 'ai_usage/settings', to: 'ai_usage#update_settings'
             post 'daily_jobs/run_conversation_analysis', to: 'daily_jobs#run_conversation_analysis'
             post 'daily_jobs/run_advisor_rollup', to: 'daily_jobs#run_advisor_rollup'
-            get 'daily_jobs/backlog_estimate', to: 'daily_jobs#backlog_estimate'
             post 'daily_jobs/run_full_backlog', to: 'daily_jobs#run_full_backlog'
+            get 'daily_jobs/estimate', to: 'daily_jobs#estimate'
+            get 'daily_jobs/progress', to: 'daily_jobs#progress'
           end
 
           resources :search, only: [:index] do

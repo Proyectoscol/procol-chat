@@ -20,7 +20,8 @@ import {
   BaseTableRow,
   BaseTableCell,
 } from 'dashboard/components-next/table';
-import BacklogEstimateModal from './BacklogEstimateModal.vue';
+import ManualRunEstimateModal from './ManualRunEstimateModal.vue';
+import PipelineProgressCard from './PipelineProgressCard.vue';
 
 const LOGS_PER_PAGE = 25;
 const MIN_COST_DEBOUNCE_MS = 400;
@@ -43,12 +44,11 @@ const canRunDailyJobs = computed(
 
 const isLoading = ref(false);
 const isSaving = ref(false);
-const isRunningAnalysis = ref(false);
-const isRunningRollup = ref(false);
-const showBacklogModal = ref(false);
-const isLoadingBacklogEstimate = ref(false);
-const isRunningBacklog = ref(false);
-const backlogEstimate = ref(null);
+const showEstimateModal = ref(false);
+const isLoadingEstimate = ref(false);
+const isRunningManualJob = ref(false);
+const estimate = ref(null);
+const activeKind = ref(null);
 const summary = ref(null);
 const logs = ref([]);
 const totalLogs = ref(0);
@@ -194,67 +194,55 @@ const saveSettings = async () => {
   }
 };
 
-// Fire-and-forget a proposito: los jobs encolan trabajo en background (cola
-// "low" de Sidekiq), no hay un resultado unico que esperar aqui -- a
-// diferencia de "Analizar ahora" (una sola conversacion, con polling), esto
-// puede encolar decenas. El gasto aparece en esta misma pantalla cuando el
-// trabajo en background termine, no al instante.
-const runConversationAnalysisNow = async () => {
-  isRunningAnalysis.value = true;
+// Las 3 corridas (analisis, rollup, backlog) pasan por el mismo flujo:
+// estimado -> confirmar -> encolar -- el usuario aprueba explicitamente el
+// gasto proyectado antes de que esto encole nada. El progreso en vivo
+// (PipelineProgressCard) se auto-restaura solo con pollear, no depende de
+// este flujo de confirmacion.
+const openEstimateModal = async kind => {
+  activeKind.value = kind;
+  showEstimateModal.value = true;
+  isLoadingEstimate.value = true;
   try {
-    await AuditoriaDailyJobsAPI.runConversationAnalysis();
-    useAlert(t('AUDITORIA_AI_USAGE.RUN_ANALYSIS_SUCCESS'));
+    const { data } = await AuditoriaDailyJobsAPI.getEstimate(kind);
+    estimate.value = useCamelCase(data, { deep: true });
   } catch (error) {
-    useAlert(t('AUDITORIA_AI_USAGE.RUN_ANALYSIS_ERROR'));
+    useAlert(t('AUDITORIA_AI_USAGE.ESTIMATE_ERROR'));
+    showEstimateModal.value = false;
   } finally {
-    isRunningAnalysis.value = false;
+    isLoadingEstimate.value = false;
   }
 };
 
-const runAdvisorRollupNow = async () => {
-  isRunningRollup.value = true;
-  try {
-    await AuditoriaDailyJobsAPI.runAdvisorRollup();
-    useAlert(t('AUDITORIA_AI_USAGE.RUN_ROLLUP_SUCCESS'));
-  } catch (error) {
-    useAlert(t('AUDITORIA_AI_USAGE.RUN_ROLLUP_ERROR'));
-  } finally {
-    isRunningRollup.value = false;
+const closeEstimateModal = () => {
+  showEstimateModal.value = false;
+  estimate.value = null;
+  activeKind.value = null;
+};
+
+// Cada rama llama a un metodo literal del API client a proposito, en vez de
+// armar el nombre del metodo en runtime -- mismo espiritu que featureLabels
+// de arriba, pero para side-effects en vez de traducciones.
+const runManualJob = kind => {
+  if (kind === 'conversation_analysis') {
+    return AuditoriaDailyJobsAPI.runConversationAnalysis();
   }
-};
-
-// El estimado se pide primero y se muestra en un modal -- el usuario
-// aprueba explicitamente el gasto proyectado antes de que esto encole
-// nada (a diferencia de los 2 botones de arriba, que corren directo).
-const openBacklogModal = async () => {
-  showBacklogModal.value = true;
-  isLoadingBacklogEstimate.value = true;
-  try {
-    const response = await AuditoriaDailyJobsAPI.getBacklogEstimate();
-    backlogEstimate.value = useCamelCase(response.data, { deep: true });
-  } catch (error) {
-    useAlert(t('AUDITORIA_AI_USAGE.BACKLOG_ESTIMATE_ERROR'));
-    showBacklogModal.value = false;
-  } finally {
-    isLoadingBacklogEstimate.value = false;
+  if (kind === 'advisor_rollup') {
+    return AuditoriaDailyJobsAPI.runAdvisorRollup();
   }
+  return AuditoriaDailyJobsAPI.runFullBacklog();
 };
 
-const closeBacklogModal = () => {
-  showBacklogModal.value = false;
-  backlogEstimate.value = null;
-};
-
-const confirmRunBacklog = async () => {
-  isRunningBacklog.value = true;
+const confirmManualRun = async () => {
+  isRunningManualJob.value = true;
   try {
-    await AuditoriaDailyJobsAPI.runFullBacklog();
-    useAlert(t('AUDITORIA_AI_USAGE.RUN_BACKLOG_SUCCESS'));
-    closeBacklogModal();
+    await runManualJob(activeKind.value);
+    useAlert(t('AUDITORIA_AI_USAGE.RUN_QUEUED_SUCCESS'));
+    closeEstimateModal();
   } catch (error) {
-    useAlert(t('AUDITORIA_AI_USAGE.RUN_BACKLOG_ERROR'));
+    useAlert(t('AUDITORIA_AI_USAGE.RUN_QUEUED_ERROR'));
   } finally {
-    isRunningBacklog.value = false;
+    isRunningManualJob.value = false;
   }
 };
 
@@ -362,30 +350,64 @@ onMounted(fetchAll);
         <p class="text-xs text-n-slate-11">
           {{ t('AUDITORIA_AI_USAGE.MANUAL_RUN_HINT') }}
         </p>
-        <div class="flex flex-wrap gap-2">
-          <Button
-            :label="t('AUDITORIA_AI_USAGE.RUN_ANALYSIS_BUTTON')"
-            size="sm"
-            faded
-            slate
-            :is-loading="isRunningAnalysis"
-            @click="runConversationAnalysisNow"
-          />
-          <Button
-            :label="t('AUDITORIA_AI_USAGE.RUN_ROLLUP_BUTTON')"
-            size="sm"
-            faded
-            slate
-            :is-loading="isRunningRollup"
-            @click="runAdvisorRollupNow"
-          />
-          <Button
-            :label="t('AUDITORIA_AI_USAGE.RUN_BACKLOG_BUTTON')"
-            size="sm"
-            faded
-            slate
-            @click="openBacklogModal"
-          />
+
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="flex flex-col gap-0.5 max-w-sm">
+              <span class="text-sm text-n-slate-12">{{
+                t('AUDITORIA_AI_USAGE.RUN_CONVERSATION_ANALYSIS_BUTTON')
+              }}</span>
+              <span class="text-xs text-n-slate-10">{{
+                t('AUDITORIA_AI_USAGE.RUN_CONVERSATION_ANALYSIS_DESCRIPTION')
+              }}</span>
+            </div>
+            <Button
+              :label="t('AUDITORIA_AI_USAGE.RUN_CONVERSATION_ANALYSIS_BUTTON')"
+              size="sm"
+              faded
+              slate
+              @click="openEstimateModal('conversation_analysis')"
+            />
+          </div>
+          <PipelineProgressCard kind="conversation_analysis" />
+
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="flex flex-col gap-0.5 max-w-sm">
+              <span class="text-sm text-n-slate-12">{{
+                t('AUDITORIA_AI_USAGE.RUN_ADVISOR_ROLLUP_BUTTON')
+              }}</span>
+              <span class="text-xs text-n-slate-10">{{
+                t('AUDITORIA_AI_USAGE.RUN_ADVISOR_ROLLUP_DESCRIPTION')
+              }}</span>
+            </div>
+            <Button
+              :label="t('AUDITORIA_AI_USAGE.RUN_ADVISOR_ROLLUP_BUTTON')"
+              size="sm"
+              faded
+              slate
+              @click="openEstimateModal('advisor_rollup')"
+            />
+          </div>
+          <PipelineProgressCard kind="advisor_rollup" />
+
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="flex flex-col gap-0.5 max-w-sm">
+              <span class="text-sm text-n-slate-12">{{
+                t('AUDITORIA_AI_USAGE.RUN_BACKLOG_BUTTON')
+              }}</span>
+              <span class="text-xs text-n-slate-10">{{
+                t('AUDITORIA_AI_USAGE.RUN_BACKLOG_DESCRIPTION')
+              }}</span>
+            </div>
+            <Button
+              :label="t('AUDITORIA_AI_USAGE.RUN_BACKLOG_BUTTON')"
+              size="sm"
+              faded
+              slate
+              @click="openEstimateModal('backlog')"
+            />
+          </div>
+          <PipelineProgressCard kind="backlog" />
         </div>
       </div>
 
@@ -509,13 +531,15 @@ onMounted(fetchAll);
       </div>
     </template>
 
-    <woot-modal v-model:show="showBacklogModal" :on-close="closeBacklogModal">
-      <BacklogEstimateModal
-        :estimate="backlogEstimate"
-        :is-loading-estimate="isLoadingBacklogEstimate"
-        :is-running="isRunningBacklog"
-        @confirm="confirmRunBacklog"
-        @close="closeBacklogModal"
+    <woot-modal v-model:show="showEstimateModal" :on-close="closeEstimateModal">
+      <ManualRunEstimateModal
+        v-if="activeKind"
+        :kind="activeKind"
+        :estimate="estimate"
+        :is-loading-estimate="isLoadingEstimate"
+        :is-running="isRunningManualJob"
+        @confirm="confirmManualRun"
+        @close="closeEstimateModal"
       />
     </woot-modal>
   </div>

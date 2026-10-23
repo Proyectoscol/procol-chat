@@ -11,11 +11,15 @@ class Auditoria::DailyJobsPolicy < ApplicationPolicy
     unrestricted_administrator?
   end
 
-  def backlog_estimate?
+  def run_full_backlog?
     unrestricted_administrator?
   end
 
-  def run_full_backlog?
+  def estimate?
+    unrestricted_administrator?
+  end
+
+  def progress?
     unrestricted_administrator?
   end
 

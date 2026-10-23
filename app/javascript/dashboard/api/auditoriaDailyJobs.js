@@ -16,12 +16,16 @@ class AuditoriaDailyJobsAPI extends ApiClient {
     });
   }
 
-  getBacklogEstimate() {
-    return axios.get(`${this.url}/backlog_estimate`);
-  }
-
   runFullBacklog() {
     return axios.post(`${this.url}/run_full_backlog`);
+  }
+
+  getEstimate(kind) {
+    return axios.get(`${this.url}/estimate`, { params: { kind } });
+  }
+
+  getProgress(kind) {
+    return axios.get(`${this.url}/progress`, { params: { kind } });
   }
 }
 

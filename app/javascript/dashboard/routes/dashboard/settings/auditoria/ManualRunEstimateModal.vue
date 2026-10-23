@@ -1,9 +1,16 @@
 <script setup>
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 
-defineProps({
+const props = defineProps({
+  kind: {
+    type: String,
+    required: true,
+    validator: value =>
+      ['conversation_analysis', 'advisor_rollup', 'backlog'].includes(value),
+  },
   estimate: { type: Object, default: null },
   isLoadingEstimate: { type: Boolean, default: false },
   isRunning: { type: Boolean, default: false },
@@ -11,6 +18,43 @@ defineProps({
 const emit = defineEmits(['confirm', 'close']);
 
 const { t } = useI18n();
+
+// Cada rama llama a t() con una clave literal a proposito (regla
+// no-dynamic-keys) -- el mapa resultante ya tiene los textos traducidos,
+// el lookup por kind pasa por el objeto, nunca por una clave armada en
+// runtime.
+const titleByKind = computed(() => ({
+  conversation_analysis: t(
+    'AUDITORIA_AI_USAGE.ESTIMATE_MODAL_TITLE_CONVERSATION_ANALYSIS'
+  ),
+  advisor_rollup: t('AUDITORIA_AI_USAGE.ESTIMATE_MODAL_TITLE_ADVISOR_ROLLUP'),
+  backlog: t('AUDITORIA_AI_USAGE.ESTIMATE_MODAL_TITLE_BACKLOG'),
+}));
+const emptyByKind = computed(() => ({
+  conversation_analysis: t(
+    'AUDITORIA_AI_USAGE.ESTIMATE_MODAL_EMPTY_CONVERSATION_ANALYSIS'
+  ),
+  advisor_rollup: t('AUDITORIA_AI_USAGE.ESTIMATE_MODAL_EMPTY_ADVISOR_ROLLUP'),
+  backlog: t('AUDITORIA_AI_USAGE.ESTIMATE_MODAL_EMPTY_BACKLOG'),
+}));
+const candidatesLabelByKind = computed(() => ({
+  conversation_analysis: count =>
+    t('AUDITORIA_AI_USAGE.ESTIMATE_MODAL_CANDIDATES_CONVERSATION_ANALYSIS', {
+      count,
+    }),
+  advisor_rollup: count =>
+    t('AUDITORIA_AI_USAGE.ESTIMATE_MODAL_CANDIDATES_ADVISOR_ROLLUP', {
+      count,
+    }),
+  backlog: count =>
+    t('AUDITORIA_AI_USAGE.ESTIMATE_MODAL_CANDIDATES_BACKLOG', { count }),
+}));
+
+const title = computed(() => titleByKind.value[props.kind]);
+const emptyMessage = computed(() => emptyByKind.value[props.kind]);
+const candidatesLabel = computed(() =>
+  candidatesLabelByKind.value[props.kind](props.estimate?.candidateCount ?? 0)
+);
 
 const formatCost = value =>
   value ? `$${Number(value).toFixed(6)}` : '$0.000000';
@@ -22,9 +66,7 @@ const onClose = () => emit('close');
 
 <template>
   <div class="flex flex-col h-auto overflow-auto">
-    <woot-modal-header
-      :header-title="t('AUDITORIA_AI_USAGE.BACKLOG_MODAL_TITLE')"
-    />
+    <woot-modal-header :header-title="title" />
     <div class="flex flex-col gap-3 px-4 pb-4 w-full !self-stretch">
       <div
         v-if="isLoadingEstimate"
@@ -33,19 +75,12 @@ const onClose = () => emit('close');
         <Spinner />
       </div>
       <template v-else-if="estimate">
-        <p
-          v-if="!estimate.candidateConversationsCount"
-          class="text-sm text-n-slate-11"
-        >
-          {{ t('AUDITORIA_AI_USAGE.BACKLOG_MODAL_EMPTY') }}
+        <p v-if="!estimate.candidateCount" class="text-sm text-n-slate-11">
+          {{ emptyMessage }}
         </p>
         <template v-else>
           <p class="text-sm text-n-slate-12">
-            {{
-              t('AUDITORIA_AI_USAGE.BACKLOG_MODAL_CANDIDATES', {
-                count: estimate.candidateConversationsCount,
-              })
-            }}
+            {{ candidatesLabel }}
           </p>
           <p
             v-if="estimate.pendingAudioMessagesCount"
@@ -57,7 +92,10 @@ const onClose = () => emit('close');
               })
             }}
           </p>
-          <p class="text-sm text-n-slate-11">
+          <p
+            v-if="estimate.estimatedInputTokens"
+            class="text-sm text-n-slate-11"
+          >
             {{
               t('AUDITORIA_AI_USAGE.BACKLOG_MODAL_ESTIMATED_TOKENS', {
                 tokens: formatTokens(estimate.estimatedInputTokens),
@@ -81,20 +119,32 @@ const onClose = () => emit('close');
               {{ t('AUDITORIA_AI_USAGE.BACKLOG_MODAL_TEXT_COST_NO_HISTORY') }}
             </p>
 
-            <p v-if="estimate.audioTranscription.avgCostUsd">
-              {{
-                t('AUDITORIA_AI_USAGE.BACKLOG_MODAL_AUDIO_COST_WITH_HISTORY', {
-                  avg: formatCost(estimate.audioTranscription.avgCostUsd),
-                  n: estimate.audioTranscription.sampleSize,
-                  estimated: formatCost(
-                    estimate.audioTranscription.estimatedCostUsd
-                  ),
-                })
-              }}
-            </p>
-            <p v-else>
-              {{ t('AUDITORIA_AI_USAGE.BACKLOG_MODAL_AUDIO_COST_NO_HISTORY') }}
-            </p>
+            <template
+              v-if="
+                estimate.audioTranscription.sampleSize ||
+                estimate.pendingAudioMessagesCount
+              "
+            >
+              <p v-if="estimate.audioTranscription.avgCostUsd">
+                {{
+                  t(
+                    'AUDITORIA_AI_USAGE.BACKLOG_MODAL_AUDIO_COST_WITH_HISTORY',
+                    {
+                      avg: formatCost(estimate.audioTranscription.avgCostUsd),
+                      n: estimate.audioTranscription.sampleSize,
+                      estimated: formatCost(
+                        estimate.audioTranscription.estimatedCostUsd
+                      ),
+                    }
+                  )
+                }}
+              </p>
+              <p v-else>
+                {{
+                  t('AUDITORIA_AI_USAGE.BACKLOG_MODAL_AUDIO_COST_NO_HISTORY')
+                }}
+              </p>
+            </template>
 
             <p class="font-medium text-n-slate-12">
               {{
@@ -121,7 +171,7 @@ const onClose = () => emit('close');
           @click="onClose"
         />
         <Button
-          v-if="estimate?.candidateConversationsCount"
+          v-if="estimate?.candidateCount"
           type="button"
           :label="t('AUDITORIA_AI_USAGE.BACKLOG_MODAL_CONFIRM')"
           :is-loading="isRunning"
