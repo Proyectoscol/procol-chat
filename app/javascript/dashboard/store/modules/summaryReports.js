@@ -209,10 +209,12 @@ export const mutations = {
         summaryDate: row.summary_date,
         conversationsCount: row.conversations_count,
         categoryCounts: row.category_counts || {},
+        feedbackTags: row.feedback_tags || [],
         generatedAt: row.generated_at,
         results: row.results
           ? {
               summary: row.results.summary,
+              shortFeedback: row.results.short_feedback,
               toneOverview: row.results.tone_overview,
               recommendation: row.results.recommendation,
             }

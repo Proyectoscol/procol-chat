@@ -5,6 +5,7 @@
 #  id                  :bigint           not null, primary key
 #  category_counts     :jsonb            not null
 #  conversations_count :integer          default(0), not null
+#  feedback_tags       :string           default([]), not null, is an Array
 #  generated_at        :datetime
 #  results             :jsonb            not null
 #  summary_date        :date             not null
@@ -15,9 +16,10 @@
 #
 # Indexes
 #
-#  idx_auditoria_advisor_summary_unique                   (account_id,user_id,summary_date) UNIQUE
-#  index_auditoria_advisor_daily_summaries_on_account_id  (account_id)
-#  index_auditoria_advisor_daily_summaries_on_user_id     (user_id)
+#  idx_auditoria_advisor_summary_unique                      (account_id,user_id,summary_date) UNIQUE
+#  index_auditoria_advisor_daily_summaries_on_account_id     (account_id)
+#  index_auditoria_advisor_daily_summaries_on_feedback_tags  (feedback_tags) USING gin
+#  index_auditoria_advisor_daily_summaries_on_user_id        (user_id)
 #
 # Foreign Keys
 #

@@ -23,6 +23,7 @@ class V2::Reports::AuditoriaAdvisorDailyRollupBuilder
       summary_date: summary.summary_date.iso8601,
       conversations_count: summary.conversations_count,
       category_counts: summary.category_counts,
+      feedback_tags: summary.feedback_tags,
       results: summary.results,
       generated_at: summary.generated_at
     }

@@ -709,7 +709,21 @@
     "RECOMMENDATION_LABEL": "Recommendation",
     "CATEGORIES_LABEL": "Categories detected that day",
     "EMPTY_TITLE": "No daily rollups yet",
-    "EMPTY_MESSAGE": "No summaries found for the selected filters. They're generated automatically overnight, or you can run them manually from Settings > Integrations > OpenAI > Usage."
+    "EMPTY_MESSAGE": "No summaries found for the selected filters. They're generated automatically overnight, or you can run them manually from Settings > Integrations > OpenAI > Usage.",
+    "GENERATED_AT_LABEL": "Generated",
+    "SHORT_FEEDBACK_LABEL": "Feedback",
+    "FEEDBACK_TAGS_LABEL": "Tags",
+    "TAG_FILTER_LABEL": "Tag",
+    "TAG_FILTER_ALL": "All tags",
+    "SORT_LABEL": "Sort by",
+    "SORT_BY_DATE": "Date",
+    "SORT_BY_NAME": "Advisor name",
+    "VIEW_CONVERSATIONS_BUTTON": "View conversations",
+    "CONVERSATIONS_DRAWER": {
+      "DESCRIPTION": "Conversations that fed this daily summary.",
+      "EMPTY": "No conversations found for this advisor on this day.",
+      "ERROR": "Failed to load conversations, please try again."
+    }
   },
   "AUDITORIA_CATEGORY_REPORTS": {
     "HEADER": "Categories Overview",

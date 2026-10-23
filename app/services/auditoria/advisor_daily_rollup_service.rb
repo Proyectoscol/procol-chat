@@ -84,7 +84,7 @@ class Auditoria::AdvisorDailyRollupService < Captain::BaseTaskService
     <<~PROMPT
       Eres un asistente experto en gestion de equipos de atencion al cliente por WhatsApp.
 
-      A continuacion se te dan los analisis de IA de todas las conversaciones que un asesor atendio en un dia especifico, mas el conteo de categorias detectadas ese dia. Sintetiza como le fue al asesor ese dia: un resumen narrativo de su desempeno, una vision general del tono emocional predominante entre sus conversaciones, y una recomendacion principal.
+      A continuacion se te dan los analisis de IA de todas las conversaciones que un asesor atendio en un dia especifico, mas el conteo de categorias detectadas ese dia. Sintetiza como le fue al asesor ese dia: un resumen narrativo MUY breve de su desempeno (maximo 2-3 frases), una vision general del tono emocional predominante entre sus conversaciones, una recomendacion principal, una retroalimentacion breve y concreta en una sola frase, y una lista corta de etiquetas libres que resuman el area de retroalimentacion (ej. manejo de objeciones, conocimiento de producto).
 
       Responde en #{account.locale_english_name}.
     PROMPT
@@ -126,10 +126,18 @@ class Auditoria::AdvisorDailyRollupService < Captain::BaseTaskService
     record.update!(
       conversations_count: conversation_ids_for_day.size,
       category_counts: category_counts,
-      results: parsed_fields.transform_keys(&:to_s).transform_values(&:to_s),
+      feedback_tags: Array(parsed_fields[:feedback_tags]),
+      results: stringify_fields(parsed_fields),
       generated_at: Time.current
     )
     { message: record.results }
+  end
+
+  # feedback_tags es un array -- transform_values(&:to_s) lo convertiria en
+  # un string ilegible ("[\"foo\", \"bar\"]"), por eso se excluye aqui y se
+  # guarda aparte en su propia columna (ver persist_result).
+  def stringify_fields(parsed_fields)
+    parsed_fields.except(:feedback_tags).transform_keys(&:to_s).transform_values(&:to_s)
   end
 
   def event_name

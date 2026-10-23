@@ -704,7 +704,21 @@
     "RECOMMENDATION_LABEL": "Recomendación",
     "CATEGORIES_LABEL": "Categorías detectadas ese día",
     "EMPTY_TITLE": "Aún no hay resúmenes diarios",
-    "EMPTY_MESSAGE": "No se encontraron resúmenes para los filtros seleccionados. Se generan automáticamente cada noche, o puedes correrlos manualmente desde Ajustes > Integraciones > OpenAI > Uso."
+    "EMPTY_MESSAGE": "No se encontraron resúmenes para los filtros seleccionados. Se generan automáticamente cada noche, o puedes correrlos manualmente desde Ajustes > Integraciones > OpenAI > Uso.",
+    "GENERATED_AT_LABEL": "Generado",
+    "SHORT_FEEDBACK_LABEL": "Retroalimentación",
+    "FEEDBACK_TAGS_LABEL": "Etiquetas",
+    "TAG_FILTER_LABEL": "Etiqueta",
+    "TAG_FILTER_ALL": "Todas las etiquetas",
+    "SORT_LABEL": "Ordenar por",
+    "SORT_BY_DATE": "Fecha",
+    "SORT_BY_NAME": "Nombre del asesor",
+    "VIEW_CONVERSATIONS_BUTTON": "Ver conversaciones",
+    "CONVERSATIONS_DRAWER": {
+      "DESCRIPTION": "Conversaciones que alimentaron este resumen diario.",
+      "EMPTY": "No se encontraron conversaciones de este asesor en este día.",
+      "ERROR": "No se pudieron cargar las conversaciones, intenta de nuevo."
+    }
   },
   "AUDITORIA_CATEGORY_REPORTS": {
     "HEADER": "Resumen de categorías",
