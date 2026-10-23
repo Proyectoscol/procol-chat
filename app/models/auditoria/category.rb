@@ -83,6 +83,23 @@ class Auditoria::Category < ApplicationRecord
     scoped_to_all_inboxes? || inbox_ids.include?(inbox_id)
   end
 
+  # Patron compartido para matchear un termino configurado como palabra
+  # completa (\y = boundary de Postgres), usado tanto para decidir si un
+  # mensaje matchea (Auditoria::KeywordCategoryMatcherService) como para
+  # reconstruir cual termino especifico disparo una mencion ya guardada
+  # (V2::Reports::AuditoriaCategoryTermsBuilder/...ConversationsBuilder).
+  def self.term_pattern(term)
+    "\\y#{Regexp.escape(term)}\\y"
+  end
+
+  # Mismo termino, version Ruby (\y de Postgres no es un token valido en el
+  # motor de regex de Ruby) -- usado para re-evaluar texto ya traido a Ruby
+  # (transcripciones de audio, reconstruir que termino disparo una mencion
+  # ya guardada), nunca contra SQL directo (ver .term_pattern para eso).
+  def self.term_regex(term)
+    /\b#{Regexp.escape(term)}\b/i
+  end
+
   private
 
   def max_categories_per_account

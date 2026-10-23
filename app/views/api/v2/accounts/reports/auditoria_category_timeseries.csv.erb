@@ -1,0 +1,6 @@
+<%= CSVSafe.generate_line [I18n.t('reports.period', since: Date.strptime(params[:since], '%s'), until: Date.strptime(params[:until], '%s'))] %>
+
+<%= CSVSafe.generate_line [I18n.t('reports.auditoria_category_timeseries_csv.date')] + @csv_headers -%>
+<% @report_data.each do |row| %>
+<%= CSVSafe.generate_line row -%>
+<% end %>

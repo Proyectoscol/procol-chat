@@ -142,7 +142,12 @@
       "MESSAGE_CREATED_AT": "Message created at {time}",
       "EVENT_OCCURRED_AT": "Event occurred at {time}",
       "INCOMING_MESSAGE": "Incoming message",
-      "OUTGOING_MESSAGE": "Outgoing message"
+      "OUTGOING_MESSAGE": "Outgoing message",
+      "SORT_LABEL": "Sort by",
+      "SORT_DEFAULT": "Most recent",
+      "SORT_BY_REASON": "Matched keyword",
+      "EXPORT_CSV": "Export CSV",
+      "MATCH_REASONS_MORE": "+{count} more"
     },
     "PAGINATION": {
       "RESULTS": "Showing {start} to {end} of {total} results",
@@ -757,6 +762,8 @@
     "TERMS_BREAKDOWN": {
       "TOGGLE": "Terms",
       "EMPTY": "No matching messages found for this category's terms."
-    }
+    },
+    "EXPORT_CSV_BUTTON": "Export CSV",
+    "EXPORT_FAILED": "Failed to export, please try again."
   }
 }

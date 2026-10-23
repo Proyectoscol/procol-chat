@@ -80,6 +80,7 @@ export const initialState = {
   auditoriaCategorySummaryReports: [],
   auditoriaCategorySummaryTotals: null,
   auditoriaCategoryTimeseries: [],
+  auditoriaCategoryTimeseriesBucket: 'day',
   auditoriaAdvisorDailyRollupSummaries: [],
   uiFlags: {
     isFetchingInboxSummaryReports: false,
@@ -120,6 +121,9 @@ export const getters = {
   },
   getAuditoriaCategoryTimeseries(state) {
     return state.auditoriaCategoryTimeseries;
+  },
+  getAuditoriaCategoryTimeseriesBucket(state) {
+    return state.auditoriaCategoryTimeseriesBucket;
   },
   getAuditoriaAdvisorDailyRollupSummaries(state) {
     return state.auditoriaAdvisorDailyRollupSummaries;
@@ -196,6 +200,7 @@ export const mutations = {
   // {date, count} listos para el chart.
   setAuditoriaCategoryTimeseries(state, data) {
     state.auditoriaCategoryTimeseries = data.series || [];
+    state.auditoriaCategoryTimeseriesBucket = data.bucket || 'day';
   },
   // El endpoint devuelve { summaries } (no una lista plana) -- cada fila ya
   // es un resumen completo (asesor + dia + narrativa), sin totales

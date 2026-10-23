@@ -53,6 +53,15 @@ module Api::V2::Accounts::ReportsHelper
     [generate_conversation_report_metrics(summary)]
   end
 
+  # Compartido entre ReportsController y SummaryReportsController -- ambos
+  # arman @report_data con su propio builder y renderizan via una vista
+  # .csv.erb (ver app/views/api/v2/accounts/reports/*.csv.erb).
+  def generate_csv(filename, template)
+    response.headers['Content-Type'] = 'text/csv'
+    response.headers['Content-Disposition'] = "attachment; filename=#{filename}.csv"
+    render layout: false, template: template, formats: [:csv]
+  end
+
   private
 
   def build_params(base_params)

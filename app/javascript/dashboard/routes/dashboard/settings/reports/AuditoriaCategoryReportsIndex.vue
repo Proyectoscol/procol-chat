@@ -16,6 +16,10 @@ import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import SummaryReportsAPI from 'dashboard/api/summaryReports';
+import {
+  downloadCsvFile,
+  generateFileName,
+} from 'dashboard/helper/downloadHelper';
 
 const { t } = useI18n();
 const store = useStore();
@@ -57,6 +61,9 @@ const reportTotals = useMapGetter(
 );
 const timeseries = useMapGetter(
   'summaryReports/getAuditoriaCategoryTimeseries'
+);
+const timeseriesBucket = useMapGetter(
+  'summaryReports/getAuditoriaCategoryTimeseriesBucket'
 );
 
 // Arbol de 2 niveles a partir de la lista plana que ya trae parent_id
@@ -257,15 +264,72 @@ const totalsSummary = computed(() => {
 });
 
 const selectedCategory = ref(null);
+const selectedTerm = ref(null);
 const isDrawerOpen = computed(() => !!selectedCategory.value);
 const openCategoryDrawer = category => {
   selectedCategory.value = category;
+  selectedTerm.value = null;
+};
+// Clic en un termino del desglose -- mismo drawer, pero filtrado a ese
+// termino puntual (ver auditoria_category_conversations_params#term).
+const openTermDrawer = (category, term) => {
+  selectedCategory.value = category;
+  selectedTerm.value = term;
 };
 const closeCategoryDrawer = () => {
   selectedCategory.value = null;
+  selectedTerm.value = null;
 };
 const fetchCategoryConversations = params =>
   SummaryReportsAPI.getAuditoriaCategoryConversations(params);
+
+const downloadCsv = async (fetchCsv, fileType) => {
+  try {
+    const { data } = await fetchCsv();
+    downloadCsvFile(generateFileName({ type: fileType, to: to.value }), data);
+  } catch {
+    useAlert(t('AUDITORIA_CATEGORY_REPORTS.EXPORT_FAILED'));
+  }
+};
+
+const isDownloadingCategoryCsv = ref(false);
+const downloadCategoryCsv = async () => {
+  isDownloadingCategoryCsv.value = true;
+  await downloadCsv(
+    () =>
+      SummaryReportsAPI.getAuditoriaCategoryCsv({
+        since: from.value,
+        until: to.value,
+        inboxId: selectedInboxId.value || undefined,
+        countMode: countMode.value,
+      }),
+    'auditoria_category'
+  );
+  isDownloadingCategoryCsv.value = false;
+};
+
+const isDownloadingTimeseriesCsv = ref(false);
+const downloadTimeseriesCsv = async () => {
+  isDownloadingTimeseriesCsv.value = true;
+  await downloadCsv(
+    () =>
+      SummaryReportsAPI.getAuditoriaCategoryTimeseriesCsv({
+        since: from.value,
+        until: to.value,
+        inboxId: selectedInboxId.value || undefined,
+        categoryIds: Array.from(checkedCategoryIds.value),
+        countMode: countMode.value,
+      }),
+    'auditoria_category_timeseries'
+  );
+  isDownloadingTimeseriesCsv.value = false;
+};
+
+const exportConversationsCsv = params =>
+  downloadCsv(
+    () => SummaryReportsAPI.getAuditoriaCategoryConversationsCsv(params),
+    'auditoria_category_conversations'
+  );
 
 const goToCreateCategory = () => router.push(createCategoryRoute.value);
 </script>
@@ -338,10 +402,26 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
     </div>
   </div>
 
+  <div class="flex items-center justify-end mt-5">
+    <Button
+      faded
+      slate
+      size="sm"
+      icon="i-ph-download-simple"
+      :label="$t('AUDITORIA_CATEGORY_REPORTS.EXPORT_CSV_BUTTON')"
+      :is-loading="isDownloadingTimeseriesCsv"
+      @click="downloadTimeseriesCsv"
+    />
+  </div>
   <div
-    class="relative mt-5 rounded-xl bg-n-solid-2 p-4 shadow outline-1 outline outline-n-container"
+    class="relative mt-2 rounded-xl bg-n-solid-2 p-4 shadow outline-1 outline outline-n-container"
   >
-    <CategoryMentionsChart :series="timeseries" :since="from" :until="to" />
+    <CategoryMentionsChart
+      :series="timeseries"
+      :since="from"
+      :until="to"
+      :bucket="timeseriesBucket"
+    />
     <div
       v-if="isLoading"
       class="absolute inset-0 flex items-center justify-center rounded-xl bg-n-solid-1/70"
@@ -360,8 +440,19 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
     <CategoryBreakdownPieChart :segments="topLevelPieSegments" />
   </div>
 
+  <div class="flex items-center justify-end mt-5">
+    <Button
+      faded
+      slate
+      size="sm"
+      icon="i-ph-download-simple"
+      :label="$t('AUDITORIA_CATEGORY_REPORTS.EXPORT_CSV_BUTTON')"
+      :is-loading="isDownloadingCategoryCsv"
+      @click="downloadCategoryCsv"
+    />
+  </div>
   <div
-    class="relative flex-1 overflow-auto px-2 py-2 mt-5 shadow outline-1 outline outline-n-container rounded-xl bg-n-solid-2"
+    class="relative flex-1 overflow-auto px-2 py-2 mt-2 shadow outline-1 outline outline-n-container rounded-xl bg-n-solid-2"
   >
     <table class="min-w-full table-auto divide-y divide-n-weak">
       <thead>
@@ -452,7 +543,10 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
           </tr>
           <tr v-if="!category.hasSubcategories && isTermsExpanded(category.id)">
             <td colspan="3" class="pb-3 ltr:pr-4 rtl:pl-4">
-              <TermsBreakdownList :state="termsByCategoryId[category.id]" />
+              <TermsBreakdownList
+                :state="termsByCategoryId[category.id]"
+                @select-term="term => openTermDrawer(category, term)"
+              />
             </td>
           </tr>
           <template
@@ -495,7 +589,10 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
             </tr>
             <tr v-if="isTermsExpanded(child.id)">
               <td colspan="3" class="pb-3 ltr:pr-4 rtl:pl-4 ps-8">
-                <TermsBreakdownList :state="termsByCategoryId[child.id]" />
+                <TermsBreakdownList
+                  :state="termsByCategoryId[child.id]"
+                  @select-term="term => openTermDrawer(child, term)"
+                />
               </td>
             </tr>
           </template>
@@ -521,8 +618,11 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
       until: to,
       categoryId: selectedCategory?.id,
       inboxId: selectedInboxId,
+      term: selectedTerm,
     }"
     :fetcher="fetchCategoryConversations"
+    :export-csv="exportConversationsCsv"
+    sortable-by-reason
     @close="closeCategoryDrawer"
   />
 </template>

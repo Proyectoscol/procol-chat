@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import eachDayOfInterval from 'date-fns/eachDayOfInterval';
+import eachWeekOfInterval from 'date-fns/eachWeekOfInterval';
+import eachMonthOfInterval from 'date-fns/eachMonthOfInterval';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import format from 'date-fns/format';
 import { colorForIndex } from 'dashboard/helper/auditoriaCategoryPalette';
@@ -10,6 +12,7 @@ const props = defineProps({
   series: { type: Array, default: () => [] },
   since: { type: Number, required: true },
   until: { type: Number, required: true },
+  bucket: { type: String, default: 'day' },
 });
 
 const { t } = useI18n();
@@ -19,20 +22,32 @@ const HEIGHT = 280;
 const MARGIN = { top: 16, right: 16, bottom: 28, left: 36 };
 const PLOT_WIDTH = WIDTH - MARGIN.left - MARGIN.right;
 const PLOT_HEIGHT = HEIGHT - MARGIN.top - MARGIN.bottom;
+const MAX_X_LABELS = 8;
 
-const days = computed(() => {
+// Cada bucket es el INICIO del periodo (dia, lunes de esa semana, o 1ro de
+// mes) -- weekStartsOn: 1 calza con como Postgres date_trunc('week', ...)
+// trunca (siempre al lunes, ISO 8601), ver el builder en el backend.
+const buckets = computed(() => {
   if (!props.since || !props.until) return [];
-  return eachDayOfInterval({
+
+  const interval = {
     start: fromUnixTime(props.since),
     end: fromUnixTime(props.until),
-  }).map(d => format(d, 'yyyy-MM-dd'));
+  };
+  const dates =
+    {
+      week: () => eachWeekOfInterval(interval, { weekStartsOn: 1 }),
+      month: () => eachMonthOfInterval(interval),
+    }[props.bucket]?.() || eachDayOfInterval(interval);
+
+  return dates.map(d => format(d, 'yyyy-MM-dd'));
 });
 
 // occurred_on ya viene resuelto por el backend (mensaje real para palabra
-// clave, dia reportado por la IA para categorias :ai) -- un dia sin
+// clave, dia reportado por la IA para categorias :ai) -- un bucket sin
 // mencion es un 0 real, no un hueco: se rellena explicito para que la
-// linea refleje el conteo real dia por dia, no interpole sobre dias sin
-// datos.
+// linea refleje el conteo real bucket por bucket, no interpole sobre
+// buckets sin datos.
 const filledSeries = computed(() =>
   props.series.map((s, index) => {
     const countByDate = Object.fromEntries(
@@ -42,7 +57,7 @@ const filledSeries = computed(() =>
       id: s.id,
       title: s.title,
       color: colorForIndex(index),
-      counts: days.value.map(date => countByDate[date] || 0),
+      counts: buckets.value.map(date => countByDate[date] || 0),
     };
   })
 );
@@ -62,9 +77,31 @@ const yTicks = computed(() => {
 });
 
 const xForIndex = index =>
-  days.value.length <= 1
+  buckets.value.length <= 1
     ? MARGIN.left
-    : MARGIN.left + (index / (days.value.length - 1)) * PLOT_WIDTH;
+    : MARGIN.left + (index / (buckets.value.length - 1)) * PLOT_WIDTH;
+
+// Maximo MAX_X_LABELS etiquetas sin importar cuantos buckets haya (hasta
+// ~36 en modo dia, ~26 en modo semana) -- muestra el primero, el ultimo, y
+// el resto espaciado parejo para que nunca se amontonen.
+const xLabelFormat = computed(() =>
+  props.bucket === 'month' ? 'MMM yyyy' : 'd MMM'
+);
+const xLabels = computed(() => {
+  const total = buckets.value.length;
+  if (!total) return [];
+
+  const step = Math.max(1, Math.ceil(total / MAX_X_LABELS));
+  const indices = [];
+  for (let index = 0; index < total; index += step) indices.push(index);
+  if (indices[indices.length - 1] !== total - 1) indices.push(total - 1);
+
+  return indices.map(index => ({
+    index,
+    x: xForIndex(index),
+    label: format(new Date(buckets.value[index]), xLabelFormat.value),
+  }));
+});
 
 const yForCount = count =>
   MARGIN.top + PLOT_HEIGHT - (count / maxCount.value) * PLOT_HEIGHT;
@@ -81,7 +118,7 @@ const hoverIndex = ref(null);
 const svgRef = ref(null);
 
 const onPointerMove = event => {
-  if (!svgRef.value || !days.value.length) return;
+  if (!svgRef.value || !buckets.value.length) return;
 
   const rect = svgRef.value.getBoundingClientRect();
   const relativeX = ((event.clientX - rect.left) / rect.width) * WIDTH;
@@ -89,15 +126,15 @@ const onPointerMove = event => {
     1,
     Math.max(0, (relativeX - MARGIN.left) / PLOT_WIDTH)
   );
-  hoverIndex.value = Math.round(ratio * (days.value.length - 1));
+  hoverIndex.value = Math.round(ratio * (buckets.value.length - 1));
 };
 const onPointerLeave = () => {
   hoverIndex.value = null;
 };
 
 const hoverDateLabel = computed(() => {
-  if (hoverIndex.value === null || !days.value[hoverIndex.value]) return '';
-  return format(new Date(days.value[hoverIndex.value]), 'd MMM yyyy');
+  if (hoverIndex.value === null || !buckets.value[hoverIndex.value]) return '';
+  return format(new Date(buckets.value[hoverIndex.value]), 'd MMM yyyy');
 });
 
 const hoverTooltipX = computed(() => {
@@ -148,6 +185,20 @@ const hoverTooltipX = computed(() => {
           class="fill-n-slate-10 text-[10px]"
         >
           {{ tick }}
+        </text>
+      </g>
+
+      <!-- eje X: fechas de calendario, maximo MAX_X_LABELS para no saturar -->
+      <g>
+        <text
+          v-for="label in xLabels"
+          :key="`xlabel-${label.index}`"
+          :x="label.x"
+          :y="HEIGHT - MARGIN.bottom + 14"
+          text-anchor="middle"
+          class="fill-n-slate-10 text-[10px]"
+        >
+          {{ label.label }}
         </text>
       </g>
 

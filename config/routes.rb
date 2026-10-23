@@ -564,6 +564,9 @@ Rails.application.routes.draw do
               get :auditoria_category_conversations
               get :auditoria_category_terms
               get :auditoria_advisor_daily_rollup
+              get :auditoria_category_csv
+              get :auditoria_category_timeseries_csv
+              get :auditoria_category_conversations_csv
             end
           end
           resources :reports, only: [:index] do

@@ -23,6 +23,7 @@ module Auditoria::ConversationAnalyzerCategoryMatching
   # heredar/extender Auditoria::ConversationAnalyzerSchema (RubyLLM::Schema
   # .create siempre arranca de Class.new(RubyLLM::Schema), no de una clase
   # padre custom), asi que los 5 field_N se repiten aqui a proposito.
+  # rubocop:disable Metrics/MethodLength
   def schema
     return Auditoria::ConversationAnalyzerSchema if active_ai_categories.blank?
 
@@ -41,10 +42,12 @@ module Auditoria::ConversationAnalyzerCategoryMatching
           array :dates, of: :string,
                         description: 'Dias (formato AAAA-MM-DD, tomados de los marcadores "Fecha:" de la conversacion) ' \
                                      'en que se detecto esta categoria.'
+          string :reason, description: 'Frase corta explicando por que esta conversacion aplica a esta categoria.'
         end
       end
     end
   end
+  # rubocop:enable Metrics/MethodLength
 
   # .leaf: una categoria agrupadora (ej. "Competencia") nunca se ofrece
   # como opcion clasificable al LLM -- solo sus subcategorias, que son las
@@ -57,27 +60,35 @@ module Auditoria::ConversationAnalyzerCategoryMatching
 
   # Diffea por (categoria, dia) -- no solo por categoria -- contra las filas
   # de IA EXISTENTES de esta conversacion (message_id: nil; nunca toca filas
-  # de palabra clave, son poblaciones independientes de la misma tabla).
+  # de palabra clave, son poblaciones independientes de la misma tabla). El
+  # reason solo se guarda al CREAR una fila -- si un (categoria, dia) ya
+  # existia, su reason original se queda igual aunque la redaccion de este
+  # analisis sea distinta (mismo criterio "no retroactivo" del resto de
+  # campos de IA en este sistema).
   def sync_ai_categories!(returned_categories)
     return if active_ai_categories.blank?
 
-    wanted = wanted_category_date_pairs(returned_categories)
+    reason_by_pair = wanted_category_date_reasons(returned_categories)
+    wanted = reason_by_pair.keys
     existing = existing_ai_category_date_pairs
 
-    create_category_mentions(wanted - existing)
+    create_category_mentions(wanted - existing, reason_by_pair)
     destroy_category_mentions(existing - wanted)
   end
 
-  def wanted_category_date_pairs(returned_categories)
+  def wanted_category_date_reasons(returned_categories)
     title_to_id = active_ai_categories.pluck(:title, :id).to_h
-    Array(returned_categories).flat_map { |entry| category_date_pairs_for(entry, title_to_id) }.uniq
+    Array(returned_categories).each_with_object({}) do |entry, reason_by_pair|
+      category_date_reasons_for(entry, title_to_id).each { |pair, reason| reason_by_pair[pair] = reason }
+    end
   end
 
-  def category_date_pairs_for(entry, title_to_id)
+  def category_date_reasons_for(entry, title_to_id)
     category_id = title_to_id[entry[:category]]
-    return [] unless category_id
+    return {} unless category_id
 
     Array(entry[:dates]).filter_map { |date_str| parsed_mention_date(category_id, date_str) }
+                        .index_with { |_pair| entry[:reason] }
   end
 
   def parsed_mention_date(category_id, date_str)
@@ -92,13 +103,13 @@ module Auditoria::ConversationAnalyzerCategoryMatching
                 .pluck(:category_id, :occurred_on)
   end
 
-  def create_category_mentions(pairs)
+  def create_category_mentions(pairs, reason_by_pair)
     return if pairs.blank?
 
     now = Time.current
     rows = pairs.map do |category_id, occurred_on|
       { account_id: account.id, category_id: category_id, conversation_id: conversation.id,
-        occurred_on: occurred_on, created_at: now }
+        occurred_on: occurred_on, reason: reason_by_pair[[category_id, occurred_on]], created_at: now }
     end
     # rubocop:disable Rails/SkipsModelValidations
     Auditoria::CategoryMention.insert_all(rows)

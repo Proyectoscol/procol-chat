@@ -138,7 +138,12 @@
       "MESSAGE_CREATED_AT": "Mensaje creado a la {time}",
       "EVENT_OCCURRED_AT": "El evento se produjo en {time}",
       "INCOMING_MESSAGE": "Mensaje entrante",
-      "OUTGOING_MESSAGE": "Mensaje saliente"
+      "OUTGOING_MESSAGE": "Mensaje saliente",
+      "SORT_LABEL": "Ordenar por",
+      "SORT_DEFAULT": "Más recientes",
+      "SORT_BY_REASON": "Palabra clave",
+      "EXPORT_CSV": "Exportar CSV",
+      "MATCH_REASONS_MORE": "+{count} más"
     },
     "PAGINATION": {
       "RESULTS": "Mostrando {start} a {end} de {total} resultados",
@@ -752,6 +757,8 @@
     "TERMS_BREAKDOWN": {
       "TOGGLE": "Términos",
       "EMPTY": "No se encontraron mensajes que coincidan con los términos de esta categoría."
-    }
+    },
+    "EXPORT_CSV_BUTTON": "Exportar CSV",
+    "EXPORT_FAILED": "No se pudo exportar, intenta de nuevo."
   }
 }

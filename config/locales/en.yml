@@ -261,6 +261,19 @@ en:
       avg_customer_waiting_time: Avg customer waiting time
     conversation_traffic_csv:
       timezone: Timezone
+    auditoria_category_csv:
+      title: Category
+      parent_title: Parent category
+      count: Count
+    auditoria_category_timeseries_csv:
+      date: Date
+    auditoria_category_conversations_csv:
+      conversation_id: Conversation
+      contact_name: Contact
+      assignee_name: Assignee
+      inbox_name: Inbox
+      last_activity_at: Last activity
+      match_reasons: Match reason(s)
     sla_csv:
       conversation_id: Conversation ID
       sla_policy_breached: SLA Policy

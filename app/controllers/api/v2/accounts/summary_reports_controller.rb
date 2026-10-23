@@ -1,8 +1,16 @@
 class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseController
+  include Api::V2::Accounts::ReportsHelper
+
+  # Limite de filas del CSV de conversaciones (sin paginar) -- una categoria
+  # real nunca deberia acercarse a esto; es solo un techo de seguridad, no
+  # un limite de negocio esperado.
+  CSV_CONVERSATIONS_MAX_ROWS = 10_000
+
   AUDITORIA_INBOX_SCOPED_ACTIONS = %i[
     auditoria_advisor auditoria_advisor_conversations auditoria_category
     auditoria_category_timeseries auditoria_category_conversations auditoria_category_terms
-    auditoria_advisor_daily_rollup
+    auditoria_advisor_daily_rollup auditoria_category_csv auditoria_category_timeseries_csv
+    auditoria_category_conversations_csv
   ].freeze
 
   before_action :check_authorization
@@ -107,6 +115,37 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     render json: builder.build
   end
 
+  def auditoria_category_csv
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    @report_data = auditoria_category_csv_rows
+    generate_csv('auditoria_category_report', 'api/v2/accounts/reports/auditoria_category')
+  end
+
+  def auditoria_category_timeseries_csv
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    series = V2::Reports::AuditoriaCategoryMentionsTimeseriesBuilder.new(
+      account: Current.account, params: auditoria_category_timeseries_params
+    ).build[:series]
+    @csv_headers = series.pluck(:title)
+    @report_data = auditoria_category_timeseries_csv_rows(series)
+    generate_csv('auditoria_category_timeseries_report', 'api/v2/accounts/reports/auditoria_category_timeseries')
+  end
+
+  # Sin paginar (ver CSV_CONVERSATIONS_MAX_ROWS) -- un export debe traer
+  # todo lo que haya, no solo la primera pagina que ve el drawer.
+  def auditoria_category_conversations_csv
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaCategoryConversationsBuilder.new(
+      account: Current.account,
+      params: auditoria_category_conversations_params.merge(per_page: CSV_CONVERSATIONS_MAX_ROWS)
+    )
+    @report_data = auditoria_category_conversations_csv_rows(builder.build[:payload])
+    generate_csv('auditoria_category_conversations_report', 'api/v2/accounts/reports/auditoria_category_conversations')
+  end
+
   private
 
   def check_authorization
@@ -141,7 +180,7 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
   end
 
   def auditoria_category_conversations_params
-    params.permit(:since, :until, :category_id, :inbox_id, :page, inbox_id: [])
+    params.permit(:since, :until, :category_id, :inbox_id, :page, :term, inbox_id: [])
   end
 
   def auditoria_category_terms_params
@@ -150,6 +189,42 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
 
   def auditoria_advisor_daily_rollup_params
     params.permit(:since, :until, :inbox_id, :user_id, inbox_id: [], user_id: [])
+  end
+
+  def auditoria_category_csv_rows
+    categories = V2::Reports::AuditoriaCategorySummaryBuilder.new(account: Current.account, params: auditoria_category_params).build[:categories]
+    title_by_id = categories.to_h { |category| [category[:id], category[:title]] }
+    categories.map { |category| [category[:title], title_by_id[category[:parent_id]], category[:conversations_count]] }
+  end
+
+  # Formato ancho: una fila por fecha-bucket, una columna por categoria
+  # (ver @csv_headers) -- un bucket sin mencion para una categoria es 0, no
+  # una celda vacia, mismo criterio que el relleno de la grafica.
+  def auditoria_category_timeseries_csv_rows(series)
+    dates = timeseries_csv_dates(series)
+    counts = timeseries_csv_counts_by_date_and_category(series)
+    dates.map { |date| [date] + series.map { |s| counts[[date, s[:id]]] || 0 } }
+  end
+
+  def timeseries_csv_dates(series)
+    series.flat_map { |s| s[:points].pluck(:date) }.uniq.sort
+  end
+
+  def timeseries_csv_counts_by_date_and_category(series)
+    series.each_with_object({}) do |s, acc|
+      s[:points].each { |point| acc[[point[:date], s[:id]]] = point[:count] }
+    end
+  end
+
+  def auditoria_category_conversations_csv_rows(payload)
+    payload.map do |record|
+      conversation = record[:conversation] || {}
+      [
+        conversation[:display_id], conversation[:contact_name], conversation[:assignee_name], conversation[:inbox_name],
+        conversation[:last_activity_at] ? Time.zone.at(conversation[:last_activity_at]) : nil,
+        Array(record[:match_reasons]).join('; ')
+      ]
+    end
   end
 
   def render_report_with(builder_class, type: nil)

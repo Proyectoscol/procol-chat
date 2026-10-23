@@ -28,7 +28,7 @@ class V2::Reports::AuditoriaCategoryTermsBuilder
   # "conversaciones" se deduplica por conversation_id, para no doblar una
   # conversacion donde el mismo termino aparece en varios mensajes.
   def count_for_term(term)
-    scope = matched_messages.where('content ~* ?', pattern_for(term))
+    scope = matched_messages.where('content ~* ?', Auditoria::Category.term_pattern(term))
     return scope.count if mentions_mode?
 
     scope.distinct.count(:conversation_id)
@@ -36,10 +36,6 @@ class V2::Reports::AuditoriaCategoryTermsBuilder
 
   def mentions_mode?
     params[:count_mode] == 'mentions'
-  end
-
-  def pattern_for(term)
-    "\\y#{Regexp.escape(term)}\\y"
   end
 
   # Mismas filas que ya cuentan como mencion de esta categoria (ver

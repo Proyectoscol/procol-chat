@@ -4,6 +4,7 @@
 #
 #  id              :bigint           not null, primary key
 #  occurred_on     :date             not null
+#  reason          :string
 #  created_at      :datetime         not null
 #  account_id      :bigint           not null
 #  category_id     :bigint           not null

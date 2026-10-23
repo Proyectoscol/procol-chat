@@ -10,6 +10,8 @@ defineProps({
   state: { type: Object, default: null },
 });
 
+defineEmits(['selectTerm']);
+
 const { t } = useI18n();
 
 const renderCount = value => (value ? value.toLocaleString() : '--');
@@ -31,7 +33,13 @@ const renderCount = value => (value ? value.toLocaleString() : '--');
       :key="row.term"
       class="flex items-center justify-between gap-4 text-sm"
     >
-      <span class="text-n-slate-11 truncate">{{ row.term }}</span>
+      <button
+        type="button"
+        class="text-n-blue-text hover:underline truncate"
+        @click="$emit('selectTerm', row.term)"
+      >
+        {{ row.term }}
+      </button>
       <span class="text-n-slate-12">{{ renderCount(row.mentionsCount) }}</span>
     </li>
   </ul>

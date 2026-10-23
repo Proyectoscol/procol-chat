@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { formatTime } from '@chatwoot/utils';
@@ -61,6 +61,22 @@ const previewText = computed(() => {
 const showPreview = computed(() => {
   return isMessageRecord.value || conversation.value.last_message;
 });
+
+// match_reasons: palabra(s) clave o razon de IA que disparo esta coincidencia
+// (ver AuditoriaCategoryConversationsBuilder#match_reasons_for) -- solo lo
+// manda el drilldown de categorias, los demas (advisors, rollup diario)
+// simplemente no incluyen esta key y este bloque entero queda oculto.
+const MAX_VISIBLE_REASONS = 3;
+const showAllReasons = ref(false);
+const matchReasons = computed(() => props.record.match_reasons || []);
+const visibleReasons = computed(() =>
+  showAllReasons.value
+    ? matchReasons.value
+    : matchReasons.value.slice(0, MAX_VISIBLE_REASONS)
+);
+const hiddenReasonsCount = computed(() =>
+  Math.max(0, matchReasons.value.length - MAX_VISIBLE_REASONS)
+);
 
 const messageCreatedTooltip = computed(() =>
   t('REPORT.DRILLDOWN.MESSAGE_CREATED_AT', {
@@ -260,6 +276,31 @@ const openRecord = () => {
     >
       {{ previewText }}
     </p>
+
+    <div
+      v-if="matchReasons.length"
+      class="mt-2 flex flex-wrap items-center gap-1.5"
+    >
+      <span
+        v-for="reason in visibleReasons"
+        :key="reason"
+        class="rounded-full bg-n-amber-3 px-2 py-0.5 text-xs text-n-amber-11"
+      >
+        {{ reason }}
+      </span>
+      <button
+        v-if="hiddenReasonsCount && !showAllReasons"
+        type="button"
+        class="text-xs text-n-slate-10 hover:text-n-slate-12 hover:underline"
+        @click.stop="showAllReasons = true"
+      >
+        {{
+          t('REPORT.DRILLDOWN.MATCH_REASONS_MORE', {
+            count: hiddenReasonsCount,
+          })
+        }}
+      </button>
+    </div>
 
     <div class="mt-2 grid grid-cols-3 gap-2">
       <component

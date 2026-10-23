@@ -42,7 +42,7 @@ class Auditoria::KeywordCategoryMatcherService
 
   # Mensajes con texto propio -- SQL directo sobre content, como antes.
   def text_rows(terms, category)
-    patterns = terms.map { |term| "\\y#{Regexp.escape(term)}\\y" }
+    patterns = terms.map { |term| Auditoria::Category.term_pattern(term) }
     candidate_messages(category).where('content ~* ANY(ARRAY[?])', patterns)
                                 .pluck(:id, :account_id, :conversation_id, :created_at)
                                 .map { |id, account_id, conversation_id, created_at| row_for(id, account_id, conversation_id, created_at) }
@@ -57,7 +57,7 @@ class Auditoria::KeywordCategoryMatcherService
   # dos dialectos distintos, asi que el universo ya viene acotado por SQL
   # (solo audio + sin texto propio) y el regex final corre en Ruby.
   def transcript_rows(terms, category)
-    regexes = terms.map { |term| /\b#{Regexp.escape(term)}\b/i }
+    regexes = terms.map { |term| Auditoria::Category.term_regex(term) }
     audio_candidate_messages(category).filter_map { |message| transcript_row(message, regexes) }
   end
 

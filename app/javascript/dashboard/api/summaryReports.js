@@ -111,6 +111,7 @@ class SummaryReportsAPI extends ApiClient {
     until,
     categoryId,
     inboxId,
+    term,
     page,
     signal,
   } = {}) {
@@ -120,6 +121,7 @@ class SummaryReportsAPI extends ApiClient {
         until,
         category_id: categoryId,
         inbox_id: inboxId,
+        term,
         page,
       },
       signal,
@@ -151,6 +153,58 @@ class SummaryReportsAPI extends ApiClient {
         category_id: categoryId,
         inbox_id: inboxId,
         count_mode: countMode,
+      },
+    });
+  }
+
+  // Los 3 metodos de CSV devuelven texto crudo (no JSON) -- el llamador los
+  // pasa a downloadCsvFile. Van por axios (no un <a href>/window.open
+  // directo) porque la autenticacion de esta app es por headers
+  // (access-token/client/uid, ver APIHelper.js), no por cookie de sesion --
+  // una navegacion plana del navegador no los llevaria.
+  getAuditoriaCategoryCsv({ since, until, inboxId, countMode } = {}) {
+    return axios.get(`${this.url}/auditoria_category_csv`, {
+      params: {
+        since,
+        until,
+        inbox_id: inboxId,
+        count_mode: countMode,
+      },
+    });
+  }
+
+  getAuditoriaCategoryTimeseriesCsv({
+    since,
+    until,
+    inboxId,
+    categoryIds,
+    countMode,
+  } = {}) {
+    return axios.get(`${this.url}/auditoria_category_timeseries_csv`, {
+      params: {
+        since,
+        until,
+        inbox_id: inboxId,
+        category_ids: categoryIds,
+        count_mode: countMode,
+      },
+    });
+  }
+
+  getAuditoriaCategoryConversationsCsv({
+    since,
+    until,
+    categoryId,
+    inboxId,
+    term,
+  } = {}) {
+    return axios.get(`${this.url}/auditoria_category_conversations_csv`, {
+      params: {
+        since,
+        until,
+        category_id: categoryId,
+        inbox_id: inboxId,
+        term,
       },
     });
   }

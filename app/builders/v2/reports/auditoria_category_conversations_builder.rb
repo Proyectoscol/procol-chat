@@ -12,13 +12,48 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
     representative_messages = representative_messages_by_conversation_id(conversations)
     records = conversations.map { |conversation| representative_messages[conversation.id] || conversation }
     serializer = V2::Reports::DrilldownRecordSerializer.new(account, nil, false, records)
+    payload = conversations.each_index.map do |index|
+      serializer.serialize(records[index]).merge(match_reasons: match_reasons_for(conversations[index]))
+    end
     {
       meta: { current_page: current_page, per_page: per_page, total_count: paginated_conversations.total_count },
-      payload: records.map { |record| serializer.serialize(record) }
+      payload: payload
     }
   end
 
   private
+
+  # Palabra clave: reconstruye en el momento cual(es) termino(s) configurado(s)
+  # matchean el texto del mensaje (igual que AuditoriaCategoryTermsBuilder,
+  # pero por mensaje puntual en vez de contar). IA: no hay texto que
+  # re-evaluar -- se lee el reason ya guardado por
+  # ConversationAnalyzerCategoryMatching (nil para menciones creadas antes
+  # de ese campo, mismo criterio "no retroactivo" del resto del proyecto).
+  def match_reasons_for(conversation)
+    mentions = relevant_mentions_by_conversation_id[conversation.id] || []
+    mentions.flat_map { |mention| reasons_for_mention(mention) }.uniq
+  end
+
+  def relevant_mentions_by_conversation_id
+    @relevant_mentions_by_conversation_id ||= begin
+      scope = Auditoria::CategoryMention.where(conversation_id: paginated_conversations.map(&:id), category_id: category_ids_for_filter)
+      scope = scope.where(occurred_on: range) if range
+      scope.includes(:category, message: :attachments).group_by(&:conversation_id)
+    end
+  end
+
+  def reasons_for_mention(mention)
+    return [mention.reason].compact if mention.message_id.nil?
+
+    matched_terms_for(mention)
+  end
+
+  def matched_terms_for(mention)
+    return [] if mention.message.blank?
+
+    text = mention.message.content_for_llm
+    mention.category.search_terms_list.select { |term| text.match?(Auditoria::Category.term_regex(term)) }
+  end
 
   # Para categorias de palabra clave, cada tarjeta debe abrir el mensaje
   # puntual que disparo el match, no solo la conversacion -- se toma la
@@ -55,7 +90,20 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
                    .distinct
     scope = scope.where(auditoria_category_mentions: { occurred_on: range }) if range
     scope = scope.where(inbox_id: inbox_id) if inbox_id.present?
+    scope = scope.where(auditoria_category_mentions: { message_id: message_ids_matching_term }) if term.present?
     scope
+  end
+
+  # Mismo alcance que AuditoriaCategoryTermsBuilder#count_for_term: solo
+  # revisa `content`, no transcripciones de audio -- limitacion ya existente
+  # en ese builder, se mantiene igual aqui por consistencia.
+  def message_ids_matching_term
+    mention_message_ids = Auditoria::CategoryMention.where(category_id: category_ids_for_filter).where.not(message_id: nil).pluck(:message_id)
+    Message.where(id: mention_message_ids).where('content ~* ?', Auditoria::Category.term_pattern(term)).ids
+  end
+
+  def term
+    params[:term]
   end
 
   def range
@@ -101,7 +149,11 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
     [params[:page].to_i, DEFAULT_PAGE].max
   end
 
+  # Override opcional -- el export CSV (sin paginar de verdad) pide un
+  # per_page grande explicito; el drawer paginado normal nunca lo manda y
+  # cae al default de siempre.
   def per_page
-    DEFAULT_PER_PAGE
+    requested = params[:per_page].to_i
+    requested.positive? ? requested : DEFAULT_PER_PAGE
   end
 end

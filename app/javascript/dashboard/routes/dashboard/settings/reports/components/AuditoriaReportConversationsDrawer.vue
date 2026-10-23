@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { formatTime } from '@chatwoot/utils';
 import SidePanel from 'dashboard/components-next/side-panel/SidePanel.vue';
@@ -18,6 +18,11 @@ const props = defineProps({
   showBreakdown: { type: Boolean, default: false },
   filterParams: { type: Object, default: () => ({}) },
   fetcher: { type: Function, required: true },
+  sortableByReason: { type: Boolean, default: false },
+  // Opcional -- solo el reporte de Categorias lo pasa hoy. Cuando esta
+  // presente, el padre hace la descarga real (axios + downloadCsvFile);
+  // el drawer se queda generico, sin saber nada de CSV.
+  exportCsv: { type: Function, default: null },
 });
 
 const emit = defineEmits(['close']);
@@ -54,8 +59,34 @@ const {
 
 const recordKey = record => record.conversation?.id;
 
+// Orden por palabra clave: alcance de solo las filas YA cargadas en la
+// pagina actual (no un sort de backend sobre todo el historico) -- mismo
+// criterio ya usado para el orden alfabetico del resumen diario por asesor.
+const sortBy = ref('default');
+const reasonSortKey = record => (record.match_reasons || []).join(', ');
+const displayedRecords = computed(() => {
+  if (sortBy.value !== 'reason') return records.value;
+
+  return [...records.value].sort((a, b) =>
+    reasonSortKey(a).localeCompare(reasonSortKey(b))
+  );
+});
+
 const fetchConversations = () => {
+  sortBy.value = 'default';
   openDrilldown({ ...props.filterParams });
+};
+
+const isExportingCsv = ref(false);
+const onExportCsv = async () => {
+  if (!props.exportCsv) return;
+
+  isExportingCsv.value = true;
+  try {
+    await props.exportCsv({ ...props.filterParams });
+  } finally {
+    isExportingCsv.value = false;
+  }
 };
 
 watch(
@@ -138,15 +169,49 @@ watch(
     </div>
 
     <div v-else class="flex flex-col gap-2">
-      <p class="text-sm text-n-slate-11 mb-1">
-        {{
-          t('REPORT.DRILLDOWN.RESULT_COUNT_CONVERSATION', {
-            count: meta.total_count,
-          })
-        }}
-      </p>
+      <div class="flex items-center justify-between gap-2 mb-1">
+        <p class="text-sm text-n-slate-11">
+          {{
+            t('REPORT.DRILLDOWN.RESULT_COUNT_CONVERSATION', {
+              count: meta.total_count,
+            })
+          }}
+        </p>
+        <div class="flex items-center gap-2">
+          <template v-if="sortableByReason">
+            <label
+              for="drilldown-sort-by-reason"
+              class="text-xs text-n-slate-10"
+            >
+              {{ t('REPORT.DRILLDOWN.SORT_LABEL') }}
+            </label>
+            <select
+              id="drilldown-sort-by-reason"
+              v-model="sortBy"
+              class="reset-base !mb-0 !w-auto text-xs"
+            >
+              <option value="default">
+                {{ t('REPORT.DRILLDOWN.SORT_DEFAULT') }}
+              </option>
+              <option value="reason">
+                {{ t('REPORT.DRILLDOWN.SORT_BY_REASON') }}
+              </option>
+            </select>
+          </template>
+          <Button
+            v-if="exportCsv"
+            faded
+            slate
+            size="sm"
+            icon="i-ph-download-simple"
+            :label="t('REPORT.DRILLDOWN.EXPORT_CSV')"
+            :is-loading="isExportingCsv"
+            @click="onExportCsv"
+          />
+        </div>
+      </div>
       <ReportDrilldownCard
-        v-for="record in records"
+        v-for="record in displayedRecords"
         :key="recordKey(record)"
         :record="record"
       />
