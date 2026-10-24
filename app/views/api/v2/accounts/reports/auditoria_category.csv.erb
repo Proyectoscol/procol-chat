@@ -1,4 +1,14 @@
-<%= CSVSafe.generate_line [I18n.t('reports.period', since: Date.strptime(params[:since], '%s'), until: Date.strptime(params[:until], '%s'))] %>
+<%
+  # since/until son opcionales en este reporte (ver V2::Reports::
+  # AuditoriaCategorySummaryBuilder#range) -- sin rango, el resumen es
+  # acumulado historico, igual que su endpoint JSON hermano.
+  period_label = if params[:since].present? && params[:until].present?
+                    I18n.t('reports.period', since: Date.strptime(params[:since], '%s'), until: Date.strptime(params[:until], '%s'))
+                  else
+                    I18n.t('reports.period_all_time')
+                  end
+%>
+<%= CSVSafe.generate_line [period_label] %>
 
 <% headers = [
     I18n.t('reports.auditoria_category_csv.title'),

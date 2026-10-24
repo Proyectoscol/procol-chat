@@ -771,6 +771,7 @@
     "TABLE": {
       "TITLE": "Categoría",
       "CONVERSATIONS": "Núm. de conversaciones",
+      "MENTIONS": "Veces mencionado",
       "SHOW_IN_CHART": "Mostrar en gráfica",
       "BREAKDOWN_SEGMENT": "{title} ({count})",
       "SUBCATEGORIES_TOGGLE": "Subcategorías"
@@ -783,6 +784,7 @@
       "MENTIONS": "Veces mencionado"
     },
     "TOTALS_SUMMARY": "Total de conversaciones con al menos una categoría: {conversations}",
+    "TOTALS_SUMMARY_MENTIONS": "Total de menciones en las categorías seleccionadas: {conversations}",
     "CHART": {
       "EMPTY": "No se encontraron menciones para las categorías y el rango de fechas seleccionados.",
       "CLICK_HINT": "Haz clic en un punto de la gráfica para ver el detalle de ese día."

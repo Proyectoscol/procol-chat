@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import camelcaseKeys from 'camelcase-keys';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import format from 'date-fns/format';
@@ -47,11 +47,18 @@ const to = ref(0);
 const selectedInboxId = ref('');
 const countMode = ref('conversations');
 const checkedCategoryIds = ref(new Set());
+// Distingue "primera carga, nunca se eligio nada" de "el usuario desmarco
+// todo a proposito" -- ambos casos tenian checkedCategoryIds.value.size
+// === 0, asi que un cambio de fecha/bandeja sin relacion volvia a marcar
+// las categorias por defecto encima de una seleccion vacia intencional.
+const hasInitializedSelection = ref(false);
 const expandedParentIds = ref(new Set());
 
 const uiFlags = useMapGetter('summaryReports/getUIFlags');
 const isLoading = computed(
-  () => uiFlags.value.isFetchingAuditoriaCategorySummaryReports ?? false
+  () =>
+    (uiFlags.value.isFetchingAuditoriaCategorySummaryReports ?? false) ||
+    (uiFlags.value.isFetchingAuditoriaCategoryTimeseries ?? false)
 );
 
 const inboxes = useMapGetter('inboxes/getInboxes');
@@ -184,12 +191,29 @@ const fetchSummary = async () => {
 
   // Primera carga: marca las primeras categorias HOJA (las unicas con
   // datos propios para graficar -- ver Auditoria::Category.leaf) por
-  // defecto para que la grafica no arranque vacia.
-  if (checkedCategoryIds.value.size === 0) {
+  // defecto para que la grafica no arranque vacia. Solo una vez -- despues
+  // de la primera carga, un size === 0 significa que el usuario desmarco
+  // todo a proposito (ver toggleChecked) y no debe revivirse solo.
+  if (!hasInitializedSelection.value) {
+    hasInitializedSelection.value = true;
     const leaves = categories.value.filter(c => !c.hasSubcategories);
     checkedCategoryIds.value = new Set(
       leaves.slice(0, DEFAULT_CHECKED_COUNT).map(c => c.id)
     );
+    return;
+  }
+
+  // Cambiar de bandeja puede dejar una categoria marcada fuera del scope
+  // del nuevo filtro (ya no aparece en `categories`, ver
+  // AuditoriaCategorySummaryBuilder#category_visible?) -- sin esto, su id
+  // seguia en checkedCategoryIds y seguia alimentando la grafica/export
+  // aunque ya no estuviera listada en la tabla para desmarcarla.
+  const visibleIds = new Set(categories.value.map(c => c.id));
+  const reconciled = new Set(
+    [...checkedCategoryIds.value].filter(id => visibleIds.has(id))
+  );
+  if (reconciled.size !== checkedCategoryIds.value.size) {
+    checkedCategoryIds.value = reconciled;
   }
 };
 
@@ -238,8 +262,10 @@ const fetchAllData = async () => {
   fetchTimeseries();
 };
 
-onMounted(() => fetchAllData());
-
+// Sin onMounted propio aqui: OverviewReportFilters ya emite 'filterChange'
+// en su propio mount (con las fechas por defecto ya resueltas), que dispara
+// onFilterChange -> fetchAllData abajo. Tener los dos onMounted competia,
+// duplicando cada request inicial al backend.
 const onFilterChange = updatedFilter => {
   from.value = updatedFilter.from;
   to.value = updatedFilter.to;
@@ -260,10 +286,24 @@ const onCountModeChange = () => {
 const totalsSummary = computed(() => {
   if (!reportTotals.value) return '';
 
-  return t('AUDITORIA_CATEGORY_REPORTS.TOTALS_SUMMARY', {
+  const key =
+    countMode.value === 'mentions'
+      ? 'AUDITORIA_CATEGORY_REPORTS.TOTALS_SUMMARY_MENTIONS'
+      : 'AUDITORIA_CATEGORY_REPORTS.TOTALS_SUMMARY';
+  return t(key, {
     conversations: renderCount(reportTotals.value.conversationsCount),
   });
 });
+
+// "Veces mencionado" es un conteo crudo de menciones, no de conversaciones
+// distintas (ver V2::Reports::AuditoriaCategorySummaryBuilder#count_for) --
+// sin esto la columna seguia diciendo "conversaciones" con un numero que en
+// ese modo puede ser mayor al total real de conversaciones.
+const countColumnLabel = computed(() =>
+  countMode.value === 'mentions'
+    ? t('AUDITORIA_CATEGORY_REPORTS.TABLE.MENTIONS')
+    : t('AUDITORIA_CATEGORY_REPORTS.TABLE.CONVERSATIONS')
+);
 
 const selectedCategory = ref(null);
 const selectedTerm = ref(null);
@@ -522,7 +562,7 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
           <th
             class="py-4 ltr:pr-4 rtl:pl-4 text-start text-heading-3 text-n-slate-12"
           >
-            {{ $t('AUDITORIA_CATEGORY_REPORTS.TABLE.CONVERSATIONS') }}
+            {{ countColumnLabel }}
           </th>
         </tr>
       </thead>

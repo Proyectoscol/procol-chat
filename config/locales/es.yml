@@ -209,6 +209,7 @@ es:
       invalid_certificate: must be a valid X.509 certificate in PEM format
   reports:
     period: Reportando el periodo desde %{since} hasta %{until}
+    period_all_time: 'Periodo del reporte: todo el histórico'
     utc_warning: El informe generado está en zona horaria UTC
     agent_csv:
       agent_name: Nombre del agente

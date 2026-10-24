@@ -38,6 +38,11 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
     @relevant_mentions_by_conversation_id ||= begin
       scope = Auditoria::CategoryMention.where(conversation_id: paginated_conversations.map(&:id), category_id: category_ids_for_filter)
       scope = scope.where(occurred_on: range) if range
+      # Sin esto, el drilldown filtrado por un termino especifico (click en
+      # TermsBreakdownList.vue) seguia mostrando razones de TODOS los
+      # terminos que matchearon esa conversacion, no solo el que el usuario
+      # clickeo -- igual que ya hace scoped_conversations.
+      scope = scope.where(message_id: message_ids_matching_term) if term.present?
       scope.includes(:category, message: :attachments).group_by(&:conversation_id)
     end
   end
@@ -68,8 +73,13 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
             .where(conversation_id: conversations.map(&:id), category_id: category_ids_for_filter)
             .where.not(message_id: nil)
     scope = scope.where(occurred_on: range) if range
+    # Mismo motivo que relevant_mentions_by_conversation_id: si el usuario
+    # filtro por un termino puntual, el mensaje representativo debe ser uno
+    # que de verdad contenga ese termino, no el mensaje mas reciente de
+    # CUALQUIER termino de la categoria.
+    scope = scope.where(message_id: message_ids_matching_term) if term.present?
     latest_message_ids = scope.group(:conversation_id).maximum(:message_id)
-    Message.where(id: latest_message_ids.values).index_by(&:conversation_id)
+    Message.where(id: latest_message_ids.values).includes(conversation: %i[assignee contact inbox]).index_by(&:conversation_id)
   end
 
   def paginated_conversations
@@ -140,7 +150,12 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
     if category.present? && !category_visible?(category)
       []
     elsif category.present?
-      [category.id] + category.descendant_ids
+      # Igual que el summary builder: un hijo cuyo scope de inbox ya no
+      # cubre al admin restringido actual no debe aparecer en el drilldown
+      # del padre, aunque sus menciones viejas (no retroactivas, ver
+      # Auditoria::Category#inbox_ids_within_parent_scope) sigan existiendo.
+      visible_descendant_ids = category.subcategories.select { |child| category_visible?(child) }.map(&:id)
+      [category.id] + visible_descendant_ids
     else
       [category_id]
     end

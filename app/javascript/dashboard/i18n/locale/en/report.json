@@ -776,6 +776,7 @@
     "TABLE": {
       "TITLE": "Category",
       "CONVERSATIONS": "No. of conversations",
+      "MENTIONS": "Times mentioned",
       "SHOW_IN_CHART": "Show in chart",
       "BREAKDOWN_SEGMENT": "{title} ({count})",
       "SUBCATEGORIES_TOGGLE": "Subcategories"
@@ -788,6 +789,7 @@
       "MENTIONS": "Times mentioned"
     },
     "TOTALS_SUMMARY": "Total conversations with at least one category: {conversations}",
+    "TOTALS_SUMMARY_MENTIONS": "Total mentions across the selected categories: {conversations}",
     "CHART": {
       "EMPTY": "No mentions found for the selected categories and date range.",
       "CLICK_HINT": "Click a point on the chart to see that day's detail."

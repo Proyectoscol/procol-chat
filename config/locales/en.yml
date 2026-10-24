@@ -227,6 +227,7 @@ en:
       invalid_certificate: must be a valid X.509 certificate in PEM format
   reports:
     period: Reporting period %{since} to %{until}
+    period_all_time: 'Reporting period: all time'
     utc_warning: The report generated is in UTC timezone
     agent_csv:
       agent_name: Agent name
