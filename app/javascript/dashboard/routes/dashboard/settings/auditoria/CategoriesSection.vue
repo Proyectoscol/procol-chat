@@ -20,6 +20,7 @@ const MAX_CATEGORIES = 10;
 const showFormModal = ref(false);
 const showDeletePopup = ref(false);
 const selectedCategory = ref(null);
+const duplicateFromCategory = ref(null);
 const deletingId = ref(null);
 
 const categories = useMapGetter('auditoriaCategories/getCategories');
@@ -72,10 +73,20 @@ const matchTypeLabel = category => {
 
 const openCreateModal = () => {
   selectedCategory.value = null;
+  duplicateFromCategory.value = null;
   showFormModal.value = true;
 };
 const openEditModal = category => {
   selectedCategory.value = category;
+  duplicateFromCategory.value = null;
+  showFormModal.value = true;
+};
+// Pre-llena el formulario de creacion con los valores de `category` -- el
+// usuario solo ajusta lo que cambia (titulo, terminos) en vez de volver a
+// elegir bandeja/padre/tipo de coincidencia desde cero cada vez.
+const openDuplicateModal = category => {
+  selectedCategory.value = null;
+  duplicateFromCategory.value = category;
   showFormModal.value = true;
 };
 const closeFormModal = () => {
@@ -192,6 +203,14 @@ onMounted(() => store.dispatch('auditoriaCategories/get'));
                   @click="openEditModal(category)"
                 />
                 <Button
+                  v-tooltip.top="t('AUDITORIA_CATEGORIES.DUPLICATE_BUTTON')"
+                  icon="i-lucide-copy-plus"
+                  slate
+                  sm
+                  :disabled="!canAddCategory"
+                  @click="openDuplicateModal(category)"
+                />
+                <Button
                   icon="i-woot-bin"
                   slate
                   sm
@@ -207,7 +226,11 @@ onMounted(() => store.dispatch('auditoriaCategories/get'));
     </BaseTable>
 
     <woot-modal v-model:show="showFormModal" :on-close="closeFormModal">
-      <CategoryFormModal :category="selectedCategory" @close="closeFormModal" />
+      <CategoryFormModal
+        :category="selectedCategory"
+        :duplicate-from="duplicateFromCategory"
+        @close="closeFormModal"
+      />
     </woot-modal>
 
     <woot-delete-modal

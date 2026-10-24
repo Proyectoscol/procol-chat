@@ -3,6 +3,7 @@
     "TAB_LABEL": "Categorías",
     "DESCRIPTION": "Configura las categorías que se rastrean en todas las conversaciones — por coincidencia exacta de palabras clave o clasificación con IA.",
     "ADD_BUTTON": "Agregar categoría",
+    "DUPLICATE_BUTTON": "Duplicar categoría",
     "EMPTY": "Aún no hay categorías configuradas.",
     "DELETE_SUCCESS": "Categoría eliminada",
     "DELETE_ERROR": "No se pudo eliminar la categoría. Inténtalo de nuevo.",
@@ -31,6 +32,8 @@
     },
     "FORM": {
       "CREATE_TITLE": "Nueva categoría",
+      "DUPLICATE_TITLE": "Duplicar categoría",
+      "DUPLICATE_TITLE_SUFFIX": "{title} (copia)",
       "EDIT_TITLE": "Editar categoría",
       "TITLE_LABEL": "Título",
       "TITLE_PLACEHOLDER": "ej. Mazda CX-5",

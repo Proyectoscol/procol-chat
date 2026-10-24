@@ -3,6 +3,7 @@
     "TAB_LABEL": "Categories",
     "DESCRIPTION": "Configure the categories tracked across all conversations — by exact keyword match or AI classification.",
     "ADD_BUTTON": "Add category",
+    "DUPLICATE_BUTTON": "Duplicate category",
     "EMPTY": "No categories configured yet.",
     "DELETE_SUCCESS": "Category deleted",
     "DELETE_ERROR": "Could not delete the category. Try again.",
@@ -31,6 +32,8 @@
     },
     "FORM": {
       "CREATE_TITLE": "New category",
+      "DUPLICATE_TITLE": "Duplicate category",
+      "DUPLICATE_TITLE_SUFFIX": "{title} (copy)",
       "EDIT_TITLE": "Edit category",
       "TITLE_LABEL": "Title",
       "TITLE_PLACEHOLDER": "e.g. Mazda CX-5",

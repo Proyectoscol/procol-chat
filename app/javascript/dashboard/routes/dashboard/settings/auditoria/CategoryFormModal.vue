@@ -11,6 +11,12 @@ import MultiInboxCheckboxSelector from 'dashboard/components/widgets/MultiInboxC
 
 const props = defineProps({
   category: { type: Object, default: null }, // null => crear, objeto => editar
+  // Pre-llena el formulario con los valores de una categoria existente,
+  // pero SIN category presente -- submit sigue creando una NUEVA, nunca
+  // actualiza la original. Pensado para "quiero varias subcategorias
+  // parecidas" (ej. cx5, cx50, Mazda 2): duplicar y solo tocar lo que
+  // cambia en vez de volver a llenar todo el formulario desde cero.
+  duplicateFrom: { type: Object, default: null },
 });
 const emit = defineEmits(['close']);
 
@@ -20,6 +26,10 @@ const allCategories = useMapGetter('auditoriaCategories/getCategories');
 const inboxes = useMapGetter('inboxes/getInboxes');
 
 const isEditMode = computed(() => !!props.category);
+const isDuplicateMode = computed(
+  () => !props.category && !!props.duplicateFrom
+);
+const sourceForFields = computed(() => props.category || props.duplicateFrom);
 // Una categoria que YA tiene subcategorias es pura agrupacion visual (ver
 // Auditoria::Category.leaf) -- oculta sus propios campos de match (dejaron
 // de importar) y no puede a su vez tener padre (maximo 2 niveles).
@@ -53,15 +63,22 @@ const parentOptions = computed(() => [
 ]);
 
 const setFormValues = () => {
-  title.value = props.category?.title || '';
-  matchType.value = props.category?.match_type || 'keyword';
-  isActive.value = props.category ? props.category.is_active : true;
-  searchTerms.value = props.category?.search_terms || '';
-  instructions.value = props.category?.instructions || '';
-  parentId.value = props.category?.parent_id ?? '';
-  selectedInboxIds.value = [...(props.category?.inbox_ids || [])];
+  const source = sourceForFields.value;
+  title.value = isDuplicateMode.value
+    ? t('AUDITORIA_CATEGORIES.FORM.DUPLICATE_TITLE_SUFFIX', {
+        title: source?.title || '',
+      })
+    : source?.title || '';
+  matchType.value = source?.match_type || 'keyword';
+  isActive.value = source ? source.is_active : true;
+  searchTerms.value = source?.search_terms || '';
+  instructions.value = source?.instructions || '';
+  parentId.value = source?.parent_id ?? '';
+  selectedInboxIds.value = [...(source?.inbox_ids || [])];
 };
-watch(() => props.category, setFormValues, { immediate: true });
+watch([() => props.category, () => props.duplicateFrom], setFormValues, {
+  immediate: true,
+});
 
 // Pista de UX anticipada -- la validacion real (bloqueante) la hace el
 // backend (ver Auditoria::Category#inbox_ids_within_parent_scope). Si el
@@ -135,9 +152,12 @@ const submit = async () => {
   <div class="flex flex-col h-auto overflow-auto">
     <woot-modal-header
       :header-title="
+        // eslint-disable-next-line no-nested-ternary
         isEditMode
           ? t('AUDITORIA_CATEGORIES.FORM.EDIT_TITLE')
-          : t('AUDITORIA_CATEGORIES.FORM.CREATE_TITLE')
+          : isDuplicateMode
+            ? t('AUDITORIA_CATEGORIES.FORM.DUPLICATE_TITLE')
+            : t('AUDITORIA_CATEGORIES.FORM.CREATE_TITLE')
       "
     />
     <!--
