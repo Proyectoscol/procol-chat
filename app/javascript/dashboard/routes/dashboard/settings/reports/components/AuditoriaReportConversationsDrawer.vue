@@ -89,9 +89,13 @@ const onExportCsv = async () => {
   }
 };
 
+// Tambien observa filterParams -- algunos consumidores (ej. Sentimiento)
+// cambian el contexto del drawer (de "este dia" a "esta etiqueta") sin
+// cerrarlo primero, y antes de esto el drawer se quedaba mostrando la
+// lista vieja porque open nunca dejaba de ser true.
 watch(
-  () => props.open,
-  isDrawerOpen => {
+  [() => props.open, () => props.filterParams],
+  ([isDrawerOpen]) => {
     if (!isDrawerOpen) {
       panelRef.value?.close();
       close();
@@ -100,7 +104,8 @@ watch(
 
     panelRef.value?.open();
     fetchConversations();
-  }
+  },
+  { deep: true }
 );
 </script>
 

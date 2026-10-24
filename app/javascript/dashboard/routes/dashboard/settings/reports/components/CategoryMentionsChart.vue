@@ -31,7 +31,12 @@ const MAX_X_LABELS = 8;
 
 // Cada bucket es el INICIO del periodo (dia, lunes de esa semana, o 1ro de
 // mes) -- weekStartsOn: 1 calza con como Postgres date_trunc('week', ...)
-// trunca (siempre al lunes, ISO 8601), ver el builder en el backend.
+// trunca (siempre al lunes, ISO 8601), ver el builder en el backend. Se
+// guarda el Date original junto a su key -- volver a parsear la key con
+// `new Date(str)` en otro punto del componente (xLabels, hoverDateLabel,
+// onChartClick) interpretaria el string como medianoche UTC, no local, y
+// en cualquier huso horario detras de UTC (ej. Colombia) eso corre la
+// fecha mostrada/clicada un dia hacia atras frente a los datos reales.
 const buckets = computed(() => {
   if (!props.since || !props.until) return [];
 
@@ -45,7 +50,7 @@ const buckets = computed(() => {
       month: () => eachMonthOfInterval(interval),
     }[props.bucket]?.() || eachDayOfInterval(interval);
 
-  return dates.map(d => format(d, 'yyyy-MM-dd'));
+  return dates.map(date => ({ date, key: format(date, 'yyyy-MM-dd') }));
 });
 
 // occurred_on ya viene resuelto por el backend (mensaje real para palabra
@@ -62,7 +67,7 @@ const filledSeries = computed(() =>
       id: s.id,
       title: s.title,
       color: colorForIndex(index),
-      counts: buckets.value.map(date => countByDate[date] || 0),
+      counts: buckets.value.map(bucket => countByDate[bucket.key] || 0),
     };
   })
 );
@@ -104,7 +109,7 @@ const xLabels = computed(() => {
   return indices.map(index => ({
     index,
     x: xForIndex(index),
-    label: format(new Date(buckets.value[index]), xLabelFormat.value),
+    label: format(buckets.value[index].date, xLabelFormat.value),
   }));
 });
 
@@ -154,7 +159,7 @@ const onChartClick = event => {
   const index = indexForEvent(event);
   if (index === null || !buckets.value[index]) return;
 
-  const start = new Date(buckets.value[index]);
+  const start = buckets.value[index].date;
   emit('selectBucket', {
     since: getUnixStartOfDay(start),
     until: getUnixEndOfDay(bucketEndDate(start)),
@@ -163,7 +168,7 @@ const onChartClick = event => {
 
 const hoverDateLabel = computed(() => {
   if (hoverIndex.value === null || !buckets.value[hoverIndex.value]) return '';
-  return format(new Date(buckets.value[hoverIndex.value]), 'd MMM yyyy');
+  return format(buckets.value[hoverIndex.value].date, 'd MMM yyyy');
 });
 
 const hoverTooltipX = computed(() => {

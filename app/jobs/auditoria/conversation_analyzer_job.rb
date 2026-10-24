@@ -16,14 +16,29 @@ class Auditoria::ConversationAnalyzerJob < ApplicationJob
     return unless conversation
 
     account = conversation.account
-    result = Auditoria::ConversationAnalyzerService.new(
-      account: account,
-      conversation_display_id: conversation.display_id,
-      triggered_by: triggered_by
-    ).perform
+    # Cualquier excepcion no manejada (red, fila duplicada, lo que sea) NO
+    # debe dejar el contador de progreso sin tocar para siempre -- antes de
+    # esto, una sola conversacion que reventara con una excepcion (no un
+    # error ya manejado por el service, que si vuelve como {error:})
+    # trababa la barra de progreso de la corrida entera por debajo del
+    # 100% para siempre, sin forma de que el frontend supiera que paso. Se
+    # cuenta como error y se vuelve a lanzar para que Sidekiq retry/dead-
+    # queue siga funcionando exactamente igual que antes.
+    unexpected_error = nil
+    result = begin
+      Auditoria::ConversationAnalyzerService.new(
+        account: account,
+        conversation_display_id: conversation.display_id,
+        triggered_by: triggered_by
+      ).perform
+    rescue StandardError => e
+      unexpected_error = e
+      { error: e.message }
+    end
 
     Redis::Alfred.set(error_key(conversation_id), result[:error], ex: 5.minutes) if result[:error]
     track_progress!(account, pipeline_run_kind, result) if pipeline_run_kind
+    raise unexpected_error if unexpected_error
   ensure
     Redis::Alfred.delete(pending_key(conversation_id))
   end
