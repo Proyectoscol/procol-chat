@@ -504,6 +504,8 @@ en:
       limit_exceeded: 'You can create a maximum of %{limit} custom tools per account'
   auditoria:
     ai_spend_limit_reached: 'The configured monthly AI spend limit has been reached. Contact your administrator.'
+    no_active_fields_to_analyze: 'There are no active AI fields configured. Ask an administrator to configure at least one in Settings.'
+    no_messages_to_analyze: 'This conversation has no messages to analyze yet.'
     max_categories_reached: 'You can create a maximum of %{limit} categories per account.'
     category_scope_narrower_than_parent_required: 'Must stay within the inbox scope of the parent category "%{parent_title}".'
     category_scope_conflicts_with_subcategories: 'Cannot restrict this scope: subcategories "%{titles}" would fall outside of it.'

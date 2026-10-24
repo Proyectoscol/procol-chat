@@ -57,13 +57,20 @@ const applyResponse = response => {
 };
 
 const fetchAnalysis = async () => {
+  // El agente puede cambiar de conversacion mientras esta peticion esta en
+  // vuelo (polling cada 3s) -- sin este guard, una respuesta que llega
+  // tarde pisa el estado de la conversacion NUEVA con los datos de la vieja.
+  const requestedConversationId = props.conversationId;
   try {
     const response = await AuditoriaConversationAnalysesAPI.getAnalysis(
-      props.conversationId
+      requestedConversationId
     );
+    if (props.conversationId !== requestedConversationId) return;
     applyResponse(response);
   } catch (error) {
+    if (props.conversationId !== requestedConversationId) return;
     errorMessage.value = t('CONVERSATION_SIDEBAR.AUDITOR_IA.ERROR');
+    isAnalyzing.value = false;
     stopPolling();
   }
 };

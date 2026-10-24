@@ -15,18 +15,43 @@ class Auditoria::AudioTranscriptionService < Captain::BaseTaskService
   DEFAULT_MODEL = 'gpt-4o-mini-transcribe'.freeze
 
   def perform
-    return { error: I18n.t('captain.disabled') } unless captain_tasks_enabled?
-    return { error: I18n.t('captain.api_key_missing') } unless api_key_configured?
-    return { error: 'No audio attachment' } unless audio_attachment
-    return { error: I18n.t('auditoria.ai_spend_limit_reached') } unless Auditoria::AiUsageLogger.within_limit?(account)
+    guard_error = check_preconditions
+    return { error: guard_error } if guard_error
 
     transcribe
   rescue StandardError => e
     capture_llm_exception(e, credential: llm_credential)
     { error: e.message }
+  ensure
+    Redis::Alfred.delete(lock_key) if @claimed_attachment
   end
 
   private
+
+  def check_preconditions
+    return I18n.t('captain.disabled') unless captain_tasks_enabled?
+    return I18n.t('captain.api_key_missing') unless api_key_configured?
+    return 'No audio attachment' unless audio_attachment
+    return I18n.t('auditoria.ai_spend_limit_reached') unless Auditoria::AiUsageLogger.within_limit?(account)
+    return 'Already transcribing' unless claim_attachment!
+
+    nil
+  end
+
+  # Esta misma transcripcion puede dispararse desde 2 caminos independientes
+  # sobre el MISMO adjunto: el job automatico (toggle "Transcribe Audio
+  # Messages", al llegar el mensaje) y "Analizar ahora" (ver
+  # Auditoria::ConversationAnalyzerService#transcribe_pending_audio!), ambos
+  # chequeando el mismo transcribed_text sin coordinarse entre si. Sin este
+  # lock, los dos pueden pasar ese chequeo antes de que cualquiera persista
+  # el resultado -> doble llamada pagada a Whisper por el mismo audio.
+  def claim_attachment!
+    @claimed_attachment = Redis::Alfred.set(lock_key, '1', nx: true, ex: 2.minutes)
+  end
+
+  def lock_key
+    format(Redis::RedisKeys::AUDITORIA_AUDIO_TRANSCRIPTION_LOCK, id: audio_attachment.id)
+  end
 
   def transcribe
     download_to_tempfile do |path|

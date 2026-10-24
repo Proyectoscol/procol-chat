@@ -14,10 +14,12 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
 
   def perform
     return skipped_result unless needs_analysis?
+    return no_active_fields_error if field_configs.empty?
     return spend_limit_error unless Auditoria::AiUsageLogger.within_limit?(account)
 
     transcribe_pending_audio!
     return spend_limit_error unless Auditoria::AiUsageLogger.within_limit?(account)
+    return no_messages_error if conversation_messages.empty?
 
     response = make_api_call(
       feature: 'editor', messages: messages, model: account.auditoria_chat_model.presence,
@@ -53,6 +55,14 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
 
   def spend_limit_error
     { error: I18n.t('auditoria.ai_spend_limit_reached') }
+  end
+
+  def no_active_fields_error
+    { error: I18n.t('auditoria.no_active_fields_to_analyze') }
+  end
+
+  def no_messages_error
+    { error: I18n.t('auditoria.no_messages_to_analyze') }
   end
 
   # "Analizar ahora" es una accion explicita del usuario pidiendo el
