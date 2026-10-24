@@ -132,6 +132,48 @@ class SummaryReportsAPI extends ApiClient {
     });
   }
 
+  getAuditoriaSentimentTimeseries({
+    since,
+    until,
+    inboxId,
+    userId,
+    teamId,
+  } = {}) {
+    return axios.get(`${this.url}/auditoria_sentiment_timeseries`, {
+      params: {
+        since,
+        until,
+        inbox_id: inboxId,
+        user_id: userId,
+        team_id: teamId,
+      },
+    });
+  }
+
+  getAuditoriaSentimentConversations({
+    since,
+    until,
+    inboxId,
+    userId,
+    teamId,
+    sentiment,
+    page,
+    signal,
+  } = {}) {
+    return axios.get(`${this.url}/auditoria_sentiment_conversations`, {
+      params: {
+        since,
+        until,
+        inbox_id: inboxId,
+        user_id: userId,
+        team_id: teamId,
+        sentiment,
+        page,
+      },
+      signal,
+    });
+  }
+
   getAuditoriaAdvisorDailyRollup({ since, until, inboxId, userId } = {}) {
     return axios.get(`${this.url}/auditoria_advisor_daily_rollup`, {
       params: {

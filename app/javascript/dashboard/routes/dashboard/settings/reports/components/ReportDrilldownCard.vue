@@ -90,6 +90,29 @@ const eventOccurredTooltip = computed(() =>
   })
 );
 
+// sentiment: solo lo manda el drilldown de sentimiento (ver
+// AuditoriaSentimentConversationsBuilder) -- los demas no incluyen esta
+// key y el badge queda oculto.
+const SENTIMENT_BADGE_CLASS = {
+  positive: 'bg-n-teal-3 text-n-teal-11',
+  neutral: 'bg-n-slate-3 text-n-slate-11',
+  negative: 'bg-n-ruby-3 text-n-ruby-11',
+};
+const sentimentBadgeClass = computed(
+  () => SENTIMENT_BADGE_CLASS[props.record.sentiment] || ''
+);
+// Cada rama llama a t() con una clave literal a proposito (regla
+// no-dynamic-keys) -- el lookup por sentiment pasa por el objeto, nunca
+// por una clave armada en runtime.
+const SENTIMENT_LABELS = {
+  positive: () => t('AUDITORIA_SENTIMENT_REPORTS.CHART.SENTIMENT.POSITIVE'),
+  neutral: () => t('AUDITORIA_SENTIMENT_REPORTS.CHART.SENTIMENT.NEUTRAL'),
+  negative: () => t('AUDITORIA_SENTIMENT_REPORTS.CHART.SENTIMENT.NEGATIVE'),
+};
+const sentimentLabel = computed(
+  () => SENTIMENT_LABELS[props.record.sentiment]?.() || ''
+);
+
 const directionDetails = computed(() => {
   const direction = messageDirection.value;
   if (!direction) return null;
@@ -237,6 +260,13 @@ const openRecord = () => {
             class="rounded bg-n-alpha-2 px-1.5 py-0.5 text-xs text-n-slate-11"
           >
             {{ metricValue }}
+          </span>
+          <span
+            v-if="record.sentiment"
+            class="rounded px-1.5 py-0.5 text-xs"
+            :class="sentimentBadgeClass"
+          >
+            {{ sentimentLabel }}
           </span>
         </div>
       </div>

@@ -383,6 +383,7 @@
     "REPORTS_AUDITORIA_ADVISORS": "Asesores (Auditoría)",
     "REPORTS_AUDITORIA_CATEGORIES": "Categorías (Auditoría)",
     "REPORTS_AUDITORIA_DAILY_ROLLUP": "Resumen diario (Auditoría)",
+    "REPORTS_AUDITORIA_SENTIMENT": "Sentimiento (Auditoría)",
     "AGENT_ASSIGNMENT": "Agent Assignment",
     "SET_AVAILABILITY_TITLE": "Ponte como",
     "SET_YOUR_AVAILABILITY": "Establecer su disponibilidad",

@@ -5,6 +5,7 @@
 #  id              :bigint           not null, primary key
 #  analyzed_at     :datetime
 #  results         :jsonb            not null
+#  sentiment       :string
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
 #  account_id      :bigint           not null
@@ -14,6 +15,7 @@
 #
 #  index_auditoria_conversation_analyses_on_account_id       (account_id)
 #  index_auditoria_conversation_analyses_on_conversation_id  (conversation_id) UNIQUE
+#  index_auditoria_conversation_analyses_on_sentiment        (sentiment)
 #
 # Foreign Keys
 #

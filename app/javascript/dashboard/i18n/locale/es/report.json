@@ -730,6 +730,30 @@
       "EMPTY": "No se encontraron las conversaciones citadas."
     }
   },
+  "AUDITORIA_SENTIMENT_REPORTS": {
+    "HEADER": "Sentimiento",
+    "DESCRIPTION": "Tendencia de sentimiento de las conversaciones en el tiempo -- compara asesores, equipos o bandejas para ver si va mejorando o empeorando.",
+    "ADVISOR_FILTER_LABEL": "Asesor",
+    "ADVISOR_FILTER_ALL": "Todos los asesores",
+    "TEAM_FILTER_LABEL": "Equipo",
+    "TEAM_FILTER_ALL": "Todos los equipos",
+    "INBOX_FILTER_LABEL": "Bandeja",
+    "INBOX_FILTER_ALL": "Todas las bandejas",
+    "CHART": {
+      "EMPTY": "No se encontraron conversaciones analizadas para los filtros y el rango de fechas seleccionados.",
+      "CLICK_HINT": "Haz clic en un punto de la gráfica para ver el detalle de ese día.",
+      "SENTIMENT": {
+        "POSITIVE": "Positivo",
+        "NEUTRAL": "Neutral",
+        "NEGATIVE": "Negativo"
+      }
+    },
+    "CONVERSATIONS_DRAWER": {
+      "DESCRIPTION": "Conversaciones analizadas en este rango.",
+      "EMPTY": "No se encontraron conversaciones en este rango.",
+      "ERROR": "No se pudieron cargar las conversaciones, intenta de nuevo."
+    }
+  },
   "AUDITORIA_CATEGORY_REPORTS": {
     "HEADER": "Resumen de categorías",
     "DESCRIPTION": "Rastrea si el equipo está mencionando lo que se les pidió — una promoción, un lanzamiento, una línea de producto — y desde cuándo. Compara categorías en el tiempo para llevarle datos concretos a la gerencia.",

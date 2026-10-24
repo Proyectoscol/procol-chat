@@ -735,6 +735,30 @@
       "EMPTY": "Could not find the cited conversations."
     }
   },
+  "AUDITORIA_SENTIMENT_REPORTS": {
+    "HEADER": "Sentiment",
+    "DESCRIPTION": "Conversation sentiment trend over time -- compare advisors, teams, or inboxes to see if it's improving or getting worse.",
+    "ADVISOR_FILTER_LABEL": "Advisor",
+    "ADVISOR_FILTER_ALL": "All advisors",
+    "TEAM_FILTER_LABEL": "Team",
+    "TEAM_FILTER_ALL": "All teams",
+    "INBOX_FILTER_LABEL": "Inbox",
+    "INBOX_FILTER_ALL": "All inboxes",
+    "CHART": {
+      "EMPTY": "No analyzed conversations found for the selected filters and date range.",
+      "CLICK_HINT": "Click a point on the chart to see that day's detail.",
+      "SENTIMENT": {
+        "POSITIVE": "Positive",
+        "NEUTRAL": "Neutral",
+        "NEGATIVE": "Negative"
+      }
+    },
+    "CONVERSATIONS_DRAWER": {
+      "DESCRIPTION": "Conversations analyzed in this range.",
+      "EMPTY": "No conversations found in this range.",
+      "ERROR": "Failed to load conversations, please try again."
+    }
+  },
   "AUDITORIA_CATEGORY_REPORTS": {
     "HEADER": "Categories Overview",
     "DESCRIPTION": "Track whether the team is mentioning what you asked them to — a promotion, a launch, a product line — and since when. Compare categories over time to bring concrete data to management.",

@@ -4,15 +4,9 @@
 # palabra clave, dia reportado por el LLM para IA), asi que un GROUP BY
 # funciona igual para ambos mecanismos sin caso especial.
 class V2::Reports::AuditoriaCategoryMentionsTimeseriesBuilder
-  pattr_initialize [:account!, :params!]
+  include V2::Reports::Concerns::AuditoriaTimeBucketing
 
-  # Umbrales de bucketing: un rango corto en dias satura el eje X si se
-  # agrupa por dia (ej. un año completo = 365 puntos), pero agrupar por
-  # semana/mes en un rango corto perderia resolucion util. date_trunc('week', ...)
-  # de Postgres trunca al LUNES (ISO 8601) -- el frontend debe generar sus
-  # mismos buckets con weekStartsOn: 1 para que las fechas calcen.
-  DAY_BUCKET_MAX_DAYS = 35
-  WEEK_BUCKET_MAX_DAYS = 180
+  pattr_initialize [:account!, :params!]
 
   def build
     { bucket: bucket_resolution.to_s, series: series_by_category }
@@ -50,30 +44,9 @@ class V2::Reports::AuditoriaCategoryMentionsTimeseriesBuilder
     return :occurred_on if bucket_resolution == :day
 
     # bucket_resolution nunca viene de params/usuario -- se calcula solo a
-    # partir del rango de fechas (ver #bucket_resolution), asi que
-    # interpolar su valor aqui no es una via de SQL injection.
+    # partir del rango de fechas (ver el concern AuditoriaTimeBucketing), asi
+    # que interpolar su valor aqui no es una via de SQL injection.
     Arel.sql("date_trunc('#{bucket_resolution}', occurred_on)")
-  end
-
-  # date_trunc devuelve un timestamp (no un Date) para semana/mes -- se
-  # normaliza a Date para que el formato de salida (date: "YYYY-MM-DD") sea
-  # identico sin importar el bucket.
-  def bucket_start_date(value)
-    value.to_date
-  end
-
-  def bucket_resolution
-    @bucket_resolution ||= if range_days <= DAY_BUCKET_MAX_DAYS
-                             :day
-                           elsif range_days <= WEEK_BUCKET_MAX_DAYS
-                             :week
-                           else
-                             :month
-                           end
-  end
-
-  def range_days
-    (range.end - range.begin).to_i
   end
 
   def mentions_mode?
@@ -107,9 +80,5 @@ class V2::Reports::AuditoriaCategoryMentionsTimeseriesBuilder
 
   def inbox_id
     params[:inbox_id]
-  end
-
-  def range
-    Time.zone.at(params[:since].to_i).to_date..Time.zone.at(params[:until].to_i).to_date
   end
 end

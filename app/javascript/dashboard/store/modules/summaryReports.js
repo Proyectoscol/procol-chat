@@ -37,6 +37,11 @@ const typeMap = {
     apiMethod: 'getAuditoriaCategoryTimeseries',
     mutationKey: 'setAuditoriaCategoryTimeseries',
   },
+  auditoriaSentimentTimeseries: {
+    flagKey: 'isFetchingAuditoriaSentimentTimeseries',
+    apiMethod: 'getAuditoriaSentimentTimeseries',
+    mutationKey: 'setAuditoriaSentimentTimeseries',
+  },
   // skipCamelCase: category_counts trae titulos de categoria en texto
   // libre como KEYS del hash (ej. "Tiempo de decision") -- camelcaseKeys
   // deep:true los mutila (los espacios se vuelven camelCase:
@@ -81,6 +86,8 @@ export const initialState = {
   auditoriaCategorySummaryTotals: null,
   auditoriaCategoryTimeseries: [],
   auditoriaCategoryTimeseriesBucket: 'day',
+  auditoriaSentimentTimeseries: [],
+  auditoriaSentimentTimeseriesBucket: 'day',
   auditoriaAdvisorDailyRollupSummaries: [],
   uiFlags: {
     isFetchingInboxSummaryReports: false,
@@ -90,6 +97,7 @@ export const initialState = {
     isFetchingAuditoriaAdvisorSummaryReports: false,
     isFetchingAuditoriaCategorySummaryReports: false,
     isFetchingAuditoriaCategoryTimeseries: false,
+    isFetchingAuditoriaSentimentTimeseries: false,
     isFetchingAuditoriaAdvisorDailyRollup: false,
   },
 };
@@ -124,6 +132,12 @@ export const getters = {
   },
   getAuditoriaCategoryTimeseriesBucket(state) {
     return state.auditoriaCategoryTimeseriesBucket;
+  },
+  getAuditoriaSentimentTimeseries(state) {
+    return state.auditoriaSentimentTimeseries;
+  },
+  getAuditoriaSentimentTimeseriesBucket(state) {
+    return state.auditoriaSentimentTimeseriesBucket;
   },
   getAuditoriaAdvisorDailyRollupSummaries(state) {
     return state.auditoriaAdvisorDailyRollupSummaries;
@@ -160,6 +174,12 @@ export const actions = {
 
   fetchAuditoriaCategoryTimeseries({ commit }, params) {
     return fetchSummaryReports('auditoriaCategoryTimeseries', params, {
+      commit,
+    });
+  },
+
+  fetchAuditoriaSentimentTimeseries({ commit }, params) {
+    return fetchSummaryReports('auditoriaSentimentTimeseries', params, {
       commit,
     });
   },
@@ -201,6 +221,13 @@ export const mutations = {
   setAuditoriaCategoryTimeseries(state, data) {
     state.auditoriaCategoryTimeseries = data.series || [];
     state.auditoriaCategoryTimeseriesBucket = data.bucket || 'day';
+  },
+  // El endpoint devuelve { series } con 3 entradas FIJAS ({sentiment,
+  // points}), a diferencia de las categorias (cantidad dinamica) -- mismo
+  // shape de puntos {date, count}, mismo bucket.
+  setAuditoriaSentimentTimeseries(state, data) {
+    state.auditoriaSentimentTimeseries = data.series || [];
+    state.auditoriaSentimentTimeseriesBucket = data.bucket || 'day';
   },
   // El endpoint devuelve { summaries } (no una lista plana) -- cada fila ya
   // es un resumen completo (asesor + dia + narrativa), sin totales

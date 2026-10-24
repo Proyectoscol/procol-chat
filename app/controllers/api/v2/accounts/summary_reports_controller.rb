@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/ClassLength
 class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseController
   include Api::V2::Accounts::ReportsHelper
 
@@ -10,7 +11,7 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     auditoria_advisor auditoria_advisor_conversations auditoria_category
     auditoria_category_timeseries auditoria_category_conversations auditoria_category_terms
     auditoria_advisor_daily_rollup auditoria_category_csv auditoria_category_timeseries_csv
-    auditoria_category_conversations_csv
+    auditoria_category_conversations_csv auditoria_sentiment_timeseries auditoria_sentiment_conversations
   ].freeze
 
   before_action :check_authorization
@@ -115,6 +116,27 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     render json: builder.build
   end
 
+  # Tendencia de sentimiento de IA por conversacion (dia/semana/mes),
+  # filtrable por asesor, equipo, o bandeja.
+  def auditoria_sentiment_timeseries
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaSentimentTimeseriesBuilder.new(
+      account: Current.account, params: auditoria_sentiment_timeseries_params
+    )
+    render json: builder.build
+  end
+
+  # Click-to-detail del reporte: conversaciones con un sentimiento puntual.
+  def auditoria_sentiment_conversations
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaSentimentConversationsBuilder.new(
+      account: Current.account, params: auditoria_sentiment_conversations_params
+    )
+    render json: builder.build
+  end
+
   def auditoria_category_csv
     raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
 
@@ -198,6 +220,14 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     params.permit(:since, :until, :inbox_id, :user_id, inbox_id: [], user_id: [])
   end
 
+  def auditoria_sentiment_timeseries_params
+    params.permit(:since, :until, :inbox_id, :user_id, :team_id, inbox_id: [])
+  end
+
+  def auditoria_sentiment_conversations_params
+    params.permit(:since, :until, :inbox_id, :user_id, :team_id, :sentiment, :page, inbox_id: [])
+  end
+
   def auditoria_category_csv_rows
     categories = V2::Reports::AuditoriaCategorySummaryBuilder.new(account: Current.account, params: auditoria_category_params).build[:categories]
     title_by_id = categories.to_h { |category| [category[:id], category[:title]] }
@@ -252,3 +282,4 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     (until_time - since_time) > 6.months
   end
 end
+# rubocop:enable Metrics/ClassLength

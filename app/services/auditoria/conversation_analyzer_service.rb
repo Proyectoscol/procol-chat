@@ -106,7 +106,7 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
 
   def persist_result(parsed_fields)
     record = analysis || Auditoria::ConversationAnalysis.new(account: account, conversation: conversation)
-    record.update!(results: stringify_fields(parsed_fields), analyzed_at: Time.current)
+    record.update!(results: stringify_fields(parsed_fields), sentiment: parsed_fields[:sentiment], analyzed_at: Time.current)
     sync_ai_categories!(parsed_fields[:categories])
     { message: record.results }
   end
@@ -114,8 +114,9 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
   def stringify_fields(parsed_fields)
     # :categories es un Array -- #to_s lo mangla a texto estilo inspect, asi
     # que se excluye del stringify masivo y se sincroniza aparte (ver
-    # sync_ai_categories!). `results` sigue siendo solo field_1..field_5.
-    parsed_fields.except(:categories).transform_keys(&:to_s).transform_values(&:to_s)
+    # sync_ai_categories!). :sentiment vive en su propia columna (ver
+    # persist_result), no en `results`. `results` sigue siendo solo field_1..field_5.
+    parsed_fields.except(:categories, :sentiment).transform_keys(&:to_s).transform_values(&:to_s)
   end
 
   def messages
@@ -133,6 +134,9 @@ class Auditoria::ConversationAnalyzerService < Captain::BaseTaskService
 
       #{field_instructions}
       #{category_instructions}
+
+      Ademas, clasifica el sentimiento GENERAL del cliente a lo largo de toda la conversacion como positive, neutral o negative -- esto es aparte de las 5 tareas anteriores.
+
       Responde en #{account.locale_english_name}.
     PROMPT
   end
