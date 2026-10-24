@@ -14,7 +14,10 @@ class Auditoria::AdvisorDailyRollupService < Captain::BaseTaskService
     return skipped_result if conversation_ids_for_day.empty?
     return spend_limit_error unless Auditoria::AiUsageLogger.within_limit?(account)
 
-    response = make_api_call(messages: messages, feature: 'editor', schema: Auditoria::AdvisorDailyRollupSchema)
+    response = make_api_call(
+      messages: messages, feature: 'editor', model: account.auditoria_chat_model.presence,
+      schema: Auditoria::AdvisorDailyRollupSchema
+    )
     return response if response[:error]
 
     log_usage(response)

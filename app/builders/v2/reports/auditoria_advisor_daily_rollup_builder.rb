@@ -51,7 +51,7 @@ class V2::Reports::AuditoriaAdvisorDailyRollupBuilder
   def inbox_scoped_user_ids
     return nil if inbox_ids.blank?
 
-    InboxMember.where(inbox_id: inbox_ids).distinct.pluck(:user_id)
+    InboxMember.where(inbox_id: account.inboxes.where(id: inbox_ids)).distinct.pluck(:user_id)
   end
 
   def inbox_ids

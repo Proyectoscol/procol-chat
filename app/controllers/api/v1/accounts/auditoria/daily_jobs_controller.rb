@@ -15,6 +15,8 @@ class Api::V1::Accounts::Auditoria::DailyJobsController < Api::V1::Accounts::Bas
   end
 
   def run_advisor_rollup
+    return render json: { error: 'Invalid summary_date' }, status: :unprocessable_entity unless summary_date
+
     Auditoria::AdvisorDailyRollupSchedulerJob.perform_later(
       summary_date: summary_date, account_id: Current.account.id, track_progress: true
     )
@@ -40,6 +42,8 @@ class Api::V1::Accounts::Auditoria::DailyJobsController < Api::V1::Accounts::Bas
 
   def summary_date
     params[:summary_date].presence ? Date.parse(params[:summary_date]) : Date.yesterday
+  rescue ArgumentError
+    nil
   end
 
   def check_authorization

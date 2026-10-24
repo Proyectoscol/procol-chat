@@ -58,7 +58,7 @@ module V2::Reports::Concerns::AuditoriaSentimentScoping
   # AuditoriaSentimentReportsIndex.vue, donde ambos selects se desactivan
   # mutuamente para que esto nunca sea ambiguo para quien usa el reporte.
   def target_user_ids
-    @target_user_ids ||= user_id.present? ? [user_id.to_i] : TeamMember.where(team_id: team_id).pluck(:user_id)
+    @target_user_ids ||= user_id.present? ? [user_id.to_i] : TeamMember.where(team_id: account.teams.where(id: team_id)).pluck(:user_id)
   end
 
   # Para una conversacion SIN el label de multi-asesor (ya excluidas en
