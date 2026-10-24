@@ -15,7 +15,9 @@ class V2::Reports::AuditoriaSentimentConversationsBuilder
     serializer = V2::Reports::DrilldownRecordSerializer.new(account, nil, false, conversations)
     {
       meta: { current_page: current_page, per_page: per_page, total_count: paginated_conversations.total_count },
-      payload: conversations.map { |conversation| serializer.serialize(conversation).merge(sentiment: sentiment_by_conversation_id[conversation.id]) }
+      payload: conversations.map do |conversation|
+        serializer.serialize(conversation).merge(sentiment: sentiment_by_conversation_id(conversations)[conversation.id])
+      end
     }
   end
 
@@ -24,10 +26,14 @@ class V2::Reports::AuditoriaSentimentConversationsBuilder
   # Sin sentiment puntual (clic en la grafica, mezcla los 3), cada tarjeta
   # necesita mostrar a cual le toco -- se resuelve aparte del filtro de
   # #base_conversation_ids para no acoplar la serializacion a ese query.
-  def sentiment_by_conversation_id
-    @sentiment_by_conversation_id ||= Auditoria::ConversationAnalysis
-                                      .where(conversation_id: filtered_conversation_ids)
-                                      .pluck(:conversation_id, :sentiment).to_h
+  # Acotado a las conversaciones YA paginadas (como mucho per_page), nunca a
+  # filtered_conversation_ids completo -- ese universo puede ser decenas de
+  # miles de ids en un rango largo, y aqui solo se necesita el sentiment de
+  # la pagina actual.
+  def sentiment_by_conversation_id(conversations)
+    Auditoria::ConversationAnalysis
+      .where(conversation_id: conversations.map(&:id))
+      .pluck(:conversation_id, :sentiment).to_h
   end
 
   def paginated_conversations

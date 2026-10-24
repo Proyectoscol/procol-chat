@@ -338,13 +338,18 @@ const drawerFilterParams = computed(() => {
     la grafica a ojo. Cada total es un boton: abre el listado completo de
     esa sola categoria (no mezclado por dia como el clic en la grafica).
   -->
-  <div v-if="grandTotal" class="flex flex-wrap items-center gap-3 mt-3">
+  <div
+    v-if="grandTotal"
+    class="flex flex-wrap items-center gap-3 mt-3"
+    :class="{ 'pointer-events-none opacity-50': isLoading }"
+  >
     <button
       v-for="sentiment in SENTIMENTS"
       :key="sentiment"
       type="button"
       class="flex-1 min-w-[160px] flex items-center justify-between gap-2 rounded-xl p-3 text-start outline-1 outline shadow-sm hover:opacity-80"
       :class="SENTIMENT_SUMMARY_CLASS[sentiment]"
+      :disabled="isLoading"
       @click="openSentimentDrawer(sentiment)"
     >
       <span class="text-sm font-medium">{{ sentimentLabel(sentiment) }}</span>

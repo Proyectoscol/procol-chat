@@ -36,9 +36,22 @@ class V2::Reports::AuditoriaSentimentTimeseriesBuilder
 
   # bucket_resolution nunca viene de params/usuario -- se calcula solo a
   # partir del rango de fechas (ver el concern AuditoriaTimeBucketing), asi
-  # que interpolar su valor aqui no es una via de SQL injection.
+  # que interpolar su valor aqui no es una via de SQL injection. Time.zone.name
+  # tampoco (viene de config.time_zone, no del cliente).
+  #
+  # conversations.created_at es `timestamp without time zone` guardado en
+  # UTC (ActiveRecord.default_timezone = :utc) -- date_trunc('day', ...)
+  # directo trunca con el valor UTC crudo, no con el dia calendario real en
+  # la zona de la cuenta (America/Bogota, GMT-5). Una conversacion creada
+  # despues de las 7pm hora Bogota cae en la madrugada UTC del dia
+  # siguiente, asi que sin este AT TIME ZONE queda contada un dia adelante
+  # (mismo tipo de bug que el de graficas en el commit 30abe4d1b, pero en
+  # SQL en vez de JS). occurred_on en el reporte de Categorias no lo sufre
+  # porque ya es un Date calculado en Ruby con Time.zone (ver
+  # Auditoria::KeywordCategoryMatcherService), no un timestamp truncado en
+  # SQL.
   def bucket_column
-    Arel.sql("date_trunc('#{bucket_resolution}', conversations.created_at)")
+    Arel.sql("date_trunc('#{bucket_resolution}', conversations.created_at AT TIME ZONE 'UTC' AT TIME ZONE '#{Time.zone.tzinfo.name}')")
   end
 
   def scoped_analyses
