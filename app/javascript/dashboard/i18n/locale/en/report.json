@@ -722,9 +722,9 @@
     "POSITIVE_TAG_FILTER_LABEL": "Positive",
     "NEGATIVE_TAG_FILTER_LABEL": "Area to improve",
     "TAG_FILTER_ALL": "All tags",
-    "SORT_LABEL": "Sort by",
-    "SORT_BY_DATE": "Date",
-    "SORT_BY_NAME": "Advisor name",
+    "CAROUSEL_PREV": "Previous day",
+    "CAROUSEL_NEXT": "Next day",
+    "CAROUSEL_POSITION": "{current} of {total}",
     "VIEW_CONVERSATIONS_BUTTON": "View conversations",
     "CONVERSATIONS_DRAWER": {
       "DESCRIPTION": "Conversations that fed this daily summary.",

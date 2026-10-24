@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,7 +22,6 @@ const selectedInboxId = ref('');
 const selectedUserId = ref('');
 const selectedPositiveTag = ref('');
 const selectedNegativeTag = ref('');
-const sortBy = ref('date');
 
 const uiFlags = useMapGetter('summaryReports/getUIFlags');
 const isLoading = computed(
@@ -110,16 +109,46 @@ const filteredSummaries = computed(() =>
   })
 );
 
-// Orden alfabetico es puramente de presentacion sobre los datos ya
-// cargados -- el backend sigue devolviendo summary_date desc, que es el
-// orden que se usa por defecto.
-const displayedSummaries = computed(() => {
-  if (sortBy.value !== 'name') return filteredSummaries.value;
+// Una tarjeta-carrusel por asesor: se agrupan los resumenes por userId
+// (el backend ya los devuelve summary_date desc dentro de cada asesor) y
+// se ordenan alfabeticamente por nombre, igual que advisorOptions.
+const groupedByAdvisor = computed(() => {
+  const groups = new Map();
+  filteredSummaries.value.forEach(row => {
+    if (!groups.has(row.userId)) groups.set(row.userId, []);
+    groups.get(row.userId).push(row);
+  });
 
-  return [...filteredSummaries.value].sort((a, b) =>
-    advisorName(a.userId).localeCompare(advisorName(b.userId))
+  return [...groups.entries()]
+    .map(([userId, rows]) => ({ userId, rows }))
+    .sort((a, b) => advisorName(a.userId).localeCompare(advisorName(b.userId)));
+});
+
+// Indice del dia mostrado en el carrusel de cada asesor -- se resetea a 0
+// (el dia mas reciente) cada vez que cambian los filtros/rango de fechas,
+// para no quedar apuntando a un indice fuera de rango.
+const carouselIndexByAdvisor = ref({});
+watch(groupedByAdvisor, groups => {
+  carouselIndexByAdvisor.value = Object.fromEntries(
+    groups.map(group => [group.userId, 0])
   );
 });
+
+const currentRow = group =>
+  group.rows[carouselIndexByAdvisor.value[group.userId] || 0];
+
+const showPrevDay = group => {
+  const index = carouselIndexByAdvisor.value[group.userId] || 0;
+  if (index < group.rows.length - 1) {
+    carouselIndexByAdvisor.value[group.userId] = index + 1;
+  }
+};
+const showNextDay = group => {
+  const index = carouselIndexByAdvisor.value[group.userId] || 0;
+  if (index > 0) {
+    carouselIndexByAdvisor.value[group.userId] = index - 1;
+  }
+};
 
 const selectedSummary = ref(null);
 const isDrawerOpen = computed(() => !!selectedSummary.value);
@@ -330,24 +359,6 @@ const onAdvisorChange = () => fetchAllData();
         </option>
       </select>
     </div>
-    <div class="flex items-center gap-2">
-      <label for="auditoria-rollup-sort" class="text-sm whitespace-nowrap">
-        {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SORT_LABEL') }}
-      </label>
-      <select
-        id="auditoria-rollup-sort"
-        v-model="sortBy"
-        class="reset-base !mb-0 !w-auto"
-        :disabled="isLoading"
-      >
-        <option value="date">
-          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SORT_BY_DATE') }}
-        </option>
-        <option value="name">
-          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SORT_BY_NAME') }}
-        </option>
-      </select>
-    </div>
   </div>
 
   <div v-if="isLoading" class="flex items-center justify-center py-16">
@@ -355,75 +366,121 @@ const onAdvisorChange = () => fetchAllData();
   </div>
 
   <EmptyState
-    v-else-if="!displayedSummaries.length"
+    v-else-if="!groupedByAdvisor.length"
     :title="$t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.EMPTY_TITLE')"
     :message="$t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.EMPTY_MESSAGE')"
   />
 
   <div v-else class="flex flex-col gap-3 mt-5">
     <div
-      v-for="row in displayedSummaries"
-      :key="`${row.userId}-${row.summaryDate}`"
+      v-for="group in groupedByAdvisor"
+      :key="group.userId"
       class="flex flex-col gap-2 p-4 rounded-xl outline outline-1 outline-n-weak bg-n-solid-2"
     >
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2">
           <Avatar
-            :src="advisorThumbnail(row.userId)"
-            :name="advisorName(row.userId)"
+            :src="advisorThumbnail(group.userId)"
+            :name="advisorName(group.userId)"
             :size="28"
           />
           <span class="text-sm font-medium text-n-slate-12">
             <button
               type="button"
               class="text-n-blue-text hover:underline"
-              @click="openConversationsDrawer(row)"
+              @click="openConversationsDrawer(currentRow(group))"
             >
-              {{ advisorName(row.userId) }}
+              {{ advisorName(group.userId) }}
             </button>
             <span class="text-n-slate-10 font-normal">
-              · {{ formatSummaryDate(row.summaryDate) }}
+              · {{ formatSummaryDate(currentRow(group).summaryDate) }}
             </span>
           </span>
         </div>
-        <span class="text-xs text-n-slate-10">
-          {{
-            $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.CONVERSATIONS_COUNT', {
-              count: row.conversationsCount,
-            })
-          }}
-        </span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-n-slate-10">
+            {{
+              $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.CONVERSATIONS_COUNT', {
+                count: currentRow(group).conversationsCount,
+              })
+            }}
+          </span>
+          <div v-if="group.rows.length > 1" class="flex items-center gap-1">
+            <button
+              type="button"
+              class="reset-base !mb-0 !p-1"
+              :disabled="
+                (carouselIndexByAdvisor[group.userId] || 0) >=
+                group.rows.length - 1
+              "
+              :title="
+                $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.CAROUSEL_PREV')
+              "
+              @click="showPrevDay(group)"
+            >
+              <i class="i-lucide-chevron-left text-base" />
+            </button>
+            <span class="text-xs text-n-slate-10 whitespace-nowrap">
+              {{
+                $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.CAROUSEL_POSITION', {
+                  current: (carouselIndexByAdvisor[group.userId] || 0) + 1,
+                  total: group.rows.length,
+                })
+              }}
+            </span>
+            <button
+              type="button"
+              class="reset-base !mb-0 !p-1"
+              :disabled="(carouselIndexByAdvisor[group.userId] || 0) === 0"
+              :title="
+                $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.CAROUSEL_NEXT')
+              "
+              @click="showNextDay(group)"
+            >
+              <i class="i-lucide-chevron-right text-base" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      <p v-if="row.generatedAt" class="text-xs text-n-slate-10">
+      <p v-if="currentRow(group).generatedAt" class="text-xs text-n-slate-10">
         {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.GENERATED_AT_LABEL') }}:
-        {{ formatGeneratedAt(row.generatedAt) }}
+        {{ formatGeneratedAt(currentRow(group).generatedAt) }}
       </p>
 
-      <p v-if="row.results?.summary" class="text-sm text-n-slate-11">
+      <p
+        v-if="currentRow(group).results?.summary"
+        class="text-sm text-n-slate-11"
+      >
         <span class="font-medium text-n-slate-12">
           {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SUMMARY_LABEL') }}:
         </span>
-        {{ row.results.summary }}
+        {{ currentRow(group).results.summary }}
       </p>
-      <p v-if="row.results?.toneOverview" class="text-sm text-n-slate-11">
+      <p
+        v-if="currentRow(group).results?.toneOverview"
+        class="text-sm text-n-slate-11"
+      >
         <span class="font-medium text-n-slate-12">
           {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.TONE_LABEL') }}:
         </span>
-        {{ row.results.toneOverview }}
+        {{ currentRow(group).results.toneOverview }}
       </p>
-      <p v-if="row.results?.recommendation" class="text-sm text-n-slate-11">
+      <p
+        v-if="currentRow(group).results?.recommendation"
+        class="text-sm text-n-slate-11"
+      >
         <span class="font-medium text-n-slate-12">
           {{
             $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.RECOMMENDATION_LABEL')
           }}:
         </span>
-        {{ row.results.recommendation }}
+        {{ currentRow(group).results.recommendation }}
       </p>
 
       <p
-        v-if="row.results?.shortFeedback"
-        v-tooltip.top="row.results?.shortFeedbackReason"
+        v-if="currentRow(group).results?.shortFeedback"
+        v-tooltip.top="currentRow(group).results?.shortFeedbackReason"
         class="text-sm text-n-amber-11 bg-n-amber-2 rounded-lg px-3 py-2"
       >
         <span class="font-medium">
@@ -431,11 +488,11 @@ const onAdvisorChange = () => fetchAllData();
             $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SHORT_FEEDBACK_LABEL')
           }}:
         </span>
-        {{ row.results.shortFeedback }}
+        {{ currentRow(group).results.shortFeedback }}
       </p>
 
       <div
-        v-if="row.feedbackTagsPositive?.length"
+        v-if="currentRow(group).feedbackTagsPositive?.length"
         class="flex flex-wrap items-center gap-2 mt-1"
       >
         <span class="text-xs text-n-slate-10">
@@ -444,7 +501,7 @@ const onAdvisorChange = () => fetchAllData();
           }}:
         </span>
         <span
-          v-for="tag in row.feedbackTagsPositive"
+          v-for="tag in currentRow(group).feedbackTagsPositive"
           :key="tag"
           class="text-xs px-2 py-0.5 rounded-full bg-n-teal-3 text-n-teal-11"
         >
@@ -453,7 +510,7 @@ const onAdvisorChange = () => fetchAllData();
       </div>
 
       <div
-        v-if="row.feedbackTagsNegative?.length"
+        v-if="currentRow(group).feedbackTagsNegative?.length"
         class="flex flex-wrap items-center gap-2 mt-1"
       >
         <span class="text-xs text-n-slate-10">
@@ -462,26 +519,26 @@ const onAdvisorChange = () => fetchAllData();
           }}:
         </span>
         <button
-          v-for="tag in row.feedbackTagsNegative"
+          v-for="tag in currentRow(group).feedbackTagsNegative"
           :key="tag"
-          v-tooltip.top="negativeDetailFor(row, tag).reason"
+          v-tooltip.top="negativeDetailFor(currentRow(group), tag).reason"
           type="button"
           class="text-xs px-2 py-0.5 rounded-full bg-n-amber-3 text-n-amber-11 hover:bg-n-amber-4"
-          @click="openCitationDrawer(negativeDetailFor(row, tag))"
+          @click="openCitationDrawer(negativeDetailFor(currentRow(group), tag))"
         >
           {{ tag }}
         </button>
       </div>
 
       <div
-        v-if="categoryChips(row).length"
+        v-if="categoryChips(currentRow(group)).length"
         class="flex flex-wrap items-center gap-2 mt-1"
       >
         <span class="text-xs text-n-slate-10">
           {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.CATEGORIES_LABEL') }}:
         </span>
         <span
-          v-for="chip in categoryChips(row)"
+          v-for="chip in categoryChips(currentRow(group))"
           :key="chip.title"
           class="text-xs px-2 py-0.5 rounded-full bg-n-alpha-1 text-n-slate-11"
         >
