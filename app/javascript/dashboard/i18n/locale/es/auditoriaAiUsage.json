@@ -26,7 +26,7 @@
     "FEATURE": {
       "CONVERSATION_ANALYSIS": "Análisis de conversación",
       "AUDIO_TRANSCRIPTION": "Transcripción de audio",
-      "ADVISOR_DAILY_ROLLUP": "Rollup diario por asesor"
+      "ADVISOR_DAILY_ROLLUP": "Resumen diario por asesor"
     },
     "FEATURE_SUMMARY": "{cost} · {tokens} tokens",
     "FETCH_ERROR": "No se pudieron cargar los datos de uso. Inténtalo de nuevo.",
@@ -72,6 +72,7 @@
     "TRIGGERED_BY": {
       "MANUAL": "Manual",
       "BATCH": "Automático"
-    }
+    },
+    "PROGRESS_DISMISS": "Descartar"
   }
 }

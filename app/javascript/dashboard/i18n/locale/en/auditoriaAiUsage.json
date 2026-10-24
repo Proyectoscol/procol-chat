@@ -26,7 +26,7 @@
     "FEATURE": {
       "CONVERSATION_ANALYSIS": "Conversation analysis",
       "AUDIO_TRANSCRIPTION": "Audio transcription",
-      "ADVISOR_DAILY_ROLLUP": "Daily advisor rollup"
+      "ADVISOR_DAILY_ROLLUP": "Daily advisor summary"
     },
     "FEATURE_SUMMARY": "{cost} · {tokens} tokens",
     "FETCH_ERROR": "Could not load usage data. Try again.",
@@ -72,6 +72,7 @@
     "TRIGGERED_BY": {
       "MANUAL": "Manual",
       "BATCH": "Batch"
-    }
+    },
+    "PROGRESS_DISMISS": "Dismiss"
   }
 }

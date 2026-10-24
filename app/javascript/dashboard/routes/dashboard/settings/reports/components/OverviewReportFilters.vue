@@ -16,6 +16,15 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  // Algunos reportes (sintesis narrativa, conteos de categoria) no tienen
+  // ningun concepto de "horario laboral" que calcular -- mostrar el toggle
+  // ahi es ruido: se ve interactivo pero no cambia nada (nunca se reenvia
+  // al backend). Los reportes que SI lo usan (team/agent/inbox/label, y el
+  // de Advisors por tiempo de respuesta) lo siguen mostrando por defecto.
+  hideBusinessHours: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['filterChange']);
@@ -97,7 +106,7 @@ onMounted(() => {
         @date-range-changed="onDateRangeChange"
       />
     </div>
-    <div class="flex items-center">
+    <div v-if="!hideBusinessHours" class="flex items-center">
       <span class="mx-2 text-sm whitespace-nowrap">
         {{ $t('REPORT.BUSINESS_HOURS') }}
       </span>

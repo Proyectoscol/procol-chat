@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCamelCase } from 'dashboard/composables/useTransformKeys';
 import AuditoriaDailyJobsAPI from 'dashboard/api/auditoriaDailyJobs';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
 
 const props = defineProps({
   kind: { type: String, required: true },
@@ -15,6 +16,12 @@ const POLL_INTERVAL_MS = 3000;
 
 const { t } = useI18n();
 const progress = ref(null);
+// Un "completado" viejo queda en Redis hasta 6h (a proposito, para que
+// sobreviva un refresco de pagina mientras el admin vuelve a revisar) --
+// pero una vez ya lo vio, no debe seguir ocupando espacio en cada visita
+// futura a esta pantalla dentro de esa ventana. Se descarta manualmente,
+// y se reactiva solo si arranca una corrida NUEVA de verdad.
+const dismissed = ref(false);
 let pollTimer = null;
 
 // Silencioso a proposito -- un poll fallido (ej. blip de red) no debe
@@ -23,7 +30,11 @@ let pollTimer = null;
 const fetchProgress = async () => {
   try {
     const { data } = await AuditoriaDailyJobsAPI.getProgress(props.kind);
-    progress.value = useCamelCase(data, { deep: true });
+    const next = useCamelCase(data, { deep: true });
+    if (next?.status === 'running' && progress.value?.status !== 'running') {
+      dismissed.value = false;
+    }
+    progress.value = next;
   } catch {
     // intencional: ver comentario arriba
   }
@@ -38,8 +49,11 @@ onUnmounted(() => {
 });
 
 const isVisible = computed(
-  () => progress.value && progress.value.status !== 'idle'
+  () => progress.value && progress.value.status !== 'idle' && !dismissed.value
 );
+const dismiss = () => {
+  dismissed.value = true;
+};
 const isRunning = computed(() => progress.value?.status === 'running');
 const percent = computed(() => {
   if (!progress.value?.total) return 0;
@@ -61,7 +75,18 @@ const percent = computed(() => {
             : t('AUDITORIA_AI_USAGE.PROGRESS_COMPLETED')
         }}
       </span>
-      <span class="text-xs text-n-slate-10">{{ percent }}%</span>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-n-slate-10">{{ percent }}%</span>
+        <button
+          v-if="!isRunning"
+          type="button"
+          class="text-n-slate-10 hover:text-n-slate-12"
+          :aria-label="t('AUDITORIA_AI_USAGE.PROGRESS_DISMISS')"
+          @click="dismiss"
+        >
+          <Icon icon="i-lucide-x" class="size-3.5" />
+        </button>
+      </div>
     </div>
     <div class="w-full h-2 rounded-full bg-n-alpha-2 overflow-hidden">
       <div

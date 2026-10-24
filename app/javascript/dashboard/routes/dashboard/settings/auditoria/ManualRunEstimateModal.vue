@@ -67,7 +67,7 @@ const onClose = () => emit('close');
 <template>
   <div class="flex flex-col h-auto overflow-auto">
     <woot-modal-header :header-title="title" />
-    <div class="flex flex-col gap-3 px-4 pb-4 w-full !self-stretch">
+    <div class="flex flex-col gap-3 px-4 pt-2 pb-4 w-full !self-stretch">
       <div
         v-if="isLoadingEstimate"
         class="flex items-center justify-center py-8"
