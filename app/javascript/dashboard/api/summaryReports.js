@@ -138,6 +138,7 @@ class SummaryReportsAPI extends ApiClient {
     inboxId,
     userId,
     teamId,
+    signal,
   } = {}) {
     return axios.get(`${this.url}/auditoria_sentiment_timeseries`, {
       params: {
@@ -147,6 +148,7 @@ class SummaryReportsAPI extends ApiClient {
         user_id: userId,
         team_id: teamId,
       },
+      signal,
     });
   }
 

@@ -5,6 +5,7 @@ import fromUnixTime from 'date-fns/fromUnixTime';
 import format from 'date-fns/format';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
+import { useAbortableRequest } from 'dashboard/composables/useAbortableRequest';
 import ReportHeader from './components/ReportHeader.vue';
 import OverviewReportFilters from './components/OverviewReportFilters.vue';
 import AuditoriaReportConversationsDrawer from './components/AuditoriaReportConversationsDrawer.vue';
@@ -57,10 +58,16 @@ const selectedInboxId = ref('');
 const selectedUserId = ref('');
 const selectedTeamId = ref('');
 
-const uiFlags = useMapGetter('summaryReports/getUIFlags');
-const isLoading = computed(
-  () => uiFlags.value.isFetchingAuditoriaSentimentTimeseries ?? false
-);
+// isPending (no el flag de Vuex isFetchingAuditoriaSentimentTimeseries) es
+// la fuente de verdad de carga aqui: ese flag es compartido por tipo en el
+// store y su `finally` lo apaga sin saber si lo esta pisando una respuesta
+// MAS VIEJA que ya fue cancelada -- con cancelacion real (ver
+// runFetchTimeseries abajo) eso casi garantiza una carrera donde la
+// cancelada apaga el flag mientras la peticion vigente sigue en curso.
+// isPending del composable solo refleja la ULTIMA peticion disparada por
+// este componente, sin esa carrera.
+const { run: runFetchTimeseries, isPending: isLoading } = useAbortableRequest();
+const hasFetchError = ref(false);
 
 const agents = useMapGetter('agents/getAgents');
 const inboxes = useMapGetter('inboxes/getInboxes');
@@ -80,6 +87,10 @@ const advisorOptions = computed(() =>
   [...agents.value].sort((a, b) => a.name.localeCompare(b.name))
 );
 
+// hasFetchError queda prendido hasta el proximo fetch exitoso, para no
+// dejar al usuario mirando datos de un filtro anterior sin ningun aviso
+// mas alla del toast transitorio. runFetchTimeseries ya cancela el fetch
+// anterior si uno nuevo arranca antes de que responda (ver arriba).
 const fetchTimeseries = async () => {
   const params = {
     since: from.value,
@@ -89,11 +100,15 @@ const fetchTimeseries = async () => {
     teamId: selectedTeamId.value || undefined,
   };
   try {
-    await store.dispatch(
-      'summaryReports/fetchAuditoriaSentimentTimeseries',
-      params
+    await runFetchTimeseries(signal =>
+      store.dispatch('summaryReports/fetchAuditoriaSentimentTimeseries', {
+        ...params,
+        signal,
+      })
     );
+    hasFetchError.value = false;
   } catch {
+    hasFetchError.value = true;
     useAlert(t('REPORT.SUMMARY_FETCHING_FAILED'));
   }
 };
@@ -111,8 +126,32 @@ const onFilterChange = updatedFilter => {
 };
 
 const onInboxChange = () => fetchTimeseries();
-const onAdvisorChange = () => fetchTimeseries();
-const onTeamChange = () => fetchTimeseries();
+
+// Asesor y equipo son mutuamente excluyentes a proposito -- el backend
+// (ver V2::Reports::Concerns::AuditoriaSentimentScoping#target_user_ids)
+// le da prioridad al asesor cuando ambos llegan, ignorando el equipo por
+// completo. Elegir uno aqui limpia el otro para que la UI nunca muestre
+// los dos selects "activos" con un filtro que en realidad no esta
+// aplicando.
+const onAdvisorChange = () => {
+  if (selectedUserId.value) selectedTeamId.value = '';
+  fetchTimeseries();
+};
+const onTeamChange = () => {
+  if (selectedTeamId.value) selectedUserId.value = '';
+  fetchTimeseries();
+};
+
+const hasActiveFilters = computed(
+  () =>
+    !!selectedInboxId.value || !!selectedUserId.value || !!selectedTeamId.value
+);
+const resetFilters = () => {
+  selectedInboxId.value = '';
+  selectedUserId.value = '';
+  selectedTeamId.value = '';
+  fetchTimeseries();
+};
 
 // Totales del rango completo (sumando todos los buckets ya cargados, sin
 // pedir nada nuevo al backend) -- responde directo "cuantas conversaciones
@@ -311,7 +350,29 @@ const drawerFilterParams = computed(() => {
           </option>
         </select>
       </div>
+      <button
+        v-if="hasActiveFilters"
+        type="button"
+        class="text-sm text-n-blue-text hover:underline whitespace-nowrap"
+        :disabled="isLoading"
+        @click="resetFilters"
+      >
+        {{ $t('AUDITORIA_SENTIMENT_REPORTS.RESET_FILTERS') }}
+      </button>
     </div>
+  </div>
+
+  <!--
+    El toast de REPORT.SUMMARY_FETCHING_FAILED es transitorio -- sin este
+    aviso persistente, un error de red deja la grafica mostrando datos de
+    un filtro que ya no es el vigente, sin ninguna pista despues de que el
+    toast desaparece.
+  -->
+  <div
+    v-if="hasFetchError"
+    class="mt-5 rounded-lg bg-n-ruby-2 outline-1 outline outline-n-ruby-6 px-3 py-2 text-sm text-n-ruby-11"
+  >
+    {{ $t('AUDITORIA_SENTIMENT_REPORTS.STALE_DATA_WARNING') }}
   </div>
 
   <div

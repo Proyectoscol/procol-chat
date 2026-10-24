@@ -744,7 +744,9 @@
     "TEAM_FILTER_ALL": "All teams",
     "INBOX_FILTER_LABEL": "Inbox",
     "INBOX_FILTER_ALL": "All inboxes",
+    "RESET_FILTERS": "Reset filters",
     "SUMMARY_PERCENT": "({percent}%)",
+    "STALE_DATA_WARNING": "Showing data from the last successful load -- the latest request failed.",
     "CHART": {
       "EMPTY": "No analyzed conversations found for the selected filters and date range.",
       "CLICK_HINT": "Click a point on the chart to see that day's detail.",

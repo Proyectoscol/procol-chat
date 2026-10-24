@@ -739,7 +739,9 @@
     "TEAM_FILTER_ALL": "Todos los equipos",
     "INBOX_FILTER_LABEL": "Bandeja",
     "INBOX_FILTER_ALL": "Todas las bandejas",
+    "RESET_FILTERS": "Limpiar filtros",
     "SUMMARY_PERCENT": "({percent}%)",
+    "STALE_DATA_WARNING": "Mostrando los datos de la última carga exitosa -- la última solicitud falló.",
     "CHART": {
       "EMPTY": "No se encontraron conversaciones analizadas para los filtros y el rango de fechas seleccionados.",
       "CLICK_HINT": "Haz clic en un punto de la gráfica para ver el detalle de ese día.",
