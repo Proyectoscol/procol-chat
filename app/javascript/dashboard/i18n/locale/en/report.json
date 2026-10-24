@@ -738,7 +738,8 @@
       "TITLE": "Category",
       "CONVERSATIONS": "No. of conversations",
       "SHOW_IN_CHART": "Show in chart",
-      "BREAKDOWN_SEGMENT": "{title} ({count})"
+      "BREAKDOWN_SEGMENT": "{title} ({count})",
+      "SUBCATEGORIES_TOGGLE": "Subcategories"
     },
     "INBOX_FILTER_LABEL": "Inbox",
     "INBOX_FILTER_ALL": "All inboxes",
@@ -764,6 +765,7 @@
       "EMPTY": "No matching messages found for this category's terms."
     },
     "EXPORT_CSV_BUTTON": "Export CSV",
-    "EXPORT_FAILED": "Failed to export, please try again."
+    "EXPORT_FAILED": "Failed to export, please try again.",
+    "SUBCATEGORIES_HIDDEN_BY_INBOX_FILTER": "This category has subcategories, but none apply to the selected inbox filter."
   }
 }

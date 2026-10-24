@@ -106,7 +106,7 @@ class Captain::BaseTaskService
 
   def build_ruby_llm_response(response, messages, model)
     {
-      message: response.content,
+      message: symbolized_message(response.content),
       model: model,
       usage: {
         'prompt_tokens' => response.input_tokens,
@@ -115,6 +115,19 @@ class Captain::BaseTaskService
       },
       request_messages: messages
     }
+  end
+
+  # ruby_llm hace JSON.parse(response.content) SIN symbolize_names cuando
+  # hay schema: (ver ruby_llm/chat.rb#complete) -- las keys llegan como
+  # String, no Symbol. Cualquier consumer que acceda parsed_fields[:algo]
+  # (el estilo normal en este codebase) obtiene nil en silencio. Se
+  # normaliza aqui, en el unico punto compartido, para que un consumer
+  # nuevo de schema: no caiga en el mismo bug -- ya paso 2 veces sin que
+  # nadie lo notara (Auditoria::ConversationAnalyzerService#sync_ai_categories!
+  # nunca creaba menciones de IA; Auditoria::AdvisorDailyRollupService
+  # siempre guardaba feedback_tags vacio).
+  def symbolized_message(content)
+    content.is_a?(Hash) ? content.deep_symbolize_keys : content
   end
 
   def build_instrumentation_params(model, messages)

@@ -490,9 +490,20 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
             <td class="py-3 ltr:pr-4 rtl:pl-4 text-body-main">
               <div class="flex items-center gap-1">
                 <button
+                  type="button"
+                  class="text-n-blue-text hover:underline"
+                  @click="openCategoryDrawer(category)"
+                >
+                  {{ category.title }}
+                </button>
+                <!-- Texto, no solo icono -- el icono i-lucide-chevron-* puede
+                     no pintarse (ej. clase CSS no generada en el build) sin
+                     que haya ningun error visible; un boton con texto nunca
+                     depende de que un icono cargue para ser detectable. -->
+                <button
                   v-if="category.hasSubcategories"
                   type="button"
-                  class="flex items-center justify-center size-5 text-n-slate-10 hover:text-n-slate-12"
+                  class="flex items-center gap-0.5 shrink-0 text-xs text-n-slate-10 hover:text-n-slate-12 hover:underline"
                   @click="toggleExpanded(category.id)"
                 >
                   <Icon
@@ -501,15 +512,11 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
                         ? 'i-lucide-chevron-up'
                         : 'i-lucide-chevron-down'
                     "
-                    class="size-4"
+                    class="size-3.5"
                   />
-                </button>
-                <button
-                  type="button"
-                  class="text-n-blue-text hover:underline"
-                  @click="openCategoryDrawer(category)"
-                >
-                  {{ category.title }}
+                  {{
+                    $t('AUDITORIA_CATEGORY_REPORTS.TABLE.SUBCATEGORIES_TOGGLE')
+                  }}
                 </button>
                 <button
                   v-if="
@@ -530,7 +537,25 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
           </tr>
           <tr v-if="category.hasSubcategories && isExpanded(category.id)">
             <td colspan="3" class="pb-3 ltr:pr-4 rtl:pl-4">
+              <!-- category.hasSubcategories viene de una consulta SIN filtro
+                   de inbox (la categoria SI tiene hijas en algun inbox) --
+                   pero childrenByParentId se arma desde la lista YA
+                   filtrada por el inbox seleccionado. Si da vacio aqui, la
+                   categoria no esta "sin subcategorias": sus subcategorias
+                   existen pero ninguna aplica al inbox filtrado. Mensaje
+                   especifico para no confundir con "sin menciones". -->
+              <p
+                v-if="!(childrenByParentId[category.id] || []).length"
+                class="text-sm text-n-slate-10"
+              >
+                {{
+                  $t(
+                    'AUDITORIA_CATEGORY_REPORTS.SUBCATEGORIES_HIDDEN_BY_INBOX_FILTER'
+                  )
+                }}
+              </p>
               <CategoryBreakdownPieChart
+                v-else
                 :segments="
                   (childrenByParentId[category.id] || []).map(child => ({
                     id: child.id,
