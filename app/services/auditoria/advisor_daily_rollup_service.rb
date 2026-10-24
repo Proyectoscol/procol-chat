@@ -141,7 +141,11 @@ class Auditoria::AdvisorDailyRollupService < Captain::BaseTaskService
   def persist_result(parsed_fields)
     record = Auditoria::AdvisorDailySummary.find_or_initialize_by(account: account, user: user, summary_date: summary_date)
     record.update!(
-      conversations_count: conversation_ids_for_day.size,
+      # numbered_analyses.size (no conversation_ids_for_day.size): si la etapa 1
+      # (analisis por conversacion) no habia terminado para todas las
+      # conversaciones del asesor cuando corrio esta sintesis, el conteo debe
+      # reflejar cuantas conversaciones realmente alimentaron el resumen de la IA.
+      conversations_count: numbered_analyses.size,
       category_counts: category_counts,
       feedback_tags_positive: Array(parsed_fields[:feedback_tags_positive]),
       feedback_tags_negative: feedback_tags_negative_names(parsed_fields),
