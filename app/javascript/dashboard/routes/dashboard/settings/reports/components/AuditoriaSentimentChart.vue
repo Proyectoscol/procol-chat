@@ -204,6 +204,18 @@ const hoverTooltipX = computed(() => {
   // Evita que el tooltip se salga del viewBox cerca del borde derecho.
   return Math.min(x, WIDTH - MARGIN.right - 140);
 });
+
+// Alto fijo recortaba en silencio las filas cuando el contenido no cabe --
+// <foreignObject> hereda el overflow:hidden por defecto de SVG. El fix
+// real es overflow-visible en el <foreignObject> (ver template); esta
+// altura solo es un estimado razonable para el layout inicial. Aqui son
+// siempre 3 series (positivo/neutral/negativo) asi que rara vez se nota,
+// pero se calcula igual que en CategoryMentionsChart por consistencia.
+const TOOLTIP_TITLE_HEIGHT = 28;
+const TOOLTIP_ROW_HEIGHT = 18;
+const hoverTooltipHeight = computed(
+  () => TOOLTIP_TITLE_HEIGHT + filledSeries.value.length * TOOLTIP_ROW_HEIGHT
+);
 </script>
 
 <template>
@@ -304,7 +316,8 @@ const hoverTooltipX = computed(() => {
           :x="hoverTooltipX"
           :y="MARGIN.top"
           width="140"
-          height="100"
+          :height="hoverTooltipHeight"
+          class="overflow-visible"
         >
           <div
             class="rounded-md bg-n-solid-2 outline outline-1 outline-n-weak px-2 py-1.5 text-[11px] shadow-md"

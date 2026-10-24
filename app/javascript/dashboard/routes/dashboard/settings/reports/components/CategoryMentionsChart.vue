@@ -177,6 +177,18 @@ const hoverTooltipX = computed(() => {
   // Evita que el tooltip se salga del viewBox cerca del borde derecho.
   return Math.min(x, WIDTH - MARGIN.right - 140);
 });
+
+// Alto fijo (100) recortaba en silencio las filas de mas de ~3-4 categorias
+// marcadas -- <foreignObject> hereda el overflow:hidden por defecto de SVG,
+// asi que con 5+ categorias el tooltip solo mostraba las primeras sin
+// ningun indicio visual de que faltaban mas. El fix real es overflow-visible
+// en el <foreignObject> (ver template) -- esta altura solo es un estimado
+// razonable para el layout inicial, ya no es lo que evita el recorte.
+const TOOLTIP_TITLE_HEIGHT = 28;
+const TOOLTIP_ROW_HEIGHT = 18;
+const hoverTooltipHeight = computed(
+  () => TOOLTIP_TITLE_HEIGHT + filledSeries.value.length * TOOLTIP_ROW_HEIGHT
+);
 </script>
 
 <template>
@@ -277,7 +289,8 @@ const hoverTooltipX = computed(() => {
           :x="hoverTooltipX"
           :y="MARGIN.top"
           width="140"
-          height="100"
+          :height="hoverTooltipHeight"
+          class="overflow-visible"
         >
           <div
             class="rounded-md bg-n-solid-2 outline outline-1 outline-n-weak px-2 py-1.5 text-[11px] shadow-md"
