@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import camelcaseKeys from 'camelcase-keys';
+import fromUnixTime from 'date-fns/fromUnixTime';
+import format from 'date-fns/format';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
@@ -265,23 +267,71 @@ const totalsSummary = computed(() => {
 
 const selectedCategory = ref(null);
 const selectedTerm = ref(null);
-const isDrawerOpen = computed(() => !!selectedCategory.value);
+const selectedBucket = ref(null);
+const isDrawerOpen = computed(
+  () => !!selectedCategory.value || !!selectedBucket.value
+);
 const openCategoryDrawer = category => {
   selectedCategory.value = category;
   selectedTerm.value = null;
+  selectedBucket.value = null;
 };
 // Clic en un termino del desglose -- mismo drawer, pero filtrado a ese
 // termino puntual (ver auditoria_category_conversations_params#term).
 const openTermDrawer = (category, term) => {
   selectedCategory.value = category;
   selectedTerm.value = term;
+  selectedBucket.value = null;
+};
+// Clic en un punto de la grafica de tiempo -- mismo drawer, pero filtrado a
+// TODAS las categorias actualmente marcadas (no solo una) y acotado al
+// dia/semana/mes exacto que se clico (ver CategoryMentionsChart#onChartClick).
+// Sin categorias marcadas no hay nada que mostrar -- el clic no hace nada.
+const openBucketDrawer = ({ since, until }) => {
+  if (!checkedCategoryIds.value.size) return;
+
+  selectedBucket.value = { since, until };
+  selectedCategory.value = null;
+  selectedTerm.value = null;
 };
 const closeCategoryDrawer = () => {
   selectedCategory.value = null;
   selectedTerm.value = null;
+  selectedBucket.value = null;
 };
 const fetchCategoryConversations = params =>
   SummaryReportsAPI.getAuditoriaCategoryConversations(params);
+
+const bucketDrawerLabel = computed(() => {
+  if (!selectedBucket.value) return '';
+
+  const { since, until } = selectedBucket.value;
+  const start = format(fromUnixTime(since), 'd MMM yyyy');
+  const end = format(fromUnixTime(until), 'd MMM yyyy');
+  return start === end ? start : `${start} - ${end}`;
+});
+
+const drawerTitle = computed(() =>
+  selectedBucket.value ? bucketDrawerLabel.value : selectedCategory.value?.title
+);
+
+const drawerFilterParams = computed(() => {
+  if (selectedBucket.value) {
+    return {
+      since: selectedBucket.value.since,
+      until: selectedBucket.value.until,
+      categoryIds: Array.from(checkedCategoryIds.value),
+      inboxId: selectedInboxId.value || undefined,
+    };
+  }
+  return {
+    since: from.value,
+    until: to.value,
+    categoryId: selectedCategory.value?.id,
+    inboxId: selectedInboxId.value || undefined,
+    term: selectedTerm.value,
+  };
+});
 
 const downloadCsv = async (fetchCsv, fileType) => {
   try {
@@ -349,6 +399,7 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
   <div class="flex flex-col justify-between gap-3 md:flex-row">
     <OverviewReportFilters
       :disabled="isLoading"
+      hide-business-hours
       @filter-change="onFilterChange"
     />
     <div
@@ -421,6 +472,7 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
       :since="from"
       :until="to"
       :bucket="timeseriesBucket"
+      @select-bucket="openBucketDrawer"
     />
     <div
       v-if="isLoading"
@@ -632,19 +684,21 @@ const goToCreateCategory = () => router.push(createCategoryRoute.value);
 
   <AuditoriaReportConversationsDrawer
     :open="isDrawerOpen"
-    :title="selectedCategory?.title"
+    :title="drawerTitle"
     :description="
-      $t('AUDITORIA_CATEGORY_REPORTS.CONVERSATIONS_DRAWER.DESCRIPTION')
+      selectedBucket
+        ? $t(
+            'AUDITORIA_CATEGORY_REPORTS.CONVERSATIONS_DRAWER.DESCRIPTION_BUCKET'
+          )
+        : $t('AUDITORIA_CATEGORY_REPORTS.CONVERSATIONS_DRAWER.DESCRIPTION')
     "
-    :empty-text="$t('AUDITORIA_CATEGORY_REPORTS.CONVERSATIONS_DRAWER.EMPTY')"
+    :empty-text="
+      selectedBucket
+        ? $t('AUDITORIA_CATEGORY_REPORTS.CONVERSATIONS_DRAWER.EMPTY_BUCKET')
+        : $t('AUDITORIA_CATEGORY_REPORTS.CONVERSATIONS_DRAWER.EMPTY')
+    "
     :error-text="$t('AUDITORIA_CATEGORY_REPORTS.CONVERSATIONS_DRAWER.ERROR')"
-    :filter-params="{
-      since: from,
-      until: to,
-      categoryId: selectedCategory?.id,
-      inboxId: selectedInboxId,
-      term: selectedTerm,
-    }"
+    :filter-params="drawerFilterParams"
     :fetcher="fetchCategoryConversations"
     :export-csv="exportConversationsCsv"
     sortable-by-reason

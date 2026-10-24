@@ -4,8 +4,11 @@ import { useI18n } from 'vue-i18n';
 import eachDayOfInterval from 'date-fns/eachDayOfInterval';
 import eachWeekOfInterval from 'date-fns/eachWeekOfInterval';
 import eachMonthOfInterval from 'date-fns/eachMonthOfInterval';
+import endOfWeek from 'date-fns/endOfWeek';
+import endOfMonth from 'date-fns/endOfMonth';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import format from 'date-fns/format';
+import { getUnixStartOfDay, getUnixEndOfDay } from 'helpers/DateHelper';
 import { colorForIndex } from 'dashboard/helper/auditoriaCategoryPalette';
 
 const props = defineProps({
@@ -14,6 +17,8 @@ const props = defineProps({
   until: { type: Number, required: true },
   bucket: { type: String, default: 'day' },
 });
+
+const emit = defineEmits(['selectBucket']);
 
 const { t } = useI18n();
 
@@ -117,8 +122,8 @@ const linePath = series =>
 const hoverIndex = ref(null);
 const svgRef = ref(null);
 
-const onPointerMove = event => {
-  if (!svgRef.value || !buckets.value.length) return;
+const indexForEvent = event => {
+  if (!svgRef.value || !buckets.value.length) return null;
 
   const rect = svgRef.value.getBoundingClientRect();
   const relativeX = ((event.clientX - rect.left) / rect.width) * WIDTH;
@@ -126,10 +131,34 @@ const onPointerMove = event => {
     1,
     Math.max(0, (relativeX - MARGIN.left) / PLOT_WIDTH)
   );
-  hoverIndex.value = Math.round(ratio * (buckets.value.length - 1));
+  return Math.round(ratio * (buckets.value.length - 1));
+};
+
+const onPointerMove = event => {
+  hoverIndex.value = indexForEvent(event);
 };
 const onPointerLeave = () => {
   hoverIndex.value = null;
+};
+
+// Fin del bucket clicado -- dia: el mismo dia; semana/mes: el ultimo dia de
+// esa semana/mes (mismo weekStartsOn: 1 que ya usa `buckets`, para calzar
+// con como Postgres date_trunc('week', ...) trunca en el backend).
+const bucketEndDate = start => {
+  if (props.bucket === 'week') return endOfWeek(start, { weekStartsOn: 1 });
+  if (props.bucket === 'month') return endOfMonth(start);
+  return start;
+};
+
+const onChartClick = event => {
+  const index = indexForEvent(event);
+  if (index === null || !buckets.value[index]) return;
+
+  const start = new Date(buckets.value[index]);
+  emit('selectBucket', {
+    since: getUnixStartOfDay(start),
+    until: getUnixEndOfDay(bucketEndDate(start)),
+  });
 };
 
 const hoverDateLabel = computed(() => {
@@ -158,10 +187,11 @@ const hoverTooltipX = computed(() => {
       v-else
       ref="svgRef"
       :viewBox="`0 0 ${WIDTH} ${HEIGHT}`"
-      class="w-full h-auto"
+      class="w-full h-auto cursor-pointer"
       role="img"
       @pointermove="onPointerMove"
       @pointerleave="onPointerLeave"
+      @click="onChartClick"
     >
       <!-- grilla + eje Y: recesiva, tokens n-slate ya dark-aware -->
       <g>
@@ -282,5 +312,9 @@ const hoverTooltipX = computed(() => {
         {{ s.title }}
       </span>
     </div>
+
+    <p v-if="hasData" class="text-xs text-n-slate-10">
+      {{ t('AUDITORIA_CATEGORY_REPORTS.CHART.CLICK_HINT') }}
+    </p>
   </div>
 </template>

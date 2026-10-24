@@ -84,15 +84,29 @@ class Auditoria::AdvisorDailyRollupService < Captain::BaseTaskService
     <<~PROMPT
       Eres un asistente experto en gestion de equipos de atencion al cliente por WhatsApp.
 
-      A continuacion se te dan los analisis de IA de todas las conversaciones que un asesor atendio en un dia especifico, mas el conteo de categorias detectadas ese dia. Sintetiza como le fue al asesor ese dia: un resumen narrativo MUY breve de su desempeno (maximo 2-3 frases), una vision general del tono emocional predominante entre sus conversaciones, una recomendacion principal, una retroalimentacion breve y concreta en una sola frase, y una lista corta de etiquetas libres que resuman el area de retroalimentacion (ej. manejo de objeciones, conocimiento de producto).
+      A continuacion se te dan los analisis de IA de todas las conversaciones que un asesor atendio en un dia especifico (numeradas "Conversacion 1", "Conversacion 2", etc.), mas el conteo de categorias detectadas ese dia. Sintetiza como le fue al asesor ese dia: un resumen narrativo MUY breve de su desempeno (maximo 2-3 frases), una vision general del tono emocional predominante entre sus conversaciones, una recomendacion principal, una retroalimentacion breve y concreta en una sola frase con su justificacion, una lista corta de etiquetas de algo POSITIVO que hizo bien, y una lista corta de etiquetas de areas de mejora -- cada etiqueta de mejora con una razon breve y el/los numero(s) de "Conversacion N" de donde sale.
 
       Responde en #{account.locale_english_name}.
     PROMPT
   end
 
   def analyses_text
-    blocks = analyses.each_with_index.map { |analysis, index| analysis_block(analysis, index + 1) }
+    blocks = numbered_analyses.map { |number, analysis| analysis_block(analysis, number) }
     (blocks + [category_counts_block]).join("\n\n")
+  end
+
+  # Memoizado para que el texto del prompt ("Conversacion N") y el mapa
+  # numero->conversation_id (usado para traducir las citas de
+  # feedback_tags_negative, ver #persist_result) numeren EXACTAMENTE igual
+  # -- construirlos por separado arriesgaria desincronizarse, ya que
+  # Postgres no garantiza que WHERE IN (...) devuelva las filas en el mismo
+  # orden que conversation_ids_for_day.
+  def numbered_analyses
+    @numbered_analyses ||= analyses.each_with_index.map { |analysis, index| [index + 1, analysis] }
+  end
+
+  def conversation_number_to_id
+    @conversation_number_to_id ||= numbered_analyses.to_h.transform_values(&:conversation_id)
   end
 
   def analysis_block(analysis, index)
@@ -126,18 +140,37 @@ class Auditoria::AdvisorDailyRollupService < Captain::BaseTaskService
     record.update!(
       conversations_count: conversation_ids_for_day.size,
       category_counts: category_counts,
-      feedback_tags: Array(parsed_fields[:feedback_tags]),
+      feedback_tags_positive: Array(parsed_fields[:feedback_tags_positive]),
+      feedback_tags_negative: feedback_tags_negative_names(parsed_fields),
+      feedback_tags_negative_detail: feedback_tags_negative_detail(parsed_fields),
       results: stringify_fields(parsed_fields),
       generated_at: Time.current
     )
     { message: record.results }
   end
 
-  # feedback_tags es un array -- transform_values(&:to_s) lo convertiria en
-  # un string ilegible ("[\"foo\", \"bar\"]"), por eso se excluye aqui y se
-  # guarda aparte en su propia columna (ver persist_result).
+  def feedback_tags_negative_names(parsed_fields)
+    Array(parsed_fields[:feedback_tags_negative]).pluck(:tag)
+  end
+
+  # Traduce los "Conversacion N" citados por la IA a conversation_id reales
+  # (via conversation_number_to_id) para que el frontend pueda abrir el
+  # drawer de esa conversacion sin conocer la numeracion interna del prompt.
+  def feedback_tags_negative_detail(parsed_fields)
+    Array(parsed_fields[:feedback_tags_negative]).map do |entry|
+      {
+        tag: entry[:tag],
+        reason: entry[:reason],
+        conversation_ids: Array(entry[:conversation_numbers]).filter_map { |number| conversation_number_to_id[number] }
+      }
+    end
+  end
+
+  # feedback_tags_positive/negative son arrays/objetos -- transform_values(&:to_s)
+  # los convertiria en un string ilegible, por eso se excluyen aqui y se
+  # guardan aparte en sus propias columnas (ver persist_result).
   def stringify_fields(parsed_fields)
-    parsed_fields.except(:feedback_tags).transform_keys(&:to_s).transform_values(&:to_s)
+    parsed_fields.except(:feedback_tags_positive, :feedback_tags_negative).transform_keys(&:to_s).transform_values(&:to_s)
   end
 
   def event_name

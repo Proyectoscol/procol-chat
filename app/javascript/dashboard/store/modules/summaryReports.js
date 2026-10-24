@@ -214,12 +214,21 @@ export const mutations = {
         summaryDate: row.summary_date,
         conversationsCount: row.conversations_count,
         categoryCounts: row.category_counts || {},
-        feedbackTags: row.feedback_tags || [],
+        feedbackTagsPositive: row.feedback_tags_positive || [],
+        feedbackTagsNegative: row.feedback_tags_negative || [],
+        feedbackTagsNegativeDetail: (
+          row.feedback_tags_negative_detail || []
+        ).map(detail => ({
+          tag: detail.tag,
+          reason: detail.reason,
+          conversationIds: detail.conversation_ids || [],
+        })),
         generatedAt: row.generated_at,
         results: row.results
           ? {
               summary: row.results.summary,
               shortFeedback: row.results.short_feedback,
+              shortFeedbackReason: row.results.short_feedback_reason,
               toneOverview: row.results.tone_overview,
               recommendation: row.results.recommendation,
             }

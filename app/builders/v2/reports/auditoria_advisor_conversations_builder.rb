@@ -41,13 +41,23 @@ class V2::Reports::AuditoriaAdvisorConversationsBuilder
                                         .per(per_page)
   end
 
+  # Usado por la cita de una etiqueta negativa del resumen diario por asesor
+  # (ver Auditoria::AdvisorDailyRollupService#feedback_tags_negative_detail):
+  # ahi ya se conocen los conversation_id exactos citados por la IA, no hay
+  # que re-derivarlos por rango de fecha + auditoria_source_user_id.
   def conversation_ids
+    return requested_conversation_ids if requested_conversation_ids.present?
+
     scope = account.messages.where(created_at: range)
                    .where("#{Auditoria::MessageAnnotatorService::UNWRAP_CONTENT_ATTRIBUTES}->>'auditoria_source_user_id' = ?",
                           user_id.to_s)
                    .where.not(conversation_id: excluded_conversation_ids)
     scope = scope.where(inbox_id: inbox_id) if inbox_id.present?
     scope.reorder(nil).distinct.pluck(:conversation_id)
+  end
+
+  def requested_conversation_ids
+    Array(params[:conversation_ids]).map(&:to_i).presence
   end
 
   def excluded_conversation_ids

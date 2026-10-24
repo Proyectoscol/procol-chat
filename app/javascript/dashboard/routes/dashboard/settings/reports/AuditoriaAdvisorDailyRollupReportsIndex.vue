@@ -20,7 +20,8 @@ const from = ref(0);
 const to = ref(0);
 const selectedInboxId = ref('');
 const selectedUserId = ref('');
-const selectedTag = ref('');
+const selectedPositiveTag = ref('');
+const selectedNegativeTag = ref('');
 const sortBy = ref('date');
 
 const uiFlags = useMapGetter('summaryReports/getUIFlags');
@@ -68,22 +69,46 @@ const categoryChips = row =>
     count,
   }));
 
+const negativeDetailFor = (row, tag) =>
+  (row.feedbackTagsNegativeDetail || []).find(detail => detail.tag === tag) || {
+    tag,
+    reason: '',
+    conversationIds: [],
+  };
+
 // Conjunto de etiquetas distintas ya cargadas (sin paginar) -- el filtro es
 // del lado del cliente, no hay endpoint nuevo que soporte filtrar por tag.
-const availableTags = computed(() => {
+const availableTagsFrom = field => {
   const tags = new Set();
   summaries.value.forEach(row =>
-    (row.feedbackTags || []).forEach(tag => tags.add(tag))
+    (row[field] || []).forEach(tag => tags.add(tag))
   );
   return [...tags].sort((a, b) => a.localeCompare(b));
-});
+};
+const availablePositiveTags = computed(() =>
+  availableTagsFrom('feedbackTagsPositive')
+);
+const availableNegativeTags = computed(() =>
+  availableTagsFrom('feedbackTagsNegative')
+);
 
-const filteredSummaries = computed(() => {
-  if (!selectedTag.value) return summaries.value;
-  return summaries.value.filter(row =>
-    (row.feedbackTags || []).includes(selectedTag.value)
-  );
-});
+const filteredSummaries = computed(() =>
+  summaries.value.filter(row => {
+    if (
+      selectedPositiveTag.value &&
+      !(row.feedbackTagsPositive || []).includes(selectedPositiveTag.value)
+    ) {
+      return false;
+    }
+    if (
+      selectedNegativeTag.value &&
+      !(row.feedbackTagsNegative || []).includes(selectedNegativeTag.value)
+    ) {
+      return false;
+    }
+    return true;
+  })
+);
 
 // Orden alfabetico es puramente de presentacion sobre los datos ya
 // cargados -- el backend sigue devolviendo summary_date desc, que es el
@@ -132,6 +157,25 @@ const drawerFilterParams = computed(() => {
     inboxId: selectedInboxId.value || undefined,
   };
 });
+
+// Cita de una etiqueta negativa puntual -- drawer separado del de "todas
+// las conversaciones del dia" (arriba), filtrado a los conversation_id
+// exactos que la IA citó para esa etiqueta (ver
+// Auditoria::AdvisorDailyRollupService#feedback_tags_negative_detail).
+const selectedCitation = ref(null);
+const isCitationDrawerOpen = computed(() => !!selectedCitation.value);
+const openCitationDrawer = detail => {
+  if (!detail.conversationIds?.length) return;
+  selectedCitation.value = detail;
+};
+const closeCitationDrawer = () => {
+  selectedCitation.value = null;
+};
+const fetchCitationConversations = params =>
+  SummaryReportsAPI.getAuditoriaAdvisorConversations(params);
+const citationDrawerFilterParams = computed(() => ({
+  conversationIds: selectedCitation.value?.conversationIds || [],
+}));
 
 const fetchReportsWithRetry = async () => {
   const params = {
@@ -182,106 +226,127 @@ const onAdvisorChange = () => fetchAllData();
     "
   />
 
-  <div class="flex flex-col justify-between gap-3 md:flex-row">
-    <OverviewReportFilters
-      :disabled="isLoading"
-      @filter-change="onFilterChange"
-    />
-    <div
-      class="flex flex-wrap items-center gap-4"
-      :class="{ 'pointer-events-none opacity-50': isLoading }"
-    >
-      <div class="flex items-center gap-2">
-        <label
-          for="auditoria-rollup-advisor-filter"
-          class="text-sm whitespace-nowrap"
+  <OverviewReportFilters
+    :disabled="isLoading"
+    hide-business-hours
+    @filter-change="onFilterChange"
+  />
+
+  <div
+    class="flex flex-wrap items-center gap-4 mt-3"
+    :class="{ 'pointer-events-none opacity-50': isLoading }"
+  >
+    <div class="flex items-center gap-2">
+      <label
+        for="auditoria-rollup-advisor-filter"
+        class="text-sm whitespace-nowrap"
+      >
+        {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.ADVISOR_FILTER_LABEL') }}
+      </label>
+      <select
+        id="auditoria-rollup-advisor-filter"
+        v-model="selectedUserId"
+        class="reset-base !mb-0 !w-auto"
+        :disabled="isLoading"
+        @change="onAdvisorChange"
+      >
+        <option value="">
+          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.ADVISOR_FILTER_ALL') }}
+        </option>
+        <option
+          v-for="advisor in advisorOptions"
+          :key="advisor.id"
+          :value="advisor.id"
         >
-          {{
-            $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.ADVISOR_FILTER_LABEL')
-          }}
-        </label>
-        <select
-          id="auditoria-rollup-advisor-filter"
-          v-model="selectedUserId"
-          class="reset-base !mb-0 !w-auto"
-          :disabled="isLoading"
-          @change="onAdvisorChange"
-        >
-          <option value="">
-            {{
-              $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.ADVISOR_FILTER_ALL')
-            }}
-          </option>
-          <option
-            v-for="advisor in advisorOptions"
-            :key="advisor.id"
-            :value="advisor.id"
-          >
-            {{ advisor.name }}
-          </option>
-        </select>
-      </div>
-      <div class="flex items-center gap-2">
-        <label
-          for="auditoria-rollup-inbox-filter"
-          class="text-sm whitespace-nowrap"
-        >
-          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.INBOX_FILTER_LABEL') }}
-        </label>
-        <select
-          id="auditoria-rollup-inbox-filter"
-          v-model="selectedInboxId"
-          class="reset-base !mb-0 !w-auto"
-          :disabled="isLoading"
-          @change="onInboxChange"
-        >
-          <option value="">
-            {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.INBOX_FILTER_ALL') }}
-          </option>
-          <option v-for="inbox in inboxes" :key="inbox.id" :value="inbox.id">
-            {{ inbox.name }}
-          </option>
-        </select>
-      </div>
-      <div class="flex items-center gap-2">
-        <label
-          for="auditoria-rollup-tag-filter"
-          class="text-sm whitespace-nowrap"
-        >
-          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.TAG_FILTER_LABEL') }}
-        </label>
-        <select
-          id="auditoria-rollup-tag-filter"
-          v-model="selectedTag"
-          class="reset-base !mb-0 !w-auto"
-          :disabled="isLoading"
-        >
-          <option value="">
-            {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.TAG_FILTER_ALL') }}
-          </option>
-          <option v-for="tag in availableTags" :key="tag" :value="tag">
-            {{ tag }}
-          </option>
-        </select>
-      </div>
-      <div class="flex items-center gap-2">
-        <label for="auditoria-rollup-sort" class="text-sm whitespace-nowrap">
-          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SORT_LABEL') }}
-        </label>
-        <select
-          id="auditoria-rollup-sort"
-          v-model="sortBy"
-          class="reset-base !mb-0 !w-auto"
-          :disabled="isLoading"
-        >
-          <option value="date">
-            {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SORT_BY_DATE') }}
-          </option>
-          <option value="name">
-            {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SORT_BY_NAME') }}
-          </option>
-        </select>
-      </div>
+          {{ advisor.name }}
+        </option>
+      </select>
+    </div>
+    <div class="flex items-center gap-2">
+      <label
+        for="auditoria-rollup-inbox-filter"
+        class="text-sm whitespace-nowrap"
+      >
+        {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.INBOX_FILTER_LABEL') }}
+      </label>
+      <select
+        id="auditoria-rollup-inbox-filter"
+        v-model="selectedInboxId"
+        class="reset-base !mb-0 !w-auto"
+        :disabled="isLoading"
+        @change="onInboxChange"
+      >
+        <option value="">
+          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.INBOX_FILTER_ALL') }}
+        </option>
+        <option v-for="inbox in inboxes" :key="inbox.id" :value="inbox.id">
+          {{ inbox.name }}
+        </option>
+      </select>
+    </div>
+    <div class="flex items-center gap-2">
+      <label
+        for="auditoria-rollup-positive-tag-filter"
+        class="text-sm whitespace-nowrap"
+      >
+        {{
+          $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.POSITIVE_TAG_FILTER_LABEL')
+        }}
+      </label>
+      <select
+        id="auditoria-rollup-positive-tag-filter"
+        v-model="selectedPositiveTag"
+        class="reset-base !mb-0 !w-auto"
+        :disabled="isLoading"
+      >
+        <option value="">
+          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.TAG_FILTER_ALL') }}
+        </option>
+        <option v-for="tag in availablePositiveTags" :key="tag" :value="tag">
+          {{ tag }}
+        </option>
+      </select>
+    </div>
+    <div class="flex items-center gap-2">
+      <label
+        for="auditoria-rollup-negative-tag-filter"
+        class="text-sm whitespace-nowrap"
+      >
+        {{
+          $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.NEGATIVE_TAG_FILTER_LABEL')
+        }}
+      </label>
+      <select
+        id="auditoria-rollup-negative-tag-filter"
+        v-model="selectedNegativeTag"
+        class="reset-base !mb-0 !w-auto"
+        :disabled="isLoading"
+      >
+        <option value="">
+          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.TAG_FILTER_ALL') }}
+        </option>
+        <option v-for="tag in availableNegativeTags" :key="tag" :value="tag">
+          {{ tag }}
+        </option>
+      </select>
+    </div>
+    <div class="flex items-center gap-2">
+      <label for="auditoria-rollup-sort" class="text-sm whitespace-nowrap">
+        {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SORT_LABEL') }}
+      </label>
+      <select
+        id="auditoria-rollup-sort"
+        v-model="sortBy"
+        class="reset-base !mb-0 !w-auto"
+        :disabled="isLoading"
+      >
+        <option value="date">
+          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SORT_BY_DATE') }}
+        </option>
+        <option value="name">
+          {{ $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.SORT_BY_NAME') }}
+        </option>
+      </select>
     </div>
   </div>
 
@@ -358,6 +423,7 @@ const onAdvisorChange = () => fetchAllData();
 
       <p
         v-if="row.results?.shortFeedback"
+        v-tooltip.top="row.results?.shortFeedbackReason"
         class="text-sm text-n-amber-11 bg-n-amber-2 rounded-lg px-3 py-2"
       >
         <span class="font-medium">
@@ -369,21 +435,42 @@ const onAdvisorChange = () => fetchAllData();
       </p>
 
       <div
-        v-if="row.feedbackTags?.length"
+        v-if="row.feedbackTagsPositive?.length"
         class="flex flex-wrap items-center gap-2 mt-1"
       >
         <span class="text-xs text-n-slate-10">
           {{
-            $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.FEEDBACK_TAGS_LABEL')
+            $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.POSITIVE_TAGS_LABEL')
           }}:
         </span>
         <span
-          v-for="tag in row.feedbackTags"
+          v-for="tag in row.feedbackTagsPositive"
           :key="tag"
-          class="text-xs px-2 py-0.5 rounded-full bg-n-amber-3 text-n-amber-11"
+          class="text-xs px-2 py-0.5 rounded-full bg-n-teal-3 text-n-teal-11"
         >
           {{ tag }}
         </span>
+      </div>
+
+      <div
+        v-if="row.feedbackTagsNegative?.length"
+        class="flex flex-wrap items-center gap-2 mt-1"
+      >
+        <span class="text-xs text-n-slate-10">
+          {{
+            $t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.NEGATIVE_TAGS_LABEL')
+          }}:
+        </span>
+        <button
+          v-for="tag in row.feedbackTagsNegative"
+          :key="tag"
+          v-tooltip.top="negativeDetailFor(row, tag).reason"
+          type="button"
+          class="text-xs px-2 py-0.5 rounded-full bg-n-amber-3 text-n-amber-11 hover:bg-n-amber-4"
+          @click="openCitationDrawer(negativeDetailFor(row, tag))"
+        >
+          {{ tag }}
+        </button>
       </div>
 
       <div
@@ -421,5 +508,20 @@ const onAdvisorChange = () => fetchAllData();
     :filter-params="drawerFilterParams"
     :fetcher="fetchDayConversations"
     @close="closeConversationsDrawer"
+  />
+
+  <AuditoriaReportConversationsDrawer
+    :open="isCitationDrawerOpen"
+    :title="selectedCitation?.tag"
+    :description="selectedCitation?.reason"
+    :empty-text="
+      t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.CITATION_DRAWER.EMPTY')
+    "
+    :error-text="
+      t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.CONVERSATIONS_DRAWER.ERROR')
+    "
+    :filter-params="citationDrawerFilterParams"
+    :fetcher="fetchCitationConversations"
+    @close="closeCitationDrawer"
   />
 </template>

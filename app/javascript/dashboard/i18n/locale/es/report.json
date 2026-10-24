@@ -712,8 +712,10 @@
     "EMPTY_MESSAGE": "No se encontraron resúmenes para los filtros seleccionados. Se generan automáticamente cada noche, o puedes correrlos manualmente desde Ajustes > Integraciones > OpenAI > Uso.",
     "GENERATED_AT_LABEL": "Generado",
     "SHORT_FEEDBACK_LABEL": "Retroalimentación",
-    "FEEDBACK_TAGS_LABEL": "Etiquetas",
-    "TAG_FILTER_LABEL": "Etiqueta",
+    "POSITIVE_TAGS_LABEL": "Puntos positivos",
+    "NEGATIVE_TAGS_LABEL": "Áreas de mejora",
+    "POSITIVE_TAG_FILTER_LABEL": "Punto positivo",
+    "NEGATIVE_TAG_FILTER_LABEL": "Área de mejora",
     "TAG_FILTER_ALL": "Todas las etiquetas",
     "SORT_LABEL": "Ordenar por",
     "SORT_BY_DATE": "Fecha",
@@ -723,6 +725,9 @@
       "DESCRIPTION": "Conversaciones que alimentaron este resumen diario.",
       "EMPTY": "No se encontraron conversaciones de este asesor en este día.",
       "ERROR": "No se pudieron cargar las conversaciones, intenta de nuevo."
+    },
+    "CITATION_DRAWER": {
+      "EMPTY": "No se encontraron las conversaciones citadas."
     }
   },
   "AUDITORIA_CATEGORY_REPORTS": {
@@ -745,11 +750,14 @@
     },
     "TOTALS_SUMMARY": "Total de conversaciones con al menos una categoría: {conversations}",
     "CHART": {
-      "EMPTY": "No se encontraron menciones para las categorías y el rango de fechas seleccionados."
+      "EMPTY": "No se encontraron menciones para las categorías y el rango de fechas seleccionados.",
+      "CLICK_HINT": "Haz clic en un punto de la gráfica para ver el detalle de ese día."
     },
     "CONVERSATIONS_DRAWER": {
       "DESCRIPTION": "Conversaciones marcadas con esta categoría.",
       "EMPTY": "No se encontraron conversaciones para esta categoría.",
+      "DESCRIPTION_BUCKET": "Conversaciones de las categorías marcadas en este rango.",
+      "EMPTY_BUCKET": "No se encontraron conversaciones para las categorías marcadas en este rango.",
       "ERROR": "No se pudieron cargar las conversaciones, intenta de nuevo."
     },
     "OVERALL_BREAKDOWN": {

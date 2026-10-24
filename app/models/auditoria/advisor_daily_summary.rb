@@ -2,24 +2,27 @@
 #
 # Table name: auditoria_advisor_daily_summaries
 #
-#  id                  :bigint           not null, primary key
-#  category_counts     :jsonb            not null
-#  conversations_count :integer          default(0), not null
-#  feedback_tags       :string           default([]), not null, is an Array
-#  generated_at        :datetime
-#  results             :jsonb            not null
-#  summary_date        :date             not null
-#  created_at          :datetime         not null
-#  updated_at          :datetime         not null
-#  account_id          :bigint           not null
-#  user_id             :bigint           not null
+#  id                            :bigint           not null, primary key
+#  category_counts               :jsonb            not null
+#  conversations_count           :integer          default(0), not null
+#  feedback_tags_negative        :string           default([]), not null, is an Array
+#  feedback_tags_negative_detail :jsonb            not null
+#  feedback_tags_positive        :string           default([]), not null, is an Array
+#  generated_at                  :datetime
+#  results                       :jsonb            not null
+#  summary_date                  :date             not null
+#  created_at                    :datetime         not null
+#  updated_at                    :datetime         not null
+#  account_id                    :bigint           not null
+#  user_id                       :bigint           not null
 #
 # Indexes
 #
-#  idx_auditoria_advisor_summary_unique                      (account_id,user_id,summary_date) UNIQUE
-#  index_auditoria_advisor_daily_summaries_on_account_id     (account_id)
-#  index_auditoria_advisor_daily_summaries_on_feedback_tags  (feedback_tags) USING gin
-#  index_auditoria_advisor_daily_summaries_on_user_id        (user_id)
+#  idx_auditoria_advisor_daily_summaries_on_feedback_tags_pos  (feedback_tags_positive) USING gin
+#  idx_auditoria_advisor_summary_unique                        (account_id,user_id,summary_date) UNIQUE
+#  idx_on_feedback_tags_negative_6716c21a14                    (feedback_tags_negative) USING gin
+#  index_auditoria_advisor_daily_summaries_on_account_id       (account_id)
+#  index_auditoria_advisor_daily_summaries_on_user_id          (user_id)
 #
 # Foreign Keys
 #

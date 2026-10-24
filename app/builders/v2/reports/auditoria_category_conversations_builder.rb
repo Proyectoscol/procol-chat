@@ -115,16 +115,34 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
   # Si category_id es una categoria padre (ej. "Competencia"), el drilldown
   # debe incluir conversaciones marcadas con CUALQUIERA de sus subcategorias
   # -- el padre nunca matchea por si mismo (ver Auditoria::Category.leaf).
+  # category_ids (plural) es la alternativa usada por el clic en la
+  # grafica de tiempo: ahi ya son ids de categorias HOJA (las unicas que se
+  # pueden graficar), asi que no hace falta expandir a descendientes --
+  # solo se filtran por visibilidad antes de usarlas.
   def category_ids_for_filter
-    @category_ids_for_filter ||= begin
-      category = account.auditoria_categories.find_by(id: category_id)
-      if category.present? && !category_visible?(category)
-        []
-      elsif category.present?
-        [category.id] + category.descendant_ids
-      else
-        [category_id]
-      end
+    @category_ids_for_filter ||= if requested_category_ids.present?
+                                   visible_requested_categories.map(&:id)
+                                 else
+                                   category_ids_for_single_filter
+                                 end
+  end
+
+  def visible_requested_categories
+    account.auditoria_categories.where(id: requested_category_ids).select { |category| category_visible?(category) }
+  end
+
+  def requested_category_ids
+    Array(params[:category_ids]).map(&:to_i).presence
+  end
+
+  def category_ids_for_single_filter
+    category = account.auditoria_categories.find_by(id: category_id)
+    if category.present? && !category_visible?(category)
+      []
+    elsif category.present?
+      [category.id] + category.descendant_ids
+    else
+      [category_id]
     end
   end
 

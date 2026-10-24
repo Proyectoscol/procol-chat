@@ -167,8 +167,12 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     params.permit(:since, :until, :inbox_id, :same_day_only, inbox_id: [])
   end
 
+  # conversation_ids: alternativa usada por la cita de una etiqueta negativa
+  # del resumen diario por asesor (ver AuditoriaAdvisorConversationsBuilder)
+  # -- cuando viene, el builder filtra exactamente a esos ids en vez de
+  # recalcular por since/until/user_id.
   def auditoria_conversations_params
-    params.permit(:since, :until, :inbox_id, :user_id, :page, inbox_id: [])
+    params.permit(:since, :until, :inbox_id, :user_id, :page, inbox_id: [], conversation_ids: [])
   end
 
   def auditoria_category_params
@@ -179,8 +183,11 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     params.permit(:since, :until, :inbox_id, :count_mode, category_ids: [], inbox_id: [])
   end
 
+  # category_ids: alternativa a category_id usada por el clic en un punto
+  # de la grafica de tiempo (ver AuditoriaCategoryConversationsBuilder) --
+  # filtra por varias categorias HOJA a la vez, sin expansion a descendientes.
   def auditoria_category_conversations_params
-    params.permit(:since, :until, :category_id, :inbox_id, :page, :term, inbox_id: [])
+    params.permit(:since, :until, :category_id, :inbox_id, :page, :term, inbox_id: [], category_ids: [])
   end
 
   def auditoria_category_terms_params

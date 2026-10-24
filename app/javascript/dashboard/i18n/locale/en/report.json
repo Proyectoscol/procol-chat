@@ -702,7 +702,7 @@
     }
   },
   "AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS": {
-    "HEADER": "Daily Rollup",
+    "HEADER": "Daily Summary",
     "DESCRIPTION": "How each advisor's day went, in plain language — synthesized daily from their conversation analyses. Generated automatically overnight, or on demand from Settings > Integrations > OpenAI > Usage.",
     "ADVISOR_FILTER_LABEL": "Advisor",
     "ADVISOR_FILTER_ALL": "All advisors",
@@ -713,12 +713,14 @@
     "TONE_LABEL": "Tone",
     "RECOMMENDATION_LABEL": "Recommendation",
     "CATEGORIES_LABEL": "Categories detected that day",
-    "EMPTY_TITLE": "No daily rollups yet",
+    "EMPTY_TITLE": "No daily summaries yet",
     "EMPTY_MESSAGE": "No summaries found for the selected filters. They're generated automatically overnight, or you can run them manually from Settings > Integrations > OpenAI > Usage.",
     "GENERATED_AT_LABEL": "Generated",
     "SHORT_FEEDBACK_LABEL": "Feedback",
-    "FEEDBACK_TAGS_LABEL": "Tags",
-    "TAG_FILTER_LABEL": "Tag",
+    "POSITIVE_TAGS_LABEL": "Positives",
+    "NEGATIVE_TAGS_LABEL": "Areas to improve",
+    "POSITIVE_TAG_FILTER_LABEL": "Positive",
+    "NEGATIVE_TAG_FILTER_LABEL": "Area to improve",
     "TAG_FILTER_ALL": "All tags",
     "SORT_LABEL": "Sort by",
     "SORT_BY_DATE": "Date",
@@ -728,6 +730,9 @@
       "DESCRIPTION": "Conversations that fed this daily summary.",
       "EMPTY": "No conversations found for this advisor on this day.",
       "ERROR": "Failed to load conversations, please try again."
+    },
+    "CITATION_DRAWER": {
+      "EMPTY": "Could not find the cited conversations."
     }
   },
   "AUDITORIA_CATEGORY_REPORTS": {
@@ -750,11 +755,14 @@
     },
     "TOTALS_SUMMARY": "Total conversations with at least one category: {conversations}",
     "CHART": {
-      "EMPTY": "No mentions found for the selected categories and date range."
+      "EMPTY": "No mentions found for the selected categories and date range.",
+      "CLICK_HINT": "Click a point on the chart to see that day's detail."
     },
     "CONVERSATIONS_DRAWER": {
       "DESCRIPTION": "Conversations tagged with this category.",
       "EMPTY": "No conversations found for this category.",
+      "DESCRIPTION_BUCKET": "Conversations for the checked categories in this range.",
+      "EMPTY_BUCKET": "No conversations found for the checked categories in this range.",
       "ERROR": "Failed to load conversations, please try again."
     },
     "OVERALL_BREAKDOWN": {
