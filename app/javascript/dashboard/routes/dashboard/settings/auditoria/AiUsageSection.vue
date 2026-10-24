@@ -179,9 +179,14 @@ const onPageChange = async page => {
 const saveSettings = async () => {
   isSaving.value = true;
   try {
+    // costLimit.value === 0 es un limite valido (pausar el gasto por
+    // completo) -- `|| null` lo confundia con "campo vacio" porque 0 es
+    // falsy en JS, y el 0 que el usuario queria guardar se volvia "sin limite".
     await AuditoriaAiUsageAPI.updateSettings({
-      auditoria_ai_monthly_cost_limit_usd: costLimit.value || null,
-      auditoria_ai_monthly_token_limit: tokenLimit.value || null,
+      auditoria_ai_monthly_cost_limit_usd:
+        costLimit.value === '' ? null : costLimit.value,
+      auditoria_ai_monthly_token_limit:
+        tokenLimit.value === '' ? null : tokenLimit.value,
       auditoria_chat_model: chatModel.value || null,
       auditoria_transcription_model: transcriptionModel.value || null,
     });

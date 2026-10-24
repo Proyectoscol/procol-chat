@@ -35,7 +35,13 @@ const saveFieldConfig = async config => {
     });
     useAlert(t('AUDITORIA_AI_FIELD_CONFIGS.SAVE_SUCCESS'));
   } catch (error) {
-    useAlert(t('AUDITORIA_AI_FIELD_CONFIGS.SAVE_ERROR'));
+    // El backend (RequestExceptionHandler#render_record_invalid) manda el
+    // mensaje de validacion real (ej. "El titulo no puede estar en blanco")
+    // bajo `message` -- sin esto el usuario solo veia el generico de abajo.
+    useAlert(
+      error?.response?.data?.message ||
+        t('AUDITORIA_AI_FIELD_CONFIGS.SAVE_ERROR')
+    );
   } finally {
     savingId.value = null;
   }
@@ -70,6 +76,7 @@ onMounted(fetchFieldConfigs);
         size="sm"
         class="self-end"
         :is-loading="savingId === config.id"
+        :disabled="!config.title?.trim()"
         @click="saveFieldConfig(config)"
       />
     </div>

@@ -31,11 +31,15 @@ export const actions = {
     }
   },
 
-  create: async ({ commit }, data) => {
+  create: async ({ commit, dispatch }, data) => {
     commit('setUIFlags', { isCreating: true });
     try {
       const response = await AuditoriaCategoriesAPI.create({ category: data });
       commit('addCategory', response.data);
+      // Si esta es la primera subcategoria de su padre, el padre pasa a ser
+      // agrupacion (has_subcategories) -- recargar para que la tabla lo
+      // refleje sin esperar a un F5 (ver Auditoria::CategoriesController#create).
+      if (data.parent_id) await dispatch('get');
       return response.data;
     } finally {
       commit('setUIFlags', { isCreating: false });
@@ -55,11 +59,16 @@ export const actions = {
     }
   },
 
-  delete: async ({ commit }, id) => {
+  delete: async ({ commit, dispatch, state: moduleState }, id) => {
     commit('setUIFlags', { isDeleting: true });
     try {
+      const { parent_id: parentId } =
+        moduleState.records.find(c => c.id === id) || {};
       await AuditoriaCategoriesAPI.delete(id);
       commit('removeCategory', id);
+      // Simetrico al create: si esta era la ultima subcategoria de su padre,
+      // el padre vuelve a ser hoja (ver Auditoria::CategoriesController#destroy).
+      if (parentId) await dispatch('get');
     } finally {
       commit('setUIFlags', { isDeleting: false });
     }

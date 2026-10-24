@@ -43,6 +43,8 @@ class Auditoria::Category < ApplicationRecord
   validate :max_categories_per_account, on: :create
   validate :parent_cannot_be_self
   validate :parent_must_be_top_level
+  validate :parent_must_be_same_account
+  validate :parent_cannot_have_subcategories_already
   validate :inbox_ids_within_parent_scope
   validate :inbox_ids_cover_subcategories
 
@@ -119,6 +121,21 @@ class Auditoria::Category < ApplicationRecord
   # top_level; esto cubre llamadas directas a la API.
   def parent_must_be_top_level
     errors.add(:parent, :invalid) if parent.present? && parent.parent_id.present?
+  end
+
+  # Sin esto, una categoria de otra cuenta se podia poner como padre (IDOR):
+  # el scoping de account_id en el controller nunca se propaga a la
+  # categoria referenciada por parent_id.
+  def parent_must_be_same_account
+    errors.add(:parent, :invalid) if parent.present? && parent.account_id != account_id
+  end
+
+  # Maximo 2 niveles (ver descendant_ids): sin esto, una categoria que ya
+  # tiene hijos propios podia a su vez recibir un padre, creando una
+  # jerarquia de 3 niveles donde el hijo real queda invisible para el
+  # abuelo (Category.leaf solo mira un nivel de profundidad).
+  def parent_cannot_have_subcategories_already
+    errors.add(:parent, :invalid) if parent_id.present? && subcategories?
   end
 
   # El scope de una subcategoria siempre debe ser subconjunto del scope de

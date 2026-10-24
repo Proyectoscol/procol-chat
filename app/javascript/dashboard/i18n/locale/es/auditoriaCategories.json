@@ -7,6 +7,7 @@
     "EMPTY": "Aún no hay categorías configuradas.",
     "DELETE_SUCCESS": "Categoría eliminada",
     "DELETE_ERROR": "No se pudo eliminar la categoría. Inténtalo de nuevo.",
+    "FETCH_ERROR": "No se pudieron cargar las categorías. Intenta recargar la página.",
     "TABLE": {
       "TITLE": "Título",
       "TYPE": "Tipo",

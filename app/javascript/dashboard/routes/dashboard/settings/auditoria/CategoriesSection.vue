@@ -127,7 +127,13 @@ const tableHeaders = computed(() => {
   return headers;
 });
 
-onMounted(() => store.dispatch('auditoriaCategories/get'));
+onMounted(async () => {
+  try {
+    await store.dispatch('auditoriaCategories/get');
+  } catch (error) {
+    useAlert(t('AUDITORIA_CATEGORIES.FETCH_ERROR'));
+  }
+});
 </script>
 
 <template>

@@ -20,18 +20,36 @@ class Api::V1::Accounts::Auditoria::AiUsageController < Api::V1::Accounts::BaseC
   end
 
   def index
-    logs = Current.account.auditoria_ai_usage_logs
-    logs = logs.where('cost_usd >= ?', params[:min_cost]) if params[:min_cost].present?
+    logs = Current.account.auditoria_ai_usage_logs.includes(:conversation)
+    logs = logs.where('cost_usd >= ?', min_cost) if min_cost
     logs = logs.order(sort_column => sort_direction).page(params[:page]).per(RESULTS_PER_PAGE)
     render json: { logs: logs.map { |log| serialize(log) }, total_count: logs.total_count }
   end
 
   def update_settings
+    return render json: { error: 'Invalid model' }, status: :unprocessable_entity unless valid_models?
+
     Current.account.update!(settings_params)
     render json: { success: true }
   end
 
   private
+
+  # Un typo aqui no falla al guardar (200 OK) -- rompe en silencio cada
+  # llamada real a la IA (analisis, rollup, transcripcion) hasta que alguien
+  # note el error. RubyLLM.models es la misma fuente que ya usa
+  # Auditoria::AiCostCalculator para precios, no una lista mantenida a mano.
+  def valid_models?
+    [settings_params[:auditoria_chat_model], settings_params[:auditoria_transcription_model]].compact.all? do |model|
+      RubyLLM.models.find(model).present?
+    rescue RubyLLM::ModelNotFoundError
+      false
+    end
+  end
+
+  def min_cost
+    Float(params[:min_cost], exception: false) if params[:min_cost].present?
+  end
 
   def sort_column
     SORTABLE_COLUMNS.include?(params[:sort_by]) ? params[:sort_by] : 'created_at'

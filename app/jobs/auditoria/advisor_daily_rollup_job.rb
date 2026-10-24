@@ -11,11 +11,22 @@ class Auditoria::AdvisorDailyRollupJob < ApplicationJob
     user = User.find_by(id: user_id)
     return unless account && user
 
-    result = Auditoria::AdvisorDailyRollupService.new(
-      account: account, user: user, summary_date: summary_date, triggered_by: triggered_by
-    ).perform
+    # Mismo manejo que Auditoria::ConversationAnalyzerJob#perform: sin este
+    # rescue, una excepcion no manejada (no un {error:} ya controlado por el
+    # service) dejaba el contador de progreso sin tocar para siempre, con la
+    # barra trabada por debajo del 100% hasta el TTL de 6h del tracker.
+    unexpected_error = nil
+    result = begin
+      Auditoria::AdvisorDailyRollupService.new(
+        account: account, user: user, summary_date: summary_date, triggered_by: triggered_by
+      ).perform
+    rescue StandardError => e
+      unexpected_error = e
+      { error: e.message }
+    end
 
     track_progress!(account, pipeline_run_kind, result) if pipeline_run_kind
+    raise unexpected_error if unexpected_error
   end
 
   private

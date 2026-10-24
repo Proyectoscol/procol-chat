@@ -27,7 +27,8 @@ class Api::V1::Accounts::Auditoria::CategoriesController < Api::V1::Accounts::Ba
 
   def update
     @category.assign_attributes(category_params)
-    needs_reconcile = @category.match_type_changed? || @category.search_terms_changed? || @category.inbox_ids_changed?
+    needs_reconcile = @category.match_type_changed? || @category.search_terms_changed? || @category.inbox_ids_changed? ||
+                      @category.is_active_changed?(to: true)
     @category.save!
     reconcile_new_parent_mentions(@category)
     Auditoria::KeywordCategoryBackfillJob.perform_later(@category.id) if needs_reconcile

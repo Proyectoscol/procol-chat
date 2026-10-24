@@ -18,6 +18,10 @@
 #available at https://guides.rubyonrails.org/i18n.html.
 es:
   hello: 'Hola mundo'
+  activerecord:
+    attributes:
+      auditoria/category:
+        inbox_ids: 'Los inboxes'
   inbox:
     reauthorization:
       success: 'Channel reauthorized successfully'

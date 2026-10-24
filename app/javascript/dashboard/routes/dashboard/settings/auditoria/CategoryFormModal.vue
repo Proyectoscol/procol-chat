@@ -33,7 +33,9 @@ const sourceForFields = computed(() => props.category || props.duplicateFrom);
 // Una categoria que YA tiene subcategorias es pura agrupacion visual (ver
 // Auditoria::Category.leaf) -- oculta sus propios campos de match (dejaron
 // de importar) y no puede a su vez tener padre (maximo 2 niveles).
-const isGroupingCategory = computed(() => !!props.category?.has_subcategories);
+const isGroupingCategory = computed(
+  () => !!sourceForFields.value?.has_subcategories
+);
 
 const title = ref('');
 const matchType = ref('keyword');
@@ -101,7 +103,18 @@ const parentScopeHint = computed(() => {
   });
 });
 
-const isFormInvalid = computed(() => !title.value.trim());
+// Una categoria de agrupacion no matchea nada propio (ver isGroupingCategory
+// arriba) -- su campo de match no aplica. Para una categoria hoja, dejar el
+// campo de match vacio la vuelve inutil: queda "activa" en la tabla pero
+// nunca generaria ninguna mencion real.
+const isFormInvalid = computed(() => {
+  if (!title.value.trim()) return true;
+  if (isGroupingCategory.value) return false;
+
+  return matchType.value === 'keyword'
+    ? !searchTerms.value.trim()
+    : !instructions.value.trim();
+});
 
 const onClose = () => emit('close');
 

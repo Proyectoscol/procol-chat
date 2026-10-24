@@ -7,6 +7,7 @@
     "EMPTY": "No categories configured yet.",
     "DELETE_SUCCESS": "Category deleted",
     "DELETE_ERROR": "Could not delete the category. Try again.",
+    "FETCH_ERROR": "Could not load categories. Try reloading the page.",
     "TABLE": {
       "TITLE": "Title",
       "TYPE": "Type",
