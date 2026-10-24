@@ -14,9 +14,9 @@ class Auditoria::AdvisorDailyRollupSchedulerJob < ApplicationJob
 
   KIND = 'advisor_rollup'.freeze
 
-  # track_progress: true solo lo pasa una corrida manual (ver
-  # Auditoria::PipelineRunTracker) -- el cron real nunca lo activa.
-  def perform(summary_date: Date.yesterday, account_id: nil, track_progress: false)
+  # track_progress: true por defecto (incluida la corrida real del cron) --
+  # ver el mismo comentario en Auditoria::DailyConversationAnalysisSchedulerJob#perform.
+  def perform(summary_date: Date.yesterday, account_id: nil, track_progress: true)
     accounts = account_id ? Account.where(id: account_id) : Account.all
     accounts.find_each do |account|
       next unless account.feature_enabled?('auditoria')

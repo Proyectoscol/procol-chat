@@ -27,10 +27,15 @@ class Auditoria::DailyConversationAnalysisSchedulerJob < ApplicationJob
   # controller), nunca para el cron real. El guard de abajo evita que
   # unbounded combinado con "todas las cuentas" se cuele por error algun dia.
   #
-  # track_progress: true solo lo pasa una corrida manual (ver
-  # Auditoria::PipelineRunTracker) -- el cron real nunca lo activa, no hay
-  # nadie viendo una pantalla esperando el progreso de la corrida nocturna.
-  def perform(account_id: nil, unbounded: false, track_progress: false)
+  # track_progress: true por defecto (incluida la corrida real del cron) --
+  # sin esto la corrida nocturna no deja rastro visible en ningun lado:
+  # Auditoria::PipelineRunTracker nunca se escribe, y PipelineProgressCard.vue
+  # (que hace poll de /progress al montar, sin depender de quien disparo la
+  # corrida) siempre ve 'idle' aunque el cron ya haya procesado todo -- el
+  # admin termina corriendolo el mismo cada manana creyendo que el cron no
+  # funciona. El TTL de 6h del tracker alcanza para cubrir la ventana en que
+  # un admin revisa la pantalla despues de la corrida nocturna.
+  def perform(account_id: nil, unbounded: false, track_progress: true)
     return if unbounded && account_id.blank?
 
     kind = unbounded ? 'backlog' : 'conversation_analysis'
