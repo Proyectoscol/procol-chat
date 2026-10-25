@@ -115,6 +115,36 @@ RSpec.describe V2::Reports::TeamSummaryBuilder do
       end
     end
 
+    context 'when the account has Auditoria enabled and the native pipeline has no data for a team' do
+      let(:business_hours) { false }
+      let(:inbox) { create(:inbox, account: account) }
+
+      before { account.enable_features!('auditoria') }
+
+      it 'falls back to the Auditoria response-time calculation instead of leaving avg_first_response_time nil' do
+        contact = create(:contact, account: account)
+        contact_inbox = create(:contact_inbox, contact: contact, inbox: inbox)
+        conversation = create(:conversation, account: account, inbox: inbox, contact: contact, contact_inbox: contact_inbox, team: team1)
+        incoming_at = 1.day.ago
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: incoming_at)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :outgoing, created_at: incoming_at + 120)
+
+        report = builder.build
+
+        expect(report.find { |row| row[:id] == team1.id }[:avg_first_response_time]).to eq(120)
+      end
+
+      it 'does not override a real native avg_first_response_time value' do
+        c2 = create(:conversation, account: account, inbox: inbox, team: team2, created_at: Time.current)
+        create(:reporting_event, account: account, inbox: inbox, conversation: c2, name: 'first_response', value: 20,
+                                 value_in_business_hours: 10, created_at: Time.current)
+
+        report = builder.build
+
+        expect(report.find { |row| row[:id] == team2.id }[:avg_first_response_time]).to eq(20.0)
+      end
+    end
+
     context 'when there is no team data' do
       let!(:new_team) { create(:team, account: account) }
       let(:business_hours) { false }
