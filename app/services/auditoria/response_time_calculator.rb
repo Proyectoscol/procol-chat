@@ -22,6 +22,12 @@ class Auditoria::ResponseTimeCalculator
     samples_by_group(group_by).transform_values { |seconds_list| average(seconds_list) }
   end
 
+  # Promedio general de toda la cuenta (sin agrupar) -- para el resumen de
+  # Conversations Overview, que no tiene un dimension_id especifico.
+  def average_seconds
+    average(rows.group_by { |row| row[:conversation_id] }.values.flat_map { |rows_in_conversation| response_gaps(rows_in_conversation) })
+  end
+
   private
 
   def average(seconds_list)
