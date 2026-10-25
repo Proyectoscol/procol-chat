@@ -22,12 +22,19 @@ const total = computed(() =>
   props.segments.reduce((sum, segment) => sum + segment.count, 0)
 );
 
+// De mayor a menor -- mas facil de leer el gajo/fila mas grande primero,
+// tanto aqui (distribucion general) como al reusar este componente para
+// las subcategorias de una categoria padre expandida.
+const sortedSegments = computed(() =>
+  [...props.segments].sort((a, b) => b.count - a.count)
+);
+
 // stroke-dasharray/offset sobre un circulo: tecnica estandar de donut en
 // SVG puro, sin libreria -- cada gajo es un tramo "encendido" seguido del
 // resto "apagado", rotados en cadena para que no se superpongan.
 const arcs = computed(() => {
   let offset = 0;
-  return props.segments.map((segment, index) => {
+  return sortedSegments.value.map((segment, index) => {
     const fraction = total.value ? segment.count / total.value : 0;
     const length = fraction * CIRCUMFERENCE;
     const arc = {

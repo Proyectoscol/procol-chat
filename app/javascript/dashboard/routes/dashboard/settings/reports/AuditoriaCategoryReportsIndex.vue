@@ -34,14 +34,6 @@ const createCategoryRoute = computed(() => ({
   hash: '#categories',
 }));
 
-// Numero de categorias marcadas por defecto en la grafica -- las primeras
-// 3 son las que la paleta categorica (skill dataviz) garantiza distintas
-// incluso comparadas todas contra todas; con mas, la comparacion sigue
-// siendo segura (son pares adyacentes en una linea, no todas-contra-todas)
-// pero arrancar con pocas evita una grafica saturada antes de que el
-// usuario elija que comparar.
-const DEFAULT_CHECKED_COUNT = 3;
-
 const from = ref(0);
 const to = ref(0);
 const selectedInboxId = ref('');
@@ -82,12 +74,17 @@ const timeseriesBucket = useMapGetter(
 const topLevelCategories = computed(() =>
   categories.value.filter(c => !c.parentId)
 );
+// De mayor a menor -- mas facil de leer que el orden alfabetico que ya
+// trae el backend (ver AuditoriaCategorySummaryBuilder#all_categories).
 const childrenByParentId = computed(() => {
   const map = {};
   categories.value.forEach(category => {
     if (!category.parentId) return;
     (map[category.parentId] ||= []).push(category);
   });
+  Object.values(map).forEach(children =>
+    children.sort((a, b) => b.conversationsCount - a.conversationsCount)
+  );
   return map;
 });
 
@@ -189,17 +186,16 @@ const fetchSummary = async () => {
     return;
   }
 
-  // Primera carga: marca las primeras categorias HOJA (las unicas con
-  // datos propios para graficar -- ver Auditoria::Category.leaf) por
-  // defecto para que la grafica no arranque vacia. Solo una vez -- despues
-  // de la primera carga, un size === 0 significa que el usuario desmarco
-  // todo a proposito (ver toggleChecked) y no debe revivirse solo.
+  // Primera carga: marca TODAS las categorias HOJA (las unicas con datos
+  // propios para graficar -- ver Auditoria::Category.leaf) por defecto,
+  // para que la grafica muestre todo lo configurado sin que el usuario
+  // tenga que ir marcando una por una. Solo una vez -- despues de la
+  // primera carga, un size === 0 significa que el usuario desmarco todo a
+  // proposito (ver toggleChecked) y no debe revivirse solo.
   if (!hasInitializedSelection.value) {
     hasInitializedSelection.value = true;
     const leaves = categories.value.filter(c => !c.hasSubcategories);
-    checkedCategoryIds.value = new Set(
-      leaves.slice(0, DEFAULT_CHECKED_COUNT).map(c => c.id)
-    );
+    checkedCategoryIds.value = new Set(leaves.map(c => c.id));
     return;
   }
 

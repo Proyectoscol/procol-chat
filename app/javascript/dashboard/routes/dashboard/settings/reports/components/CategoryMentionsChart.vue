@@ -76,6 +76,19 @@ const hasData = computed(() =>
   filledSeries.value.some(s => s.counts.some(c => c > 0))
 );
 
+// Leyenda ordenada de mayor a menor (total del rango) -- mas facil de leer
+// que el orden de seleccion/toggle, que no dice nada sobre cuanto pesa cada
+// categoria. No reordena filledSeries (lineas/colores siguen su orden
+// original) para no desincronizar el color de cada categoria entre
+// renders.
+const legendSeries = computed(() =>
+  [...filledSeries.value].sort(
+    (a, b) =>
+      b.counts.reduce((sum, c) => sum + c, 0) -
+      a.counts.reduce((sum, c) => sum + c, 0)
+  )
+);
+
 const maxCount = computed(() => {
   const raw = Math.max(1, ...filledSeries.value.flatMap(s => s.counts));
   return raw;
@@ -126,6 +139,17 @@ const linePath = series =>
 
 const hoverIndex = ref(null);
 const svgRef = ref(null);
+
+// Ordenado por el valor del punto bajo el mouse (no el total del rango) --
+// asi la fila de arriba del tooltip siempre es la linea mas alta en ESE
+// punto exacto, que es lo que el ojo esta comparando al pasar el mouse.
+const tooltipRows = computed(() => {
+  if (hoverIndex.value === null) return [];
+
+  return [...filledSeries.value].sort(
+    (a, b) => b.counts[hoverIndex.value] - a.counts[hoverIndex.value]
+  );
+});
 
 const indexForEvent = event => {
   if (!svgRef.value || !buckets.value.length) return null;
@@ -186,8 +210,20 @@ const hoverTooltipX = computed(() => {
 // razonable para el layout inicial, ya no es lo que evita el recorte.
 const TOOLTIP_TITLE_HEIGHT = 28;
 const TOOLTIP_ROW_HEIGHT = 18;
+// Con todas las categorias seleccionadas por defecto (ver
+// AuditoriaCategoryReportsIndex.vue), el tooltip puede tener mas filas que
+// espacio vertical hay debajo del punto -- un alto sin tope lo hacia
+// crecer hasta quedar tapado por la tabla de abajo. Tope fijo + scroll
+// interno en las filas (ver template) en vez de seguir creciendo.
+const TOOLTIP_MAX_VISIBLE_ROWS = 8;
 const hoverTooltipHeight = computed(
-  () => TOOLTIP_TITLE_HEIGHT + filledSeries.value.length * TOOLTIP_ROW_HEIGHT
+  () =>
+    TOOLTIP_TITLE_HEIGHT +
+    Math.min(filledSeries.value.length, TOOLTIP_MAX_VISIBLE_ROWS) *
+      TOOLTIP_ROW_HEIGHT
+);
+const tooltipRowsMaxHeight = computed(
+  () => TOOLTIP_MAX_VISIBLE_ROWS * TOOLTIP_ROW_HEIGHT
 );
 </script>
 
@@ -296,14 +332,19 @@ const hoverTooltipHeight = computed(
             class="rounded-md bg-n-solid-2 outline outline-1 outline-n-weak px-2 py-1.5 text-[11px] shadow-md"
           >
             <p class="font-medium text-n-slate-12 mb-1">{{ hoverDateLabel }}</p>
-            <p
-              v-for="s in filledSeries"
-              :key="`tooltip-${s.id}`"
-              class="flex items-center justify-between gap-2 text-n-slate-11"
+            <div
+              class="flex flex-col overflow-y-auto"
+              :style="{ maxHeight: `${tooltipRowsMaxHeight}px` }"
             >
-              <span class="truncate">{{ s.title }}</span>
-              <span class="text-n-slate-12">{{ s.counts[hoverIndex] }}</span>
-            </p>
+              <p
+                v-for="s in tooltipRows"
+                :key="`tooltip-${s.id}`"
+                class="flex items-center justify-between gap-2 text-n-slate-11"
+              >
+                <span class="truncate">{{ s.title }}</span>
+                <span class="text-n-slate-12">{{ s.counts[hoverIndex] }}</span>
+              </p>
+            </div>
           </div>
         </foreignObject>
       </g>
@@ -316,7 +357,7 @@ const hoverTooltipHeight = computed(
     -->
     <div v-if="hasData" class="flex flex-wrap items-center gap-4" role="list">
       <span
-        v-for="s in filledSeries"
+        v-for="s in legendSeries"
         :key="s.id"
         class="flex items-center gap-1.5 text-xs text-n-slate-11"
       >
