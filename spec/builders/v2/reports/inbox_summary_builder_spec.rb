@@ -74,6 +74,31 @@ RSpec.describe V2::Reports::InboxSummaryBuilder do
       end
     end
 
+    context 'when the account has Auditoria enabled and the native pipeline has no data for an inbox' do
+      let(:business_hours) { false }
+
+      before { account.enable_features!('auditoria') }
+
+      it 'falls back to the Auditoria response-time calculation instead of leaving avg_first_response_time nil' do
+        contact = create(:contact, account: account)
+        contact_inbox = create(:contact_inbox, contact: contact, inbox: i2)
+        conversation = create(:conversation, account: account, inbox: i2, contact: contact, contact_inbox: contact_inbox)
+        incoming_at = 1.day.ago
+        create(:message, account: account, inbox: i2, conversation: conversation, message_type: :incoming, created_at: incoming_at)
+        create(:message, account: account, inbox: i2, conversation: conversation, message_type: :outgoing, created_at: incoming_at + 90)
+
+        row = report.find { |r| r[:id] == i2.id }
+
+        expect(row[:avg_first_response_time]).to eq(90)
+      end
+
+      it 'does not override the real native avg_first_response_time value' do
+        row = report.find { |r| r[:id] == i1.id }
+
+        expect(row[:avg_first_response_time]).to eq(50.0)
+      end
+    end
+
     context 'when there is no data for an inbox' do
       let!(:empty_inbox) { create(:inbox, account: account) }
       let(:business_hours) { false }
