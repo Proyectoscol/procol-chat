@@ -578,7 +578,7 @@
       "TABLE_HEADER": {
         "AGENT": "Agente",
         "OPEN": "Abrir",
-        "UNATTENDED": "Desatendido",
+        "AVG_RESPONSE_TIME": "Tiempo de respuesta promedio",
         "STATUS": "Estado"
       }
     },

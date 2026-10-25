@@ -9,26 +9,41 @@ import {
 import { useI18n } from 'vue-i18n';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 
+import { formatTime } from '@chatwoot/utils';
 import Spinner from 'shared/components/Spinner.vue';
 import EmptyState from 'dashboard/components/widgets/EmptyState.vue';
 import Table from 'dashboard/components/table/Table.vue';
 import Pagination from 'dashboard/components/table/Pagination.vue';
 import AgentCell from './AgentCell.vue';
 
-const { agents, agentMetrics } = defineProps({
-  agents: {
-    type: Array,
-    default: () => [],
-  },
-  agentMetrics: {
-    type: Array,
-    default: () => [],
-  },
-  isLoading: {
-    type: Boolean,
-    default: false,
-  },
-});
+const { agents, agentMetrics, isAuditoriaAccount, responseTimeByAgentId } =
+  defineProps({
+    agents: {
+      type: Array,
+      default: () => [],
+    },
+    agentMetrics: {
+      type: Array,
+      default: () => [],
+    },
+    isLoading: {
+      type: Boolean,
+      default: false,
+    },
+    // Cuentas con Auditoria activa no usan "Desatendido" -- en su lugar se
+    // muestra el tiempo de respuesta promedio por asesor (ver
+    // AgentLiveReportContainer.vue), mismo dato ya calculado por
+    // Auditoria::AdvisorSummaryBuilder para el reporte de Asesores.
+    isAuditoriaAccount: {
+      type: Boolean,
+      default: false,
+    },
+    // { [agentId]: avgResponseTimeSeconds | null }
+    responseTimeByAgentId: {
+      type: Object,
+      default: () => ({}),
+    },
+  });
 
 const { t } = useI18n();
 const { uiSettings, updateUISettings } = useUISettings();
@@ -48,6 +63,8 @@ const handlePageSizeChange = pageSize => {
 const getAgentMetrics = id =>
   agentMetrics.find(metrics => metrics.assignee_id === Number(id)) || {};
 
+const renderAvgTime = value => (value ? formatTime(value) : '--');
+
 const tableData = computed(() =>
   agents
     .map(agent => {
@@ -58,6 +75,7 @@ const tableData = computed(() =>
         thumbnail: agent.thumbnail,
         open: metric.open || 0,
         unattended: metric.unattended || 0,
+        avgResponseTime: responseTimeByAgentId[agent.id] ?? null,
         status: agent.availability_status,
       };
     })
@@ -85,7 +103,31 @@ const defaulSpanRender = cellProps =>
   );
 
 const columnHelper = createColumnHelper();
-const columns = [
+const avgResponseTimeCellRender = cellProps =>
+  h('span', { class: 'text-n-slate-12' }, renderAvgTime(cellProps.getValue()));
+
+// Cuentas con Auditoria activa no usan "Desatendido" -- no lo tabulan, lo
+// reemplazan por el tiempo de respuesta promedio por asesor (ver
+// AgentLiveReportContainer.vue).
+const lastColumn = computed(() =>
+  isAuditoriaAccount
+    ? columnHelper.accessor('avgResponseTime', {
+        header: t(
+          'OVERVIEW_REPORTS.AGENT_CONVERSATIONS.TABLE_HEADER.AVG_RESPONSE_TIME'
+        ),
+        cell: avgResponseTimeCellRender,
+        size: 140,
+      })
+    : columnHelper.accessor('unattended', {
+        header: t(
+          'OVERVIEW_REPORTS.AGENT_CONVERSATIONS.TABLE_HEADER.UNATTENDED'
+        ),
+        cell: defaulSpanRender,
+        size: 100,
+      })
+);
+
+const columns = computed(() => [
   columnHelper.accessor('agent', {
     header: t('OVERVIEW_REPORTS.AGENT_CONVERSATIONS.TABLE_HEADER.AGENT'),
     cell: cellProps => h(AgentCell, cellProps),
@@ -97,18 +139,16 @@ const columns = [
     cell: defaulSpanRender,
     size: 100,
   }),
-  columnHelper.accessor('unattended', {
-    header: t('OVERVIEW_REPORTS.AGENT_CONVERSATIONS.TABLE_HEADER.UNATTENDED'),
-    cell: defaulSpanRender,
-    size: 100,
-  }),
-];
+  lastColumn.value,
+]);
 
 const table = useVueTable({
   get data() {
     return tableData.value;
   },
-  columns,
+  get columns() {
+    return columns.value;
+  },
   enableSorting: false,
   getCoreRowModel: getCoreRowModel(),
   getPaginationRowModel: getPaginationRowModel(),

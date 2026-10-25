@@ -583,7 +583,7 @@
       "TABLE_HEADER": {
         "AGENT": "Agent",
         "OPEN": "Open",
-        "UNATTENDED": "Unattended",
+        "AVG_RESPONSE_TIME": "Avg. response time",
         "STATUS": "Status"
       }
     },
