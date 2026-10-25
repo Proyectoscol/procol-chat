@@ -34,6 +34,10 @@ module Auditoria::ConversationAnalyzerCategoryMatching
       string :field_3, description: 'Respuesta a la tarea 3 solicitada en las instrucciones.'
       string :field_4, description: 'Respuesta a la tarea 4 solicitada en las instrucciones.'
       string :field_5, description: 'Respuesta a la tarea 5 solicitada en las instrucciones.'
+      string :sentiment, enum: %w[positive neutral negative],
+                         description: 'Sentimiento general del cliente a lo largo de toda la conversacion.'
+      string :sentiment_reason,
+             description: 'Explica brevemente (1-2 frases) en que parte(s) de la conversacion se basa esa clasificacion de sentimiento.'
       array :categories,
             description: 'Solo las categorias configuradas que SI aplican a esta conversacion. ' \
                          'No incluir categorias que no aplican.' do

@@ -12,7 +12,12 @@ RSpec.describe Auditoria::AudioTranscriptionService do
     allow(Auditoria::AiUsageLogger).to receive(:within_limit?).and_return(true)
     allow(account).to receive(:feature_enabled?).and_call_original
     allow(account).to receive(:feature_enabled?).with('captain_tasks').and_return(true)
-    InstallationConfig.find_or_create_by!(name: 'CAPTAIN_OPEN_AI_API_KEY') { |config| config.value = 'test-key' }
+    # destroy_all + create (no find_or_create_by!) -- un registro ya
+    # existente con value nil (ej. de una corrida anterior que no limpio)
+    # haria que find_or_create_by! lo devolviera tal cual sin el value que
+    # este spec necesita.
+    InstallationConfig.where(name: 'CAPTAIN_OPEN_AI_API_KEY').destroy_all
+    create(:installation_config, name: 'CAPTAIN_OPEN_AI_API_KEY', value: 'test-key')
   end
 
   describe '#perform' do

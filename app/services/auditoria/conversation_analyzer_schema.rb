@@ -14,4 +14,6 @@ class Auditoria::ConversationAnalyzerSchema < RubyLLM::Schema
   string :field_5, description: 'Respuesta a la tarea 5 solicitada en las instrucciones.'
   string :sentiment, enum: %w[positive neutral negative],
                      description: 'Sentimiento general del cliente a lo largo de toda la conversacion.'
+  string :sentiment_reason,
+         description: 'Explica brevemente (1-2 frases) en que parte(s) de la conversacion se basa esa clasificacion de sentimiento.'
 end

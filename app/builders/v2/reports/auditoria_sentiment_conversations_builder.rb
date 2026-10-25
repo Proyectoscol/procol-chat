@@ -18,7 +18,8 @@ class V2::Reports::AuditoriaSentimentConversationsBuilder
     {
       meta: { current_page: current_page, per_page: per_page, total_count: paginated_conversations.total_count },
       payload: conversations.map do |conversation|
-        serializer.serialize(conversation).merge(sentiment: sentiment_by_conversation_id(conversations)[conversation.id])
+        analysis = analysis_by_conversation_id(conversations)[conversation.id]
+        serializer.serialize(conversation).merge(sentiment: analysis&.first, sentiment_reason: analysis&.second)
       end
     }
   end
@@ -32,10 +33,11 @@ class V2::Reports::AuditoriaSentimentConversationsBuilder
   # filtered_conversation_ids completo -- ese universo puede ser decenas de
   # miles de ids en un rango largo, y aqui solo se necesita el sentiment de
   # la pagina actual.
-  def sentiment_by_conversation_id(conversations)
+  def analysis_by_conversation_id(conversations)
     Auditoria::ConversationAnalysis
       .where(conversation_id: conversations.map(&:id))
-      .pluck(:conversation_id, :sentiment).to_h
+      .pluck(:conversation_id, :sentiment, :sentiment_reason)
+      .to_h { |conversation_id, sentiment, sentiment_reason| [conversation_id, [sentiment, sentiment_reason]] }
   end
 
   def paginated_conversations

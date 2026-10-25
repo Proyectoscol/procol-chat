@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_23_040000) do
+ActiveRecord::Schema[7.2].define(version: 2026_10_25_013544) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -374,6 +374,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_23_040000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "sentiment"
+    t.text "sentiment_reason"
     t.index ["account_id"], name: "index_auditoria_conversation_analyses_on_account_id"
     t.index ["conversation_id"], name: "index_auditoria_conversation_analyses_on_conversation_id", unique: true
     t.index ["sentiment"], name: "index_auditoria_conversation_analyses_on_sentiment"

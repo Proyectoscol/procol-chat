@@ -8,14 +8,16 @@ RSpec.describe V2::Reports::AuditoriaSentimentConversationsBuilder do
   let(:params) { { since: since, until: until_ } }
   let(:builder) { described_class.new(account: account, params: params) }
 
-  def analysis_for(sentiment:, created_at: 2.days.ago.noon, labels: [], source_user: nil, conversation_inbox: inbox)
+  # rubocop:disable Metrics/ParameterLists
+  def analysis_for(sentiment:, created_at: 2.days.ago.noon, labels: [], source_user: nil, conversation_inbox: inbox, sentiment_reason: nil)
+    # rubocop:enable Metrics/ParameterLists
     conversation = create(:conversation, account: account, inbox: conversation_inbox, created_at: created_at)
     conversation.update_labels(*labels) if labels.any?
     if source_user
       create(:message, account: account, inbox: conversation_inbox, conversation: conversation,
                        message_type: 'outgoing', content_attributes: { 'auditoria_source_user_id' => source_user.id })
     end
-    create(:auditoria_conversation_analysis, account: account, conversation: conversation, sentiment: sentiment)
+    create(:auditoria_conversation_analysis, account: account, conversation: conversation, sentiment: sentiment, sentiment_reason: sentiment_reason)
     conversation
   end
 
@@ -33,6 +35,13 @@ RSpec.describe V2::Reports::AuditoriaSentimentConversationsBuilder do
 
       row = builder.build[:payload].find { |r| r[:conversation][:id] == conversation.id }
       expect(row[:sentiment]).to eq('negative')
+    end
+
+    it 'includes the sentiment reason of each conversation in the payload' do
+      conversation = analysis_for(sentiment: 'negative', sentiment_reason: 'El cliente se quejo del tiempo de espera')
+
+      row = builder.build[:payload].find { |r| r[:conversation][:id] == conversation.id }
+      expect(row[:sentiment_reason]).to eq('El cliente se quejo del tiempo de espera')
     end
 
     context 'with a sentiment filter' do

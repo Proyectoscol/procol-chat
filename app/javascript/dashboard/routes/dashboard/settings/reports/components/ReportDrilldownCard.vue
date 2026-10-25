@@ -307,6 +307,13 @@ const openRecord = () => {
       {{ previewText }}
     </p>
 
+    <p
+      v-if="record.sentiment_reason"
+      class="mt-2 text-sm leading-5 text-n-slate-11"
+    >
+      {{ record.sentiment_reason }}
+    </p>
+
     <div
       v-if="matchReasons.length"
       class="mt-2 flex flex-wrap items-center gap-1.5"

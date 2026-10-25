@@ -2,14 +2,15 @@
 #
 # Table name: auditoria_conversation_analyses
 #
-#  id              :bigint           not null, primary key
-#  analyzed_at     :datetime
-#  results         :jsonb            not null
-#  sentiment       :string
-#  created_at      :datetime         not null
-#  updated_at      :datetime         not null
-#  account_id      :bigint           not null
-#  conversation_id :bigint           not null
+#  id               :bigint           not null, primary key
+#  analyzed_at      :datetime
+#  results          :jsonb            not null
+#  sentiment        :string
+#  sentiment_reason :text
+#  created_at       :datetime         not null
+#  updated_at       :datetime         not null
+#  account_id       :bigint           not null
+#  conversation_id  :bigint           not null
 #
 # Indexes
 #
