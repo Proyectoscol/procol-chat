@@ -215,6 +215,7 @@ const table = useVueTable({
   <div class="flex flex-col justify-between gap-3 md:flex-row">
     <OverviewReportFilters
       :disabled="isLoading"
+      hide-business-hours
       @filter-change="onFilterChange"
     />
     <div
