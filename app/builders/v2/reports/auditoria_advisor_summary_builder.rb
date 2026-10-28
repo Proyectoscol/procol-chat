@@ -151,8 +151,16 @@ class V2::Reports::AuditoriaAdvisorSummaryBuilder
   # y config.time_zone = 'America/Bogota' (config/application.rb), pluck ya
   # devuelve el valor casteado a esa zona -- el to_date en collect_samples ya
   # refleja el dia calendario de Bogota, sin plomeria extra de timezone.
+  # message_type: [:incoming, :outgoing] explicito -- sin esto, un mensaje de
+  # otro tipo intercalado (ej. "activity" de asignacion, que se crea
+  # automaticamente con cada asignacion/reasignacion/resolucion, o un
+  # "template" de csat/greeting/auto-resolve) rompe la adyacencia que
+  # collect_samples detecta via prev_type == 'incoming' justo antes del
+  # saliente -- la respuesta real del asesor queda totalmente fuera del
+  # promedio y del desglose, en vez de solo medirse distinto.
   def scoped_messages
-    scope = account.messages.where(created_at: range).where.not(conversation_id: excluded_conversation_ids)
+    scope = account.messages.where(created_at: range, message_type: [:incoming, :outgoing])
+                   .where.not(conversation_id: excluded_conversation_ids)
     scope = scope.where(inbox_id: inbox_id) if inbox_id.present?
     scope.reorder('messages.conversation_id ASC, messages.id ASC')
          .pluck(:conversation_id, :message_type, :created_at,
