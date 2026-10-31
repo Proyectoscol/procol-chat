@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
@@ -12,16 +13,41 @@ import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import EmptyState from 'dashboard/components/widgets/EmptyState.vue';
 import Avatar from 'next/avatar/Avatar.vue';
 import SummaryReportsAPI from 'dashboard/api/summaryReports';
+import {
+  parseFilterURLParams,
+  generateFilterURLParams,
+} from './helpers/reportFilterHelper';
 
 const { t, locale } = useI18n();
 const store = useStore();
+const route = useRoute();
+const router = useRouter();
 
 const from = ref(0);
 const to = ref(0);
-const selectedInboxId = ref('');
-const selectedUserId = ref('');
+// Inicializados desde la URL en el momento de crear el ref (no en
+// onMounted): OverviewReportFilters emite su filterChange inicial ANTES
+// del onMounted del padre (los hijos montan primero), asi que si el valor
+// se restaurara en onMounted el primer fetch ya habria salido sin filtros.
+const initialFilters = parseFilterURLParams(route.query);
+const selectedInboxId = ref(initialFilters.inbox_id || '');
+const selectedUserId = ref(initialFilters.agent_id || '');
 const selectedPositiveTag = ref('');
 const selectedNegativeTag = ref('');
+
+const updateFilterURLParams = () => {
+  const params = generateFilterURLParams({
+    inbox_id: selectedInboxId.value,
+    agent_id: selectedUserId.value,
+  });
+  router.replace({
+    query: {
+      ...route.query,
+      inbox_id: params.inbox_id || undefined,
+      agent_id: params.agent_id || undefined,
+    },
+  });
+};
 
 const uiFlags = useMapGetter('summaryReports/getUIFlags');
 const isLoading = computed(
@@ -245,8 +271,14 @@ const onFilterChange = updatedFilter => {
   fetchAllData();
 };
 
-const onInboxChange = () => fetchAllData();
-const onAdvisorChange = () => fetchAllData();
+const onInboxChange = () => {
+  updateFilterURLParams();
+  fetchAllData();
+};
+const onAdvisorChange = () => {
+  updateFilterURLParams();
+  fetchAllData();
+};
 </script>
 
 <template>

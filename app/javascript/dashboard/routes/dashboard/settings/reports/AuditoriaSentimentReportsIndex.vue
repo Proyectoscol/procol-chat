@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import format from 'date-fns/format';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
@@ -12,9 +13,15 @@ import AuditoriaReportConversationsDrawer from './components/AuditoriaReportConv
 import AuditoriaSentimentChart from './components/AuditoriaSentimentChart.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import SummaryReportsAPI from 'dashboard/api/summaryReports';
+import {
+  parseFilterURLParams,
+  generateFilterURLParams,
+} from './helpers/reportFilterHelper';
 
 const { t } = useI18n();
 const store = useStore();
+const route = useRoute();
+const router = useRouter();
 
 // Mismos tonos ya usados en ReportDrilldownCard (badge de sentimiento por
 // tarjeta) -- el lenguaje visual de "positivo/neutral/negativo" se repite
@@ -54,9 +61,30 @@ const sentimentPlural = sentiment =>
 
 const from = ref(0);
 const to = ref(0);
-const selectedInboxId = ref('');
-const selectedUserId = ref('');
-const selectedTeamId = ref('');
+// Inicializados desde la URL en el momento de crear el ref (no en
+// onMounted): OverviewReportFilters emite su filterChange inicial ANTES
+// del onMounted del padre (los hijos montan primero), asi que si el valor
+// se restaurara en onMounted el primer fetch ya habria salido sin filtros.
+const initialFilters = parseFilterURLParams(route.query);
+const selectedInboxId = ref(initialFilters.inbox_id || '');
+const selectedUserId = ref(initialFilters.agent_id || '');
+const selectedTeamId = ref(initialFilters.team_id || '');
+
+const updateFilterURLParams = () => {
+  const params = generateFilterURLParams({
+    inbox_id: selectedInboxId.value,
+    agent_id: selectedUserId.value,
+    team_id: selectedTeamId.value,
+  });
+  router.replace({
+    query: {
+      ...route.query,
+      inbox_id: params.inbox_id || undefined,
+      agent_id: params.agent_id || undefined,
+      team_id: params.team_id || undefined,
+    },
+  });
+};
 
 // isPending (no el flag de Vuex isFetchingAuditoriaSentimentTimeseries) es
 // la fuente de verdad de carga aqui: ese flag es compartido por tipo en el
@@ -128,7 +156,10 @@ const onFilterChange = updatedFilter => {
   fetchTimeseries();
 };
 
-const onInboxChange = () => fetchTimeseries();
+const onInboxChange = () => {
+  updateFilterURLParams();
+  fetchTimeseries();
+};
 
 // Asesor y equipo son mutuamente excluyentes a proposito -- el backend
 // (ver V2::Reports::Concerns::AuditoriaSentimentScoping#target_user_ids)
@@ -138,10 +169,12 @@ const onInboxChange = () => fetchTimeseries();
 // aplicando.
 const onAdvisorChange = () => {
   if (selectedUserId.value) selectedTeamId.value = '';
+  updateFilterURLParams();
   fetchTimeseries();
 };
 const onTeamChange = () => {
   if (selectedTeamId.value) selectedUserId.value = '';
+  updateFilterURLParams();
   fetchTimeseries();
 };
 
@@ -153,6 +186,7 @@ const resetFilters = () => {
   selectedInboxId.value = '';
   selectedUserId.value = '';
   selectedTeamId.value = '';
+  updateFilterURLParams();
   fetchTimeseries();
 };
 

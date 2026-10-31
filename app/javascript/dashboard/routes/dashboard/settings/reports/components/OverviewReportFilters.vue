@@ -44,7 +44,10 @@ const updateURLParams = () => {
     range: selectedDateRange.value,
   });
 
-  router.replace({ query: { ...params } });
+  // route.query va primero: preserva filtros de asesor/bandeja/equipo que
+  // el componente padre ya haya escrito en la URL -- params aqui solo
+  // conoce fecha/horario, nunca debe borrar claves que no es duena de.
+  router.replace({ query: { ...route.query, ...params } });
 };
 
 const emitChange = () => {

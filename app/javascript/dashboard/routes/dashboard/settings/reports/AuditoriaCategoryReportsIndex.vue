@@ -22,6 +22,10 @@ import {
   downloadCsvFile,
   generateFileName,
 } from 'dashboard/helper/downloadHelper';
+import {
+  parseFilterURLParams,
+  generateFilterURLParams,
+} from './helpers/reportFilterHelper';
 
 const { t } = useI18n();
 const store = useStore();
@@ -36,7 +40,22 @@ const createCategoryRoute = computed(() => ({
 
 const from = ref(0);
 const to = ref(0);
-const selectedInboxId = ref('');
+// Inicializado desde la URL en el momento de crear el ref (no en onMounted):
+// OverviewReportFilters emite su filterChange inicial ANTES del onMounted
+// del padre (los hijos montan primero), asi que si el valor se restaurara
+// en onMounted el primer fetch ya habria salido sin el filtro de bandeja.
+const selectedInboxId = ref(parseFilterURLParams(route.query).inbox_id || '');
+
+const updateFilterURLParams = () => {
+  const params = generateFilterURLParams({ inbox_id: selectedInboxId.value });
+  router.replace({
+    query: {
+      ...route.query,
+      ...params,
+      inbox_id: params.inbox_id || undefined,
+    },
+  });
+};
 const countMode = ref('conversations');
 const checkedCategoryIds = ref(new Set());
 // Distingue "primera carga, nunca se eligio nada" de "el usuario desmarco
@@ -268,7 +287,10 @@ const onFilterChange = updatedFilter => {
   fetchAllData();
 };
 
-const onInboxChange = () => fetchAllData();
+const onInboxChange = () => {
+  updateFilterURLParams();
+  fetchAllData();
+};
 // Re-pide tanto el resumen (tabla/totales) como la serie de tiempo -- ambos
 // aceptan count_mode con el mismo criterio (crudo vs. distinct por
 // conversation_id), ver V2::Reports::AuditoriaCategorySummaryBuilder y
