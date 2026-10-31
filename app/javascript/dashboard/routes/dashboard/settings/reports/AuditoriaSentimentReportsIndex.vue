@@ -113,10 +113,13 @@ const fetchTimeseries = async () => {
   }
 };
 
+// No se llama fetchTimeseries aqui: OverviewReportFilters ya emite
+// 'filterChange' en su propio mount (fechas por defecto resueltas), que
+// dispara onFilterChange -> fetchTimeseries. Llamarlo tambien aqui duplicaba
+// el request inicial.
 onMounted(() => {
   store.dispatch('agents/get');
   store.dispatch('teams/get');
-  fetchTimeseries();
 });
 
 const onFilterChange = updatedFilter => {

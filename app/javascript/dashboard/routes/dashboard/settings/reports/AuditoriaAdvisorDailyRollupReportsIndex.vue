@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -235,8 +235,10 @@ const fetchAllData = () => {
   fetchReportsWithRetry();
 };
 
-onMounted(() => fetchAllData());
-
+// Sin onMounted propio aqui: OverviewReportFilters ya emite 'filterChange'
+// en su propio mount (fechas por defecto resueltas), que dispara
+// onFilterChange -> fetchAllData. Tener los dos onMounted duplicaba el
+// request inicial (mismo patron corregido antes en Categorias).
 const onFilterChange = updatedFilter => {
   from.value = updatedFilter.from;
   to.value = updatedFilter.to;
