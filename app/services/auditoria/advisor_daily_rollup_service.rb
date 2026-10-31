@@ -58,7 +58,7 @@ class Auditoria::AdvisorDailyRollupService < Captain::BaseTaskService
   end
 
   def excluded_conversation_ids
-    account.conversations.tagged_with(Auditoria::MessageAnnotatorService::MULTIPLE_ADVISORS_LABEL_TITLE).ids
+    Auditoria::MessageAnnotatorService.multi_advisor_excluded_conversation_ids(account)
   end
 
   def analyses

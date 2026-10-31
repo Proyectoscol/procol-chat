@@ -56,6 +56,15 @@ class Auditoria::MessageAnnotatorService
     I18n.transliterate(name.to_s).downcase.gsub(/\s+/, ' ').strip
   end
 
+  # Conversaciones marcadas por #flag_multiple_advisors -- excluidas de
+  # todos los reportes/pipelines por asesor (ver V2::Reports::
+  # AuditoriaAdvisorSummaryBuilder y los demas consumidores) porque sus
+  # timestamps podrian no reflejar fielmente cuando respondio un asesor real
+  # especifico. Punto unico para no repetir este query en cada consumidor.
+  def self.multi_advisor_excluded_conversation_ids(account)
+    account.conversations.tagged_with(MULTIPLE_ADVISORS_LABEL_TITLE).ids
+  end
+
   def call
     return unless message.account.feature_enabled?('auditoria')
 

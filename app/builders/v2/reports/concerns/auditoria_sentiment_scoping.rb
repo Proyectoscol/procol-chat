@@ -42,7 +42,7 @@ module V2::Reports::Concerns::AuditoriaSentimentScoping
   end
 
   def excluded_conversation_ids
-    account.conversations.tagged_with(Auditoria::MessageAnnotatorService::MULTIPLE_ADVISORS_LABEL_TITLE).ids
+    Auditoria::MessageAnnotatorService.multi_advisor_excluded_conversation_ids(account)
   end
 
   def advisor_scoped?

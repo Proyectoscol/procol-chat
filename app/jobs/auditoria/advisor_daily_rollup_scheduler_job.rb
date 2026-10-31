@@ -45,6 +45,6 @@ class Auditoria::AdvisorDailyRollupSchedulerJob < ApplicationJob
   end
 
   def self.excluded_conversation_ids(account)
-    account.conversations.tagged_with(Auditoria::MessageAnnotatorService::MULTIPLE_ADVISORS_LABEL_TITLE).ids
+    Auditoria::MessageAnnotatorService.multi_advisor_excluded_conversation_ids(account)
   end
 end
