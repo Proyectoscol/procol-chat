@@ -279,6 +279,16 @@ en:
       inbox_name: Inbox
       last_activity_at: Last activity
       match_reasons: Match reason(s)
+    auditoria_advisor_daily_rollup_csv:
+      date: Date
+      advisor: Advisor
+      conversations_count: Conversations
+      summary: Summary
+      tone_overview: Tone
+      recommendation: Recommendation
+      categories: Categories
+      feedback_tags_positive: Positives
+      feedback_tags_negative: Areas to improve
     sla_csv:
       conversation_id: Conversation ID
       sla_policy_breached: SLA Policy

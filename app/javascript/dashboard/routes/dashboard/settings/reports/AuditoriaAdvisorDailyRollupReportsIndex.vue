@@ -12,11 +12,16 @@ import AuditoriaReportConversationsDrawer from './components/AuditoriaReportConv
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import EmptyState from 'dashboard/components/widgets/EmptyState.vue';
 import Avatar from 'next/avatar/Avatar.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 import SummaryReportsAPI from 'dashboard/api/summaryReports';
 import {
   parseFilterURLParams,
   generateFilterURLParams,
 } from './helpers/reportFilterHelper';
+import {
+  downloadCsvFile,
+  generateFileName,
+} from 'dashboard/helper/downloadHelper';
 
 const { t, locale } = useI18n();
 const store = useStore();
@@ -232,6 +237,29 @@ const citationDrawerFilterParams = computed(() => ({
   conversationIds: selectedCitation.value?.conversationIds || [],
 }));
 
+const isDownloadingCsv = ref(false);
+const downloadCsv = async () => {
+  isDownloadingCsv.value = true;
+  try {
+    const { data } = await SummaryReportsAPI.getAuditoriaAdvisorDailyRollupCsv({
+      since: from.value,
+      until: to.value,
+      inboxId: selectedInboxId.value || undefined,
+      userId: selectedUserId.value || undefined,
+    });
+    downloadCsvFile(
+      generateFileName({
+        type: 'auditoria_advisor_daily_rollup',
+        to: to.value,
+      }),
+      data
+    );
+  } catch {
+    useAlert(t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.EXPORT_FAILED'));
+  }
+  isDownloadingCsv.value = false;
+};
+
 const fetchReportsWithRetry = async () => {
   const params = {
     since: from.value,
@@ -393,6 +421,18 @@ const onAdvisorChange = () => {
         </option>
       </select>
     </div>
+  </div>
+
+  <div class="flex items-center justify-end mt-5">
+    <Button
+      faded
+      slate
+      size="sm"
+      icon="i-ph-download-simple"
+      :label="$t('AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS.EXPORT_CSV_BUTTON')"
+      :is-loading="isDownloadingCsv"
+      @click="downloadCsv"
+    />
   </div>
 
   <div v-if="isLoading" class="flex items-center justify-center py-16">

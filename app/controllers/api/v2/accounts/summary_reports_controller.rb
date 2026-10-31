@@ -10,7 +10,7 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
   AUDITORIA_INBOX_SCOPED_ACTIONS = %i[
     auditoria_advisor auditoria_advisor_conversations auditoria_category
     auditoria_category_timeseries auditoria_category_conversations auditoria_category_terms
-    auditoria_advisor_daily_rollup auditoria_category_csv auditoria_category_timeseries_csv
+    auditoria_advisor_daily_rollup auditoria_advisor_daily_rollup_csv auditoria_category_csv auditoria_category_timeseries_csv
     auditoria_category_conversations_csv auditoria_sentiment_timeseries auditoria_sentiment_conversations
   ].freeze
 
@@ -155,6 +155,16 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     generate_csv('auditoria_category_timeseries_report', 'api/v2/accounts/reports/auditoria_category_timeseries')
   end
 
+  def auditoria_advisor_daily_rollup_csv
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    summaries = V2::Reports::AuditoriaAdvisorDailyRollupBuilder.new(
+      account: Current.account, params: auditoria_advisor_daily_rollup_params
+    ).build[:summaries]
+    @report_data = auditoria_advisor_daily_rollup_csv_rows(summaries)
+    generate_csv('auditoria_advisor_daily_rollup_report', 'api/v2/accounts/reports/auditoria_advisor_daily_rollup')
+  end
+
   # Sin paginar (ver CSV_CONVERSATIONS_MAX_ROWS) -- un export debe traer
   # todo lo que haya, no solo la primera pagina que ve el drawer.
   def auditoria_category_conversations_csv
@@ -251,6 +261,26 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     series.each_with_object({}) do |s, acc|
       s[:points].each { |point| acc[[point[:date], s[:id]]] = point[:count] }
     end
+  end
+
+  def auditoria_advisor_daily_rollup_csv_rows(summaries)
+    agent_name_by_id = Current.account.users.where(id: summaries.pluck(:user_id)).to_h { |user| [user.id, user.name] }
+    summaries.map { |summary| auditoria_advisor_daily_rollup_csv_row(summary, agent_name_by_id) }
+  end
+
+  def auditoria_advisor_daily_rollup_csv_row(summary, agent_name_by_id)
+    results = summary[:results] || {}
+    [
+      summary[:summary_date],
+      agent_name_by_id[summary[:user_id]],
+      summary[:conversations_count],
+      results['summary'],
+      results['tone_overview'],
+      results['recommendation'],
+      Array(summary[:category_counts]&.keys).join('; '),
+      Array(summary[:feedback_tags_positive]).join('; '),
+      Array(summary[:feedback_tags_negative]).join('; ')
+    ]
   end
 
   def auditoria_category_conversations_csv_rows(payload)

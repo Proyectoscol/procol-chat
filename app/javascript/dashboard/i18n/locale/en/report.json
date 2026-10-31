@@ -733,7 +733,9 @@
     },
     "CITATION_DRAWER": {
       "EMPTY": "Could not find the cited conversations."
-    }
+    },
+    "EXPORT_CSV_BUTTON": "Export CSV",
+    "EXPORT_FAILED": "Failed to export, please try again."
   },
   "AUDITORIA_SENTIMENT_REPORTS": {
     "HEADER": "Sentiment",

@@ -187,6 +187,17 @@ class SummaryReportsAPI extends ApiClient {
     });
   }
 
+  getAuditoriaAdvisorDailyRollupCsv({ since, until, inboxId, userId } = {}) {
+    return axios.get(`${this.url}/auditoria_advisor_daily_rollup_csv`, {
+      params: {
+        since,
+        until,
+        inbox_id: inboxId,
+        user_id: userId,
+      },
+    });
+  }
+
   getAuditoriaCategoryTerms({
     since,
     until,

@@ -1,0 +1,16 @@
+<% headers = [
+    I18n.t('reports.auditoria_advisor_daily_rollup_csv.date'),
+    I18n.t('reports.auditoria_advisor_daily_rollup_csv.advisor'),
+    I18n.t('reports.auditoria_advisor_daily_rollup_csv.conversations_count'),
+    I18n.t('reports.auditoria_advisor_daily_rollup_csv.summary'),
+    I18n.t('reports.auditoria_advisor_daily_rollup_csv.tone_overview'),
+    I18n.t('reports.auditoria_advisor_daily_rollup_csv.recommendation'),
+    I18n.t('reports.auditoria_advisor_daily_rollup_csv.categories'),
+    I18n.t('reports.auditoria_advisor_daily_rollup_csv.feedback_tags_positive'),
+    I18n.t('reports.auditoria_advisor_daily_rollup_csv.feedback_tags_negative')
+  ]
+%>
+<%= CSVSafe.generate_line headers -%>
+<% @report_data.each do |row| %>
+<%= CSVSafe.generate_line row -%>
+<% end %>
