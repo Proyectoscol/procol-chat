@@ -108,7 +108,14 @@ class V2::Reports::AuditoriaCategoryConversationsBuilder
   # revisa `content`, no transcripciones de audio -- limitacion ya existente
   # en ese builder, se mantiene igual aqui por consistencia.
   def message_ids_matching_term
-    mention_message_ids = Auditoria::CategoryMention.where(category_id: category_ids_for_filter).where.not(message_id: nil).pluck(:message_id)
+    scope = Auditoria::CategoryMention.where(category_id: category_ids_for_filter).where.not(message_id: nil)
+    # Acota por rango aqui tambien (igual que scoped_conversations/
+    # AuditoriaCategoryTermsBuilder#scoped_mentions) -- sin esto, cada
+    # llamada escanea TODAS las menciones historicas de la categoria para
+    # resolver el termino, aunque el resultado final ya quede intersectado
+    # con el rango en scoped_conversations.
+    scope = scope.where(occurred_on: range) if range
+    mention_message_ids = scope.pluck(:message_id)
     Message.where(id: mention_message_ids).where('content ~* ?', Auditoria::Category.term_pattern(term)).ids
   end
 
