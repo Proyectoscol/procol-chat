@@ -558,6 +558,7 @@ Rails.application.routes.draw do
               get :label
               get :channel
               get :auditoria_advisor
+              get :auditoria_advisor_activity
               get :auditoria_advisor_conversations
               get :auditoria_category
               get :auditoria_category_timeseries

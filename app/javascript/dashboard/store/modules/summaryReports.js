@@ -27,6 +27,11 @@ const typeMap = {
     apiMethod: 'getAuditoriaAdvisorReports',
     mutationKey: 'setAuditoriaAdvisorSummaryReport',
   },
+  auditoriaAdvisorActivity: {
+    flagKey: 'isFetchingAuditoriaAdvisorActivity',
+    apiMethod: 'getAuditoriaAdvisorActivity',
+    mutationKey: 'setAuditoriaAdvisorActivity',
+  },
   auditoriaCategory: {
     flagKey: 'isFetchingAuditoriaCategorySummaryReports',
     apiMethod: 'getAuditoriaCategoryReports',
@@ -82,6 +87,8 @@ export const initialState = {
   labelSummaryReports: [],
   auditoriaAdvisorSummaryReports: [],
   auditoriaAdvisorSummaryTotals: null,
+  auditoriaAdvisorActivityAdvisors: [],
+  auditoriaAdvisorActivityTeams: [],
   auditoriaCategorySummaryReports: [],
   auditoriaCategorySummaryTotals: null,
   auditoriaCategoryTimeseries: [],
@@ -95,6 +102,7 @@ export const initialState = {
     isFetchingTeamSummaryReports: false,
     isFetchingLabelSummaryReports: false,
     isFetchingAuditoriaAdvisorSummaryReports: false,
+    isFetchingAuditoriaAdvisorActivity: false,
     isFetchingAuditoriaCategorySummaryReports: false,
     isFetchingAuditoriaCategoryTimeseries: false,
     isFetchingAuditoriaSentimentTimeseries: false,
@@ -120,6 +128,12 @@ export const getters = {
   },
   getAuditoriaAdvisorSummaryTotals(state) {
     return state.auditoriaAdvisorSummaryTotals;
+  },
+  getAuditoriaAdvisorActivityAdvisors(state) {
+    return state.auditoriaAdvisorActivityAdvisors;
+  },
+  getAuditoriaAdvisorActivityTeams(state) {
+    return state.auditoriaAdvisorActivityTeams;
   },
   getAuditoriaCategorySummaryReports(state) {
     return state.auditoriaCategorySummaryReports;
@@ -168,6 +182,12 @@ export const actions = {
     return fetchSummaryReports('auditoriaAdvisor', params, { commit });
   },
 
+  fetchAuditoriaAdvisorActivity({ commit }, params) {
+    return fetchSummaryReports('auditoriaAdvisorActivity', params, {
+      commit,
+    });
+  },
+
   fetchAuditoriaCategorySummaryReports({ commit }, params) {
     return fetchSummaryReports('auditoriaCategory', params, { commit });
   },
@@ -210,6 +230,10 @@ export const mutations = {
   setAuditoriaAdvisorSummaryReport(state, data) {
     state.auditoriaAdvisorSummaryReports = data.advisors || [];
     state.auditoriaAdvisorSummaryTotals = data.totals || null;
+  },
+  setAuditoriaAdvisorActivity(state, data) {
+    state.auditoriaAdvisorActivityAdvisors = data.advisors || [];
+    state.auditoriaAdvisorActivityTeams = data.teams || [];
   },
   setAuditoriaCategorySummaryReport(state, data) {
     state.auditoriaCategorySummaryReports = data.categories || [];

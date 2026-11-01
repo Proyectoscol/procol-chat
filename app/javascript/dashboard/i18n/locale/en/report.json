@@ -701,6 +701,30 @@
       }
     }
   },
+  "AUDITORIA_ADVISOR_ACTIVITY_REPORTS": {
+    "HEADER": "Advisor Activity",
+    "DESCRIPTION": "Message, media and call volume per advisor and team, normalized per conversation so advisors with different caseloads can be compared fairly. Conversations with messages from more than one advisor are excluded, same as the rest of Auditoría.",
+    "INBOX_FILTER_LABEL": "Inbox",
+    "INBOX_FILTER_ALL": "All inboxes",
+    "VIEW_ADVISOR": "By advisor",
+    "VIEW_TEAM": "By team",
+    "COLUMNS": {
+      "NAME": "Name",
+      "CONVERSATIONS": "Conversations",
+      "MESSAGES_GROUP": "Messages",
+      "OUTGOING": "Outgoing",
+      "INCOMING": "Incoming",
+      "AVG_PER_CONVERSATION": "Avg/conversation",
+      "TEXT_GROUP": "Text",
+      "CHARACTERS": "Characters",
+      "WORDS": "Words",
+      "AUDIO_GROUP": "Audio",
+      "PHOTO_GROUP": "Photos",
+      "VIDEO_GROUP": "Video",
+      "CALLS_GROUP": "Calls",
+      "MISSED": "Missed"
+    }
+  },
   "AUDITORIA_ADVISOR_DAILY_ROLLUP_REPORTS": {
     "HEADER": "Daily Summary",
     "DESCRIPTION": "How each advisor's day went, in plain language — synthesized daily from their conversation analyses. Generated automatically overnight, or on demand from Settings > Integrations > OpenAI > Usage.",

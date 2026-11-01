@@ -37,6 +37,7 @@ const headerClass = computed(() =>
         <th
           v-for="header in headerGroup.headers"
           :key="header.id"
+          :colspan="header.colSpan"
           :style="{
             width: `${header.getSize()}px`,
           }"

@@ -8,7 +8,7 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
   CSV_CONVERSATIONS_MAX_ROWS = 10_000
 
   AUDITORIA_INBOX_SCOPED_ACTIONS = %i[
-    auditoria_advisor auditoria_advisor_conversations auditoria_category
+    auditoria_advisor auditoria_advisor_activity auditoria_advisor_conversations auditoria_category
     auditoria_category_timeseries auditoria_category_conversations auditoria_category_terms
     auditoria_advisor_daily_rollup auditoria_advisor_daily_rollup_csv auditoria_category_csv auditoria_category_timeseries_csv
     auditoria_category_conversations_csv auditoria_sentiment_timeseries auditoria_sentiment_conversations
@@ -55,6 +55,15 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
 
     builder = V2::Reports::AuditoriaAdvisorSummaryBuilder.new(account: Current.account, params: auditoria_params)
+    render json: builder.build
+  end
+
+  # Volumen/proporcion de actividad por asesor y por equipo -- mensajes,
+  # medios por direccion, llamadas (texto del espejo), caracteres/palabras.
+  def auditoria_advisor_activity
+    raise Pundit::NotAuthorizedError unless Current.account.feature_enabled?('auditoria')
+
+    builder = V2::Reports::AuditoriaAdvisorActivityBuilder.new(account: Current.account, params: auditoria_params)
     render json: builder.build
   end
 
