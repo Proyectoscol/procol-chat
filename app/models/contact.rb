@@ -4,24 +4,28 @@
 #
 # Table name: contacts
 #
-#  id                    :integer          not null, primary key
-#  additional_attributes :jsonb
-#  blocked               :boolean          default(FALSE), not null
-#  contact_type          :integer          default("visitor")
-#  country_code          :string           default("")
-#  custom_attributes     :jsonb
-#  email                 :string
-#  identifier            :string
-#  last_activity_at      :datetime
-#  last_name             :string           default("")
-#  location              :string           default("")
-#  middle_name           :string           default("")
-#  name                  :string           default("")
-#  phone_number          :string
-#  created_at            :datetime         not null
-#  updated_at            :datetime         not null
-#  account_id            :integer          not null
-#  company_id            :bigint
+#  id                     :integer          not null, primary key
+#  additional_attributes  :jsonb
+#  blocked                :boolean          default(FALSE), not null
+#  contact_type           :integer          default("visitor")
+#  country_code           :string           default("")
+#  custom_attributes      :jsonb
+#  document_type          :integer
+#  email                  :string
+#  identifier             :string
+#  internal               :boolean          default(FALSE), not null
+#  last_activity_at       :datetime
+#  last_name              :string           default("")
+#  location               :string           default("")
+#  middle_name            :string           default("")
+#  name                   :string           default("")
+#  phone_number           :string
+#  secondary_phone_number :string
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  account_id             :integer          not null
+#  company_id             :bigint
+#  payer_id               :bigint
 #
 # Indexes
 #
@@ -30,13 +34,19 @@
 #  index_contacts_on_account_id_and_last_activity_at     (account_id,last_activity_at DESC NULLS LAST)
 #  index_contacts_on_blocked                             (blocked)
 #  index_contacts_on_company_id                          (company_id)
+#  index_contacts_on_internal                            (internal)
 #  index_contacts_on_lower_email_account_id              (lower((email)::text), account_id)
 #  index_contacts_on_name_email_phone_number_identifier  (name,email,phone_number,identifier) USING gin
 #  index_contacts_on_nonempty_fields                     (account_id,email,phone_number,identifier) WHERE (((email)::text <> ''::text) OR ((phone_number)::text <> ''::text) OR ((identifier)::text <> ''::text))
+#  index_contacts_on_payer_id                            (payer_id)
 #  index_contacts_on_phone_number_and_account_id         (phone_number,account_id)
 #  index_resolved_contact_account_id                     (account_id) WHERE (((email)::text <> ''::text) OR ((phone_number)::text <> ''::text) OR ((identifier)::text <> ''::text))
 #  uniq_email_per_account_contact                        (email,account_id) UNIQUE
 #  uniq_identifier_per_account_contact                   (identifier,account_id) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (payer_id => calendario_payers.id) ON DELETE => nullify
 #
 
 # rubocop:enable Layout/LineLength
@@ -47,6 +57,15 @@ class Contact < ApplicationRecord
   include Labelable
   include LlmFormattable
 
+  # Catalogo estandar colombiano para persona natural -- pendiente de
+  # confirmacion del usuario (ver design doc de Calendario, Open Question 3).
+  # CC es el que mas se usa. Sin presence: true aqui a proposito -- el
+  # documento solo es obligatorio en las superficies de creacion manual
+  # (ver Api::V1::Accounts::ContactsController#create), nunca a nivel de
+  # modelo, porque los builders de creacion automatica por canal no tienen
+  # documento disponible al crear el contacto.
+  enum :document_type, { cc: 0, ti: 1, ce: 2, pa: 3, rc: 4, pep: 5, ppt: 6 }, prefix: true
+
   validates :account_id, presence: true
   validates :email, allow_blank: true, uniqueness: { scope: [:account_id], case_sensitive: false },
                     format: { with: Devise.email_regexp, message: I18n.t('errors.contacts.email.invalid') }
@@ -54,8 +73,12 @@ class Contact < ApplicationRecord
   validates :phone_number,
             allow_blank: true, uniqueness: { scope: [:account_id] },
             format: { with: /\+[1-9]\d{1,14}\z/, message: I18n.t('errors.contacts.phone_number.invalid') }
+  validate :payer_belongs_to_account
 
   belongs_to :account
+  belongs_to :payer, class_name: 'Calendario::Payer', optional: true
+  has_many :calendario_appointments, dependent: :destroy_async, class_name: 'Calendario::Appointment'
+  has_many :calendario_session_credits, dependent: :destroy_async, class_name: 'Calendario::ContactSessionCredit'
   has_many :conversations, dependent: :destroy_async
   has_many :contact_inboxes, dependent: :destroy_async
   has_many :csat_survey_responses, dependent: :destroy_async
@@ -194,6 +217,13 @@ class Contact < ApplicationRecord
   end
 
   private
+
+  def payer_belongs_to_account
+    return if payer.blank?
+    return if payer.account_id == account_id
+
+    errors.add(:payer, :invalid)
+  end
 
   def ip_lookup
     return unless account.feature_enabled?('ip_lookup')

@@ -1,0 +1,42 @@
+{
+  "IMPORT_WHATSAPP": {
+    "TITLE": "Importar chats de WhatsApp",
+    "DESCRIPTION": "Sube los .zip exportados de WhatsApp Business (uno por chat) para cargar el historico en la bandeja conectada.",
+    "FETCH_ERROR": "No se pudo cargar la informacion de importacion.",
+    "FORM": {
+      "INBOX_LABEL": "Bandeja destino",
+      "INBOX_PLACEHOLDER": "Seleccione una bandeja",
+      "US_SENDER_LABEL": "Nombre que aparece como \"nosotros\" en los chats",
+      "US_SENDER_PLACEHOLDER": "Ej. Recepcion",
+      "FILES_LABEL": "Archivos .zip exportados",
+      "PHONE_PLACEHOLDER": "Numero de telefono",
+      "UPLOAD_ALL": "Subir todos",
+      "UPLOAD_ALL_DONE": "Subida completada. El procesamiento sigue en segundo plano.",
+      "UPLOAD_ERROR": "No se pudo subir este archivo."
+    },
+    "ROW_STATUS": {
+      "PENDING": "Pendiente",
+      "UPLOADING": "Subiendo...",
+      "UPLOADED": "Subido",
+      "ERROR": "Error"
+    },
+    "BATCHES": {
+      "TITLE": "Importaciones",
+      "TABLE": {
+        "FILE": "Archivo",
+        "PHONE": "Telefono",
+        "CONTACT": "Contacto",
+        "STATUS": "Estado",
+        "RESULT": "Resultado",
+        "RESULT_SUMMARY": "{imported} importados, {skipped} ya existian, {attachments} adjuntos"
+      },
+      "STATUS": {
+        "PENDING": "En cola",
+        "PROCESSING": "Procesando",
+        "COMPLETED": "Completado",
+        "FAILED": "Fallo",
+        "NEEDS_REVIEW": "Necesita revision"
+      }
+    }
+  }
+}

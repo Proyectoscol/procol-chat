@@ -6,6 +6,7 @@
 #  active_at                :datetime
 #  auto_offline             :boolean          default(TRUE), not null
 #  availability             :integer          default("online"), not null
+#  restricted_inbox_ids     :integer          default([]), not null, is an Array
 #  role                     :integer          default("agent")
 #  created_at               :datetime         not null
 #  updated_at               :datetime         not null
@@ -20,6 +21,7 @@
 #  index_account_users_on_account_id                (account_id)
 #  index_account_users_on_agent_capacity_policy_id  (agent_capacity_policy_id)
 #  index_account_users_on_custom_role_id            (custom_role_id)
+#  index_account_users_on_restricted_inbox_ids      (restricted_inbox_ids) USING gin
 #  index_account_users_on_user_id                   (user_id)
 #  uniq_user_id_per_account_id                      (account_id,user_id) UNIQUE
 #

@@ -5,6 +5,7 @@ import attributesMgmt from './attributesMgmt.json';
 import auditLogs from './auditLogs.json';
 import automation from './automation.json';
 import bulkActions from './bulkActions.json';
+import calendario from './calendario.json';
 import campaign from './campaign.json';
 import cannedMgmt from './cannedMgmt.json';
 import chatlist from './chatlist.json';
@@ -20,6 +21,7 @@ import emoji from './emoji.json';
 import general from './general.json';
 import generalSettings from './generalSettings.json';
 import helpCenter from './helpCenter.json';
+import importWhatsapp from './importWhatsapp.json';
 import inbox from './inbox.json';
 import inboxMgmt from './inboxMgmt.json';
 import integrationApps from './integrationApps.json';
@@ -47,6 +49,7 @@ export default {
   ...auditLogs,
   ...automation,
   ...bulkActions,
+  ...calendario,
   ...campaign,
   ...cannedMgmt,
   ...chatlist,
@@ -62,6 +65,7 @@ export default {
   ...general,
   ...generalSettings,
   ...helpCenter,
+  ...importWhatsapp,
   ...inbox,
   ...inboxMgmt,
   ...integrationApps,

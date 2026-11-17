@@ -7,6 +7,7 @@
 #  custom_attributes     :jsonb
 #  domain                :string(100)
 #  feature_flags         :bigint           default(0), not null
+#  feature_flags_ext_1   :bigint           default(0), not null
 #  internal_attributes   :jsonb            not null
 #  limits                :jsonb
 #  locale                :integer          default("en")
@@ -65,6 +66,15 @@ class Account < ApplicationRecord
   has_many :assignment_policies, dependent: :destroy_async
   has_many :automation_rules, dependent: :destroy_async
   has_many :macros, dependent: :destroy_async
+  has_many :calendario_appointment_event_triggers, dependent: :destroy_async, class_name: 'Calendario::AppointmentEventTrigger'
+  has_many :calendario_appointments, dependent: :destroy_async, class_name: 'Calendario::Appointment'
+  has_many :calendario_contact_session_credits, dependent: :destroy_async, class_name: 'Calendario::ContactSessionCredit'
+  has_many :calendario_payers, dependent: :destroy_async, class_name: 'Calendario::Payer'
+  has_many :calendario_open_days, dependent: :destroy_async, class_name: 'Calendario::OpenDay'
+  has_many :calendario_professionals, dependent: :destroy_async, class_name: 'Calendario::Professional'
+  has_many :calendario_services, dependent: :destroy_async, class_name: 'Calendario::Service'
+  has_many :calendario_specialties, dependent: :destroy_async, class_name: 'Calendario::Specialty'
+  has_many :calendario_waitlist_entries, dependent: :destroy_async, class_name: 'Calendario::WaitlistEntry'
   has_many :campaigns, dependent: :destroy_async
   has_many :canned_responses, dependent: :destroy_async
   has_many :categories, dependent: :destroy_async, class_name: '::Category'

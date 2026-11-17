@@ -1,0 +1,42 @@
+{
+  "IMPORT_WHATSAPP": {
+    "TITLE": "Import WhatsApp chats",
+    "DESCRIPTION": "Upload the .zip files exported from WhatsApp Business (one per chat) to load the history into the connected inbox.",
+    "FETCH_ERROR": "Could not load the import information.",
+    "FORM": {
+      "INBOX_LABEL": "Target inbox",
+      "INBOX_PLACEHOLDER": "Select an inbox",
+      "US_SENDER_LABEL": "Name that shows as \"us\" in the chats",
+      "US_SENDER_PLACEHOLDER": "E.g. Front desk",
+      "FILES_LABEL": "Exported .zip files",
+      "PHONE_PLACEHOLDER": "Phone number",
+      "UPLOAD_ALL": "Upload all",
+      "UPLOAD_ALL_DONE": "Upload finished. Processing continues in the background.",
+      "UPLOAD_ERROR": "Could not upload this file."
+    },
+    "ROW_STATUS": {
+      "PENDING": "Pending",
+      "UPLOADING": "Uploading...",
+      "UPLOADED": "Uploaded",
+      "ERROR": "Error"
+    },
+    "BATCHES": {
+      "TITLE": "Imports",
+      "TABLE": {
+        "FILE": "File",
+        "PHONE": "Phone",
+        "CONTACT": "Contact",
+        "STATUS": "Status",
+        "RESULT": "Result",
+        "RESULT_SUMMARY": "{imported} imported, {skipped} already existed, {attachments} attachments"
+      },
+      "STATUS": {
+        "PENDING": "Queued",
+        "PROCESSING": "Processing",
+        "COMPLETED": "Completed",
+        "FAILED": "Failed",
+        "NEEDS_REVIEW": "Needs review"
+      }
+    }
+  }
+}

@@ -350,6 +350,16 @@
     "SMS": "SMS",
     "WHATSAPP": "WhatsApp",
     "CAMPAIGNS": "Campaigns",
+    "CALENDARIO": {
+      "TITLE": "Calendar",
+      "AGENDA": "Today's Agenda",
+      "CALENDAR": "Calendar view",
+      "SCHEDULES": "Schedules",
+      "PROFESSIONALS": "Professionals",
+      "SERVICES": "Services",
+      "PAYERS": "Insurers",
+      "STATS": "Stats"
+    },
     "ONGOING": "Ongoing",
     "ONE_OFF": "One off",
     "REPORTS_SLA": "SLA",

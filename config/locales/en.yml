@@ -31,6 +31,12 @@
 
 en:
   hello: 'Hello world'
+  calendario:
+    appointments:
+      overlapping_appointment: 'An appointment already exists for this professional at this time'
+      outside_availability: 'This time falls outside the professional''s configured availability'
+      contact_conflict: '%{contact} already has an appointment at this time'
+      has_warnings: 'This appointment has warnings that need confirmation'
   inbox:
     reauthorization:
       success: 'Channel reauthorized successfully'

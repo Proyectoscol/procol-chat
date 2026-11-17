@@ -388,7 +388,8 @@
       "MACROS": "Macros",
       "LINEAR_ISSUES": "Linked Linear Issues",
       "SHOPIFY_ORDERS": "Shopify Orders",
-      "SHARED_FILES": "Attachments"
+      "SHARED_FILES": "Attachments",
+      "CALENDARIO": "Patient schedule"
     },
     "SHARED_FILES": {
       "EMPTY": "No attachments yet",

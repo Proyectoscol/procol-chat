@@ -3,18 +3,33 @@
 # Table name: data_imports
 #
 #  id                :bigint           not null, primary key
+#  abandoned_at      :datetime
+#  access_token      :text
+#  completed_at      :datetime
+#  cursor            :jsonb            not null
 #  data_type         :string           not null
+#  import_types      :jsonb            not null
+#  last_error_at     :datetime
+#  name              :string
 #  processed_records :integer
 #  processing_errors :text
+#  source_metadata   :jsonb            not null
+#  source_provider   :string
+#  source_type       :string
+#  started_at        :datetime
+#  stats             :jsonb            not null
 #  status            :integer          default("pending"), not null
 #  total_records     :integer
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  account_id        :bigint           not null
+#  initiated_by_id   :integer
 #
 # Indexes
 #
-#  index_data_imports_on_account_id  (account_id)
+#  index_data_imports_on_account_id       (account_id)
+#  index_data_imports_on_initiated_by_id  (initiated_by_id)
+#  index_data_imports_on_source_provider  (source_provider)
 #
 class DataImport < ApplicationRecord
   belongs_to :account

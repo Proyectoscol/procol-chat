@@ -1,0 +1,554 @@
+{
+  "CALENDARIO": {
+    "TABS": {
+      "AGENDA": "Agenda de hoy",
+      "CALENDAR": "Vista calendario",
+      "SCHEDULES": "Agendas",
+      "SPECIALTIES": "Especialidades",
+      "PROFESSIONALS": "Profesionales",
+      "SERVICES": "Servicios",
+      "PAYERS": "EPS",
+      "STATS": "Estadísticas",
+      "TRIGGERS": "Notificaciones"
+    },
+    "CONTACT_APPOINTMENTS": {
+      "EMPTY": "Este contacto todavía no tiene citas.",
+      "AVAILABLE_CREDITS": "{count} control(es) disponible(s) de un procedimiento previo"
+    },
+    "STATS": {
+      "DESCRIPTION": "Volumen y resultado de las citas en el rango seleccionado.",
+      "DESCRIPTION_CREATED": "Volumen de citas según el día en que se crearon (registraron) -- útil para auditoría, sin importar para cuándo haya quedado agendada cada una.",
+      "GROUP_BY": {
+        "SCHEDULED": "Por fecha programada",
+        "CREATED": "Por fecha de creación"
+      },
+      "AVG_PER_DAY": "Promedio de citas / día",
+      "ATTENDED_PCT": "Atendidas",
+      "NO_SHOW_PCT": "No asistió",
+      "CANCELLED_PCT": "Canceladas",
+      "CHART_LABEL": "Citas",
+      "CHART_LABEL_CREATED": "Citas creadas",
+      "CREATED_LIST_TITLE": "Citas creadas en este rango",
+      "CREATED_LIST_EMPTY": "No se creó ninguna cita en este rango.",
+      "SCHEDULED_FOR": "para el {when}",
+      "CREATED_BY": "creada por {name}",
+      "FETCH_ERROR": "No se pudieron cargar las estadísticas.",
+      "EMPTY": "No hay citas en este rango."
+    },
+    "AGENDA": {
+      "DESCRIPTION": "Citas de hoy.",
+      "EMPTY": "No hay citas programadas para hoy.",
+      "FETCH_ERROR": "No se pudo cargar la agenda de hoy.",
+      "FILTERS": {
+        "SPECIALTY_LABEL": "Especialidad",
+        "PROFESSIONAL_LABEL": "Profesional"
+      },
+      "TABLE": {
+        "TIME": "Hora",
+        "CONTACT": "Contacto",
+        "SERVICE": "Servicio",
+        "PROFESSIONAL": "Profesional",
+        "STATUS": "Estado",
+        "ACTIONS": "Acciones"
+      }
+    },
+    "CALENDAR": {
+      "FETCH_ERROR": "No se pudo cargar el calendario.",
+      "FILTERS": {
+        "SPECIALTY_LABEL": "Especialidad",
+        "PROFESSIONAL_LABEL": "Profesional",
+        "SERVICE_LABEL": "Servicio",
+        "PAYER_LABEL": "EPS"
+      }
+    },
+    "APPOINTMENTS": {
+      "DESCRIPTION": "Próximas citas de todas las profesionales.",
+      "ADD_BUTTON": "Nueva cita",
+      "EMPTY": "No hay próximas citas.",
+      "FETCH_ERROR": "No se pudieron cargar las citas.",
+      "UPDATE_ERROR": "No se pudo actualizar la cita.",
+      "TABLE": {
+        "WHEN": "Cuándo",
+        "CONTACT": "Contacto",
+        "SERVICE": "Servicio",
+        "PROFESSIONAL": "Profesional",
+        "STATUS": "Estado",
+        "ACTIONS": "Acciones"
+      },
+      "STATUS": {
+        "PENDING": "Pendiente",
+        "CONFIRMED": "Confirmada",
+        "ATTENDED": "Atendida",
+        "NO_SHOW": "No asistió",
+        "CANCELLED": "Cancelada"
+      },
+      "ACTIONS": {
+        "PENDING": "Pendiente",
+        "CONFIRM": "Confirmar",
+        "ATTENDED": "Atendida",
+        "NO_SHOW": "No asistió",
+        "CANCEL": "Cancelar",
+        "RESCHEDULE": "Reagendar"
+      },
+      "DETAIL": {
+        "TITLE": "Detalle de la cita",
+        "CONTACT": "Contacto",
+        "SERVICE": "Servicio",
+        "PROFESSIONAL": "Profesional",
+        "WHEN": "Fecha y hora",
+        "PAYER": "Entidad / EPS",
+        "NO_PAYER": "Particular / sin entidad",
+        "PRICE": "Precio",
+        "STATUS": "Estado",
+        "CREATED_AT": "Creada",
+        "CREATED_BY": "por {name}",
+        "NOTES": "Notas",
+        "OPEN_CONVERSATION": "Abrir conversación",
+        "ACTIONS_TITLE": "Acciones",
+        "HISTORY_TITLE": "Historial",
+        "FETCH_ERROR": "No se pudo cargar el detalle de la cita.",
+        "HISTORY": {
+          "CREATED": "Cita creada",
+          "RESCHEDULED": "Reagendada de {from} a {to}",
+          "STATUS_CHANGED": "Estado cambiado de {from} a {to}"
+        }
+      },
+      "RESCHEDULE": {
+        "TITLE": "Reagendar cita",
+        "SUBMIT": "Reagendar",
+        "SUCCESS": "Cita reagendada",
+        "ERROR": "No se pudo reagendar la cita",
+        "COUNT_ONE": "Reagendada 1 vez",
+        "COUNT_OTHER": "Reagendada {count} veces",
+        "NOTES_LABEL": "Notas (obligatorio)",
+        "NOTES_PLACEHOLDER": "¿Por qué se reagenda esta cita?"
+      },
+      "CANCEL_APPOINTMENT": {
+        "TITLE": "Cancelar cita",
+        "TYPE_LABEL": "Tipo de cancelación",
+        "TYPE_DEFINITIVE": "Definitiva",
+        "TYPE_DEFINITIVE_HINT": "El paciente ya no necesita esta cita -- no vuelve a la lista de espera.",
+        "TYPE_TEMPORARY": "Temporal",
+        "TYPE_TEMPORARY_HINT": "Ej. está enfermo y no sabe cuándo podrá asistir -- vuelve a la lista de espera sin fecha.",
+        "NOTES_LABEL": "Motivo de la cancelación (obligatorio)",
+        "NOTES_PLACEHOLDER": "¿Por qué se cancela esta cita?",
+        "SUBMIT": "Cancelar cita",
+        "SUCCESS": "Cita cancelada",
+        "ERROR": "No se pudo cancelar la cita"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Nueva cita",
+        "CONTACT_LABEL": "Contacto",
+        "CONTACT_PLACEHOLDER": "Buscar por nombre, correo o teléfono",
+        "SERVICE_LABEL": "Servicio",
+        "SERVICE_PLACEHOLDER": "Seleccione un servicio",
+        "PROFESSIONAL_LABEL": "Profesional",
+        "PROFESSIONAL_PLACEHOLDER": "Seleccione una profesional",
+        "PAYER_LABEL": "Entidad / EPS",
+        "CREATE_CONTACT_LINK": "No encuentro a \"{query}\" -- crear contacto nuevo",
+        "CREATE_CONTACT_TITLE": "Nuevo contacto",
+        "CREATE_CONTACT_SUBMIT": "Crear y continuar",
+        "CREATE_CONTACT_ERROR": "No se pudo crear el contacto",
+        "CONTACT_DATA_INCOMPLETE": "Sin documento ni EPS registrados",
+        "NEW_CONTACT_NAME": "Nombre",
+        "NEW_CONTACT_PHONE": "Teléfono",
+        "SECONDARY_PHONE_LABEL": "Teléfono secundario",
+        "SECONDARY_PHONE_PLACEHOLDER": "Solo para llamadas de respaldo (mamá, esposo, hijo...)",
+        "DOCUMENT_TYPE_LABEL": "Tipo de documento",
+        "DOCUMENT_NUMBER_LABEL": "Número de documento",
+        "DOCUMENT_TYPES": {
+          "CC": "Cédula de ciudadanía",
+          "TI": "Tarjeta de identidad",
+          "CE": "Cédula de extranjería",
+          "PA": "Pasaporte",
+          "RC": "Registro civil",
+          "PEP": "Permiso especial de permanencia",
+          "PPT": "Permiso de protección temporal"
+        },
+        "STARTS_AT_LABEL": "Fecha y hora",
+        "NOTES_LABEL": "Notas",
+        "CANCEL": "Cancelar",
+        "CREATE": "Crear cita",
+        "CONFIRM_ANYWAY": "Sí, crear de todas formas",
+        "OVERLAP_WARNING": "{contact} ya tiene una cita a las {when} con esta profesional.",
+        "CONTACT_CONFLICT_WARNING": "{contact} ya tiene una cita a las {when}.",
+        "OUTSIDE_AVAILABILITY_WARNING": "Este horario está fuera de la disponibilidad configurada de la profesional.",
+        "OPEN_DAY_MISSING_WARNING": "Todavía no hay agenda abierta el {date} en la {window} para esta profesional. Si continúas, se abrirá automáticamente.",
+        "OPEN_DAY_HINT": "Los días marcados ya tienen agenda abierta para esta profesional.",
+        "SEND_TO_WAITLIST_BUTTON": "Agregar a lista de espera en su lugar",
+        "CREATE_SUCCESS": "Cita creada",
+        "ERROR": "No se pudo crear la cita"
+      }
+    },
+    "SCHEDULES": {
+      "DESCRIPTION": "Agenda por profesional -- reemplaza el Excel de bloques copiados y pegados.",
+      "EMPTY": "Esta profesional todavía no tiene agenda abierta.",
+      "EMPTY_WITH_WAITLIST": "Pero hay {count} personas en lista de espera para ella.",
+      "EMPTY_OPEN_DAY": "Agenda abierta, todavía sin citas.",
+      "HIDDEN_BY_FILTERS": "Hay citas este día, pero ninguna coincide con los filtros.",
+      "FETCH_ERROR": "No se pudo cargar la agenda.",
+      "ADD_APPOINTMENT_BUTTON": "Agregar cita",
+      "BOOK_HERE_BUTTON": "Agendar aquí a {name}",
+      "EXPAND_BUTTON": "Expandir",
+      "COLLAPSE_BUTTON": "Colapsar",
+      "LOAD_MORE": "Ver fechas anteriores",
+      "SHOW_RATE_LABEL": "Asistencia (30 días)",
+      "FILTERS": {
+        "SPECIALTY_LABEL": "Especialidad",
+        "SPECIALTY_ALL": "Todas las especialidades",
+        "SERVICE_LABEL": "Servicio",
+        "SERVICE_ALL": "Todos los servicios",
+        "PAYER_LABEL": "EPS"
+      },
+      "TIME_WINDOW": {
+        "MORNING": "Mañana",
+        "AFTERNOON": "Tarde",
+        "FULL_DAY": "Todo el día"
+      },
+      "OPEN_MULTIPLE": {
+        "BUTTON": "Abrir agenda",
+        "RANGE_LABEL": "Rango de fechas",
+        "WINDOW_LABEL": "Franja horaria",
+        "WINDOW_MORNING": "Mañana",
+        "WINDOW_AFTERNOON": "Tarde",
+        "WINDOW_FULL_DAY": "Todo el día",
+        "SUBMIT": "Aplicar",
+        "SUMMARY": "{opened} fecha(s) abiertas, {skipped} ya estaban abiertas"
+      },
+      "CSV": {
+        "BUTTON": "Exportar CSV",
+        "DATE": "Fecha",
+        "TIME": "Hora",
+        "CONTACT": "Paciente",
+        "DOCUMENT": "Documento",
+        "PHONE": "Teléfono",
+        "SERVICE": "Servicio",
+        "PAYER": "Entidad",
+        "STATUS": "Estado",
+        "NOTES": "Notas"
+      }
+    },
+    "WAITLIST": {
+      "TITLE": "Lista de espera",
+      "OPEN_BUTTON": "Lista de espera",
+      "EMPTY": "No hay nadie en la lista de espera.",
+      "BOOK_BUTTON": "Agendar",
+      "ADD_BUTTON": "Agregar",
+      "ORIGIN_CANCELLATION_BADGE": "Por cancelación",
+      "ORIGIN_MANUAL_BADGE": "Nueva",
+      "DAYS_WAITING_ONE": "{count} día en espera",
+      "DAYS_WAITING_OTHER": "{count} días en espera",
+      "FILTERS": {
+        "ORIGIN_LABEL": "Origen",
+        "ORIGIN_ALL": "Todos",
+        "ORIGIN_MANUAL": "Nuevas",
+        "ORIGIN_CANCELLATION": "Por cancelación",
+        "SERVICE_LABEL": "Servicio",
+        "SERVICE_ALL": "Todos",
+        "SORT_LABEL": "Ordenar por",
+        "SORT_OLDEST": "Más antiguas primero",
+        "SORT_NEWEST": "Más recientes primero",
+        "SORT_SERVICE": "Servicio (A-Z)"
+      },
+      "DELETE_ERROR": "No se pudo quitar de la lista de espera",
+      "DELETE_CONFIRM": {
+        "TITLE": "Quitar de la lista de espera",
+        "MESSAGE": "Este contacto se quitará de la lista de espera.",
+        "CONFIRM": "Quitar",
+        "CANCEL": "Cancelar"
+      },
+      "ADD_FORM": {
+        "CREATE_TITLE": "Nuevo contacto en lista de espera",
+        "EDIT_TITLE": "Editar entrada de lista de espera",
+        "CONTACT_LABEL": "Contacto",
+        "CONTACT_PLACEHOLDER": "Buscar por nombre, correo o teléfono",
+        "SERVICE_LABEL": "Servicio",
+        "SERVICE_PLACEHOLDER": "Selecciona un servicio",
+        "PROFESSIONAL_LABEL": "Profesional",
+        "PROFESSIONAL_PLACEHOLDER": "Selecciona un profesional",
+        "NOTES_LABEL": "Notas",
+        "SUBMIT": "Agregar a la lista",
+        "SAVE": "Guardar cambios",
+        "SUCCESS": "Contacto agregado a la lista de espera",
+        "EDIT_SUCCESS": "Entrada actualizada",
+        "ERROR": "No se pudo agregar a la lista de espera"
+      },
+      "QUICK_BOOK": {
+        "ARMED_BANNER": "Agendando a {name} -- elige un día",
+        "TITLE": "Agendar a {name}",
+        "TIME_LABEL": "Hora",
+        "CANCEL": "Cancelar",
+        "CONFIRM": "Confirmar",
+        "CONFIRM_ANYWAY": "Confirmar de todas formas",
+        "ERROR": "No se pudo agendar la cita"
+      }
+    },
+    "PROFESSIONALS": {
+      "DESCRIPTION": "Personas que prestan servicios y pueden recibir citas.",
+      "ADD_BUTTON": "Agregar profesional",
+      "EMPTY": "Todavía no hay profesionales.",
+      "FETCH_ERROR": "No se pudieron cargar las profesionales.",
+      "DELETE_SUCCESS": "Profesional eliminada",
+      "DELETE_ERROR": "No se pudo eliminar la profesional",
+      "TABLE": {
+        "NAME": "Nombre",
+        "SPECIALTY": "Especialidad",
+        "SERVICES": "Servicios",
+        "STATUS": "Estado",
+        "ACTIONS": "Acciones"
+      },
+      "STATUS": {
+        "ACTIVE": "Activa",
+        "INACTIVE": "Inactiva"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Eliminar profesional",
+        "MESSAGE": "Esta profesional se eliminará. Las citas existentes se conservan.",
+        "CONFIRM": "Eliminar",
+        "CANCEL": "Cancelar"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Agregar profesional",
+        "EDIT_TITLE": "Editar profesional",
+        "AGENT_LABEL": "Vincular a un agente existente",
+        "AGENT_HINT": "Opcional. Una profesional sin agente vinculado también puede recibir citas, sin necesitar acceso a Chatwoot.",
+        "NO_AGENT": "Sin agente vinculado",
+        "NAME_LABEL": "Nombre",
+        "NAME_PLACEHOLDER": "ej. Dra. Ana Gómez",
+        "SPECIALTY_LABEL": "Especialidad",
+        "SPECIALTY_PLACEHOLDER": "Selecciona una especialidad",
+        "ACTIVE_LABEL": "Activa",
+        "ACTIVE_HINT": "Desmarca esto para archivar a esta profesional: deja de aparecer en Agendas, Agenda de hoy, Vista calendario y en los selectores para crear citas o lista de espera nuevas. Sus citas ya existentes NO se borran ni se modifican.",
+        "CANCEL": "Cancelar",
+        "SAVE": "Guardar",
+        "CREATE": "Crear",
+        "CREATE_SUCCESS": "Profesional creada",
+        "EDIT_SUCCESS": "Profesional actualizada",
+        "ERROR": "No se pudo guardar la profesional"
+      },
+      "AVAILABILITY": {
+        "BUTTON": "Gestionar disponibilidad",
+        "TITLE": "Disponibilidad de {name}",
+        "DESCRIPTION": "Solo se pueden reservar citas dentro de estos horarios. Si no hay horarios configurados, esta profesional puede recibir citas en cualquier momento.",
+        "EMPTY": "Todavía no hay horarios de disponibilidad configurados.",
+        "WEEKDAYS_LABEL": "Se repite en",
+        "WEEKDAYS_SHORT": {
+          "SUNDAY": "Dom",
+          "MONDAY": "Lun",
+          "TUESDAY": "Mar",
+          "WEDNESDAY": "Mié",
+          "THURSDAY": "Jue",
+          "FRIDAY": "Vie",
+          "SATURDAY": "Sáb"
+        },
+        "START_TIME_LABEL": "Desde",
+        "END_TIME_LABEL": "Hasta",
+        "ADD_BUTTON": "Agregar horario",
+        "CLOSE": "Cerrar",
+        "CREATE_SUCCESS": "Horario de disponibilidad agregado",
+        "DELETE_ERROR": "No se pudo eliminar el horario de disponibilidad",
+        "ERROR": "No se pudo agregar el horario de disponibilidad"
+      }
+    },
+    "SERVICES": {
+      "DESCRIPTION": "Servicios que se pueden reservar, y quién los presta.",
+      "ADD_BUTTON": "Agregar servicio",
+      "EMPTY": "Todavía no hay servicios.",
+      "FETCH_ERROR": "No se pudieron cargar los servicios.",
+      "DELETE_SUCCESS": "Servicio eliminado",
+      "DELETE_ERROR": "No se pudo eliminar el servicio",
+      "TABLE": {
+        "NAME": "Nombre",
+        "DURATION": "Duración",
+        "DURATION_MINUTES": "{count} min",
+        "KIND": "Tipo",
+        "KIND_VALUES": {
+          "CONSULTATION": "Consulta",
+          "CONTROL": "Control",
+          "PROCEDURE": "Procedimiento"
+        },
+        "PRICE": "Precio base",
+        "PROFESSIONALS": "Profesionales",
+        "STATUS": "Estado",
+        "ACTIONS": "Acciones"
+      },
+      "STATUS": {
+        "ACTIVE": "Activo",
+        "INACTIVE": "Inactivo"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Eliminar servicio",
+        "MESSAGE": "Este servicio se eliminará. Las citas existentes se conservan.",
+        "CONFIRM": "Eliminar",
+        "CANCEL": "Cancelar"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Agregar servicio",
+        "EDIT_TITLE": "Editar servicio",
+        "NAME_LABEL": "Nombre",
+        "NAME_PLACEHOLDER": "ej. Consulta general",
+        "DURATION_LABEL": "Duración (minutos)",
+        "COLOR_LABEL": "Color",
+        "KIND_LABEL": "Tipo",
+        "KIND_OPTIONS": {
+          "CONSULTATION": "Consulta",
+          "CONTROL": "Control (requiere consulta o procedimiento previo)",
+          "PROCEDURE": "Procedimiento"
+        },
+        "BASE_PRICE_LABEL": "Precio base (COP)",
+        "INCLUDED_SESSIONS_LABEL": "Controles incluidos (solo procedimientos)",
+        "PROFESSIONALS_LABEL": "Profesionales que ofrecen este servicio",
+        "ACTIVE_LABEL": "Activo",
+        "CANCEL": "Cancelar",
+        "SAVE": "Guardar",
+        "CREATE": "Crear",
+        "CREATE_SUCCESS": "Servicio creado",
+        "EDIT_SUCCESS": "Servicio actualizado",
+        "ERROR": "No se pudo guardar el servicio"
+      },
+      "MANAGE_PAYERS_LINK": "Gestionar EPS"
+    },
+    "PAYERS": {
+      "DESCRIPTION": "Entidades (EPS, pólizas, planes) que pueden pagar una cita.",
+      "ADD_BUTTON": "Agregar EPS",
+      "EMPTY": "Todavía no hay entidades.",
+      "FETCH_ERROR": "No se pudieron cargar las entidades.",
+      "DELETE_SUCCESS": "Entidad eliminada",
+      "DELETE_ERROR": "No se pudo eliminar la entidad",
+      "TABLE": {
+        "NAME": "Nombre",
+        "KIND": "Tipo",
+        "STATUS": "Estado",
+        "ACTIONS": "Acciones"
+      },
+      "KIND_VALUES": {
+        "PARTICULAR": "Particular",
+        "EPS": "EPS",
+        "PLAN_COMPLEMENTARIO": "Plan complementario",
+        "PREPAGADA": "Medicina prepagada",
+        "POLIZA": "Póliza"
+      },
+      "STATUS": {
+        "ACTIVE": "Activa",
+        "INACTIVE": "Inactiva"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Eliminar entidad",
+        "MESSAGE": "Esta entidad se eliminará. Las citas existentes quedan sin entidad asignada.",
+        "CONFIRM": "Eliminar",
+        "CANCEL": "Cancelar"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Agregar EPS",
+        "EDIT_TITLE": "Editar EPS",
+        "NAME_LABEL": "Nombre",
+        "NAME_PLACEHOLDER": "p. ej. Nueva EPS",
+        "KIND_LABEL": "Tipo",
+        "ACTIVE_LABEL": "Activa",
+        "CANCEL": "Cancelar",
+        "SAVE": "Guardar",
+        "CREATE": "Crear",
+        "CREATE_SUCCESS": "EPS creada",
+        "EDIT_SUCCESS": "EPS actualizada",
+        "ERROR": "No se pudo guardar la entidad"
+      }
+    },
+    "SPECIALTIES": {
+      "DESCRIPTION": "Especialidades del consultorio -- todo profesional queda ligado a una.",
+      "ADD_BUTTON": "Agregar especialidad",
+      "EMPTY": "Todavía no hay especialidades.",
+      "FETCH_ERROR": "No se pudieron cargar las especialidades.",
+      "DELETE_SUCCESS": "Especialidad eliminada",
+      "DELETE_ERROR": "No se pudo eliminar la especialidad",
+      "TABLE": {
+        "NAME": "Nombre",
+        "STATUS": "Estado",
+        "ACTIONS": "Acciones"
+      },
+      "STATUS": {
+        "ACTIVE": "Activa",
+        "INACTIVE": "Inactiva"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Eliminar especialidad",
+        "MESSAGE": "Esta especialidad se eliminará. Los profesionales existentes quedan sin especialidad asignada.",
+        "CONFIRM": "Eliminar",
+        "CANCEL": "Cancelar"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Agregar especialidad",
+        "EDIT_TITLE": "Editar especialidad",
+        "NAME_LABEL": "Nombre",
+        "NAME_PLACEHOLDER": "p. ej. Urología",
+        "ACTIVE_LABEL": "Activa",
+        "CANCEL": "Cancelar",
+        "SAVE": "Guardar",
+        "CREATE": "Crear",
+        "CREATE_SUCCESS": "Especialidad creada",
+        "EDIT_SUCCESS": "Especialidad actualizada",
+        "ERROR": "No se pudo guardar la especialidad"
+      }
+    },
+    "TRIGGERS": {
+      "DESCRIPTION": "Mensajes automáticos de WhatsApp al crear una cita, cambiar su estado o antes de que empiece.",
+      "ADD_BUTTON": "Nueva notificación",
+      "EMPTY": "Todavía no hay notificaciones configuradas.",
+      "FETCH_ERROR": "No se pudieron cargar las notificaciones.",
+      "DELETE_SUCCESS": "Notificación eliminada",
+      "DELETE_ERROR": "No se pudo eliminar la notificación",
+      "NO_WHATSAPP_INBOX_WARNING": "No hay ninguna bandeja de WhatsApp configurada en esta cuenta -- primero conecta una bandeja de WhatsApp para poder crear notificaciones.",
+      "TABLE": {
+        "KIND": "Cuándo se envía",
+        "SERVICE": "Servicio",
+        "INBOX": "Bandeja",
+        "TEMPLATE": "Plantilla",
+        "STATUS": "Estado",
+        "ACTIONS": "Acciones"
+      },
+      "ALL_SERVICES": "Todos los servicios",
+      "KIND_VALUES": {
+        "ON_CREATE": "Al crear la cita",
+        "ON_STATUS_CHANGE": "Al cambiar el estado a \"{status}\"",
+        "BEFORE_START": "{minutes} min antes de la cita"
+      },
+      "STATUS": {
+        "ACTIVE": "Activa",
+        "INACTIVE": "Inactiva"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Eliminar notificación",
+        "MESSAGE": "Esta notificación se eliminará. Las citas ya creadas no se ven afectadas.",
+        "CONFIRM": "Eliminar",
+        "CANCEL": "Cancelar"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Nueva notificación",
+        "EDIT_TITLE": "Editar notificación",
+        "KIND_LABEL": "Cuándo se envía",
+        "KIND_OPTIONS": {
+          "ON_CREATE": "Al crear la cita (confirmación)",
+          "ON_STATUS_CHANGE": "Al cambiar el estado de la cita",
+          "BEFORE_START": "Antes de que empiece la cita (recordatorio)"
+        },
+        "TARGET_STATUS_LABEL": "Nuevo estado",
+        "TARGET_STATUS_PLACEHOLDER": "Selecciona el estado",
+        "OFFSET_MINUTES_LABEL": "Minutos antes de la cita",
+        "SERVICE_LABEL": "Servicio",
+        "SERVICE_PLACEHOLDER": "Todos los servicios",
+        "INBOX_LABEL": "Bandeja de WhatsApp",
+        "INBOX_PLACEHOLDER": "Selecciona una bandeja",
+        "TEMPLATE_LABEL": "Plantilla de WhatsApp",
+        "TEMPLATE_PLACEHOLDER": "Selecciona una plantilla aprobada",
+        "TEMPLATE_HINT": "Puedes usar variables de la cita en los parámetros de la plantilla (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) escribiéndolas entre llaves dobles -- se reemplazan automáticamente por los datos reales de cada cita.",
+        "NO_TEMPLATES": "Esta bandeja no tiene plantillas aprobadas disponibles.",
+        "ACTIVE_LABEL": "Activa",
+        "CANCEL": "Cancelar",
+        "SAVE": "Guardar",
+        "CREATE": "Crear",
+        "CREATE_SUCCESS": "Notificación creada",
+        "EDIT_SUCCESS": "Notificación actualizada",
+        "ERROR": "No se pudo guardar la notificación"
+      }
+    }
+  }
+}

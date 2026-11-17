@@ -588,6 +588,48 @@ const menuItems = computed(() => {
       ],
     },
     {
+      name: 'Calendario',
+      label: t('SIDEBAR.CALENDARIO.TITLE'),
+      icon: 'i-lucide-calendar-days',
+      children: [
+        {
+          name: 'Agenda',
+          label: t('SIDEBAR.CALENDARIO.AGENDA'),
+          to: accountScopedRoute('calendario_agenda_index'),
+        },
+        {
+          name: 'Calendar',
+          label: t('SIDEBAR.CALENDARIO.CALENDAR'),
+          to: accountScopedRoute('calendario_calendar_index'),
+        },
+        {
+          name: 'Schedules',
+          label: t('SIDEBAR.CALENDARIO.SCHEDULES'),
+          to: accountScopedRoute('calendario_schedules_index'),
+        },
+        {
+          name: 'Professionals',
+          label: t('SIDEBAR.CALENDARIO.PROFESSIONALS'),
+          to: accountScopedRoute('calendario_professionals_index'),
+        },
+        {
+          name: 'Services',
+          label: t('SIDEBAR.CALENDARIO.SERVICES'),
+          to: accountScopedRoute('calendario_services_index'),
+        },
+        {
+          name: 'Payers',
+          label: t('SIDEBAR.CALENDARIO.PAYERS'),
+          to: accountScopedRoute('calendario_payers_index'),
+        },
+        {
+          name: 'Stats',
+          label: t('SIDEBAR.CALENDARIO.STATS'),
+          to: accountScopedRoute('calendario_stats_index'),
+        },
+      ],
+    },
+    {
       name: 'Portals',
       label: t('SIDEBAR.HELP_CENTER.TITLE'),
       icon: 'i-lucide-library-big',

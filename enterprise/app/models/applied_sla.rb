@@ -3,6 +3,7 @@
 # Table name: applied_slas
 #
 #  id              :bigint           not null, primary key
+#  completed_at    :datetime
 #  sla_status      :integer          default("active")
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null

@@ -125,6 +125,30 @@ Rails.application.routes.draw do
             end
           end
           resources :campaigns, only: [:index, :create, :show, :update, :destroy]
+          namespace :calendario do
+            resources :specialties, only: [:index, :create, :update, :destroy]
+            resources :professionals, only: [:index, :create, :update, :destroy] do
+              resources :availabilities, only: [:index, :create, :destroy],
+                                          controller: 'professional_availabilities'
+            end
+            resources :services, only: [:index, :create, :update, :destroy] do
+              resources :prices, only: [:index, :create, :update, :destroy], controller: 'service_prices'
+            end
+            resources :payers, only: [:index, :create, :update, :destroy]
+            resources :contact_credits, only: [:index]
+            resources :open_days, only: [:index, :create, :destroy]
+            resources :waitlist_entries, only: [:index, :create, :update, :destroy]
+            resources :appointments, only: [:index, :show, :create, :update] do
+              collection do
+                get :agenda
+              end
+            end
+            resource :stats, only: [:show], controller: 'stats'
+            resources :appointment_event_triggers, only: [:index, :create, :update, :destroy]
+          end
+          namespace :import do
+            resources :whatsapp_chat_batches, only: [:index, :create]
+          end
           resources :dashboard_apps, only: [:index, :show, :create, :update, :destroy]
           namespace :channels do
             resource :twilio_channel, only: [:create]

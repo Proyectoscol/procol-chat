@@ -17,6 +17,7 @@ import ComposeConversation from 'dashboard/components-next/NewConversation/Compo
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import VoiceCallButton from 'dashboard/components-next/Contacts/VoiceCallButton.vue';
 import InlineInput from 'dashboard/components-next/inline-input/InlineInput.vue';
+import AppointmentFormModal from 'dashboard/routes/dashboard/calendario/components/AppointmentFormModal.vue';
 
 export default {
   components: {
@@ -30,6 +31,7 @@ export default {
     ContactDeleteModal,
     VoiceCallButton,
     InlineInput,
+    AppointmentFormModal,
   },
   props: {
     contact: {
@@ -39,6 +41,10 @@ export default {
     showAvatar: {
       type: Boolean,
       default: true,
+    },
+    conversationId: {
+      type: [Number, String],
+      default: null,
     },
   },
   emits: ['panelClose'],
@@ -53,6 +59,7 @@ export default {
       showEditModal: false,
       isEditingName: false,
       editName: '',
+      showAppointmentModal: false,
     };
   },
   computed: {
@@ -108,6 +115,9 @@ export default {
     dynamicTime,
     toggleEditModal() {
       this.showEditModal = !this.showEditModal;
+    },
+    toggleAppointmentModal() {
+      this.showAppointmentModal = !this.showAppointmentModal;
     },
     findCountryFlag(countryCode, cityAndCountry) {
       try {
@@ -268,6 +278,13 @@ export default {
             :title="$t('CONTACT_PANEL.IDENTIFIER')"
           />
           <ContactInfoRow
+            v-if="contact.payer_name"
+            :value="contact.payer_name"
+            icon="shield-check"
+            emoji="🏥"
+            :title="$t('CONTACT_PANEL.PAYER')"
+          />
+          <ContactInfoRow
             :value="additionalAttributes.company_name"
             icon="building-bank"
             emoji="🏢"
@@ -323,6 +340,14 @@ export default {
           sm
           @click="toggleEditModal"
         />
+        <NextButton
+          v-tooltip.top-end="$t('CONTACT_PANEL.NEW_APPOINTMENT')"
+          icon="i-lucide-calendar-plus"
+          slate
+          faded
+          sm
+          @click="toggleAppointmentModal"
+        />
         <ContactMergeModal :primary-contact="contact">
           <template #trigger>
             <NextButton
@@ -358,6 +383,16 @@ export default {
         :contact="contact"
         @cancel="toggleEditModal"
       />
+      <woot-modal
+        v-model:show="showAppointmentModal"
+        :on-close="toggleAppointmentModal"
+      >
+        <AppointmentFormModal
+          :preset-contact="contact"
+          :preset-conversation-id="conversationId"
+          @close="toggleAppointmentModal"
+        />
+      </woot-modal>
     </div>
   </div>
 </template>

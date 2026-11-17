@@ -4,6 +4,8 @@
     "EMAIL_ADDRESS": "Dirección de correo",
     "PHONE_NUMBER": "Número de teléfono",
     "IDENTIFIER": "Idenrificador",
+    "PAYER": "Entidad / EPS",
+    "NEW_APPOINTMENT": "Agendar cita",
     "COPY_SUCCESSFUL": "Copiado al portapapeles satisfactoriamente",
     "COMPANY": "Empresa",
     "LOCATION": "Ubicación",
@@ -107,6 +109,21 @@
         "ERROR": "El número telefónico debe estar vacío o en formato E.164",
         "DIAL_CODE_ERROR": "Por favor, seleccione un código de marcado de la lista",
         "DUPLICATE": "Este número de teléfono está en uso para otro contacto."
+      },
+      "SECONDARY_PHONE_NUMBER": {
+        "LABEL": "Teléfono secundario",
+        "PLACEHOLDER": "Solo para llamadas de respaldo (mamá, cónyuge, hijo...)"
+      },
+      "DOCUMENT_TYPE": {
+        "LABEL": "Tipo de documento"
+      },
+      "DOCUMENT_NUMBER": {
+        "LABEL": "Número de documento",
+        "PLACEHOLDER": "Escriba el número de documento"
+      },
+      "PAYER": {
+        "LABEL": "Entidad / EPS",
+        "PLACEHOLDER": "Sin entidad asignada"
       },
       "LOCATION": {
         "PLACEHOLDER": "Escriba la ubicación del contacto",
@@ -508,6 +525,7 @@
         "ATTRIBUTES": "Atributos",
         "HISTORY": "Historial",
         "NOTES": "Notas",
+        "APPOINTMENTS": "Citas",
         "MERGE": "Combinar"
       },
       "HISTORY": {

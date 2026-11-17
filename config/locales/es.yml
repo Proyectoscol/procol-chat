@@ -18,6 +18,12 @@
 #available at https://guides.rubyonrails.org/i18n.html.
 es:
   hello: 'Hola mundo'
+  calendario:
+    appointments:
+      overlapping_appointment: 'Ya existe una cita para esta profesional a esta hora'
+      outside_availability: 'Este horario está fuera de la disponibilidad configurada de la profesional'
+      contact_conflict: '%{contact} ya tiene una cita a esta hora'
+      has_warnings: 'Esta cita tiene advertencias que necesitan confirmación'
   inbox:
     reauthorization:
       success: 'Channel reauthorized successfully'

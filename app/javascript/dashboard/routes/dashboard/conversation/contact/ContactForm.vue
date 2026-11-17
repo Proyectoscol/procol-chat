@@ -12,6 +12,7 @@ import parsePhoneNumber from 'libphonenumber-js';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import Avatar from 'next/avatar/Avatar.vue';
 import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
+import calendarioPayersAPI from 'dashboard/api/calendarioPayers';
 
 export default {
   components: {
@@ -46,6 +47,14 @@ export default {
       name: '',
       phoneNumber: '',
       activeDialCode: '',
+      // Documento, telefono secundario y EPS son datos del paciente (no de
+      // la cita) -- se editan aqui, en el formulario general de contacto,
+      // para que sean consistentes sin importar desde donde se editen.
+      documentType: 'cc',
+      identifier: '',
+      secondaryPhoneNumber: '',
+      payerId: '',
+      payers: [],
       avatarFile: null,
       avatarUrl: '',
       country: {
@@ -83,6 +92,43 @@ export default {
     bio: {},
   },
   computed: {
+    documentTypeOptions() {
+      return [
+        {
+          value: 'cc',
+          label: this.$t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.CC'),
+        },
+        {
+          value: 'ti',
+          label: this.$t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.TI'),
+        },
+        {
+          value: 'ce',
+          label: this.$t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.CE'),
+        },
+        {
+          value: 'pa',
+          label: this.$t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.PA'),
+        },
+        {
+          value: 'rc',
+          label: this.$t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.RC'),
+        },
+        {
+          value: 'pep',
+          label: this.$t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.PEP'),
+        },
+        {
+          value: 'ppt',
+          label: this.$t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.PPT'),
+        },
+      ];
+    },
+    payerOptions() {
+      return [...this.payers]
+        .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+        .map(payer => ({ value: payer.id, label: payer.name }));
+    },
     parsePhoneNumber() {
       return parsePhoneNumber(this.phoneNumber);
     },
@@ -121,9 +167,11 @@ export default {
       this.setContactObject();
     },
   },
-  mounted() {
+  async mounted() {
     this.setContactObject();
     this.setDialCode();
+    const response = await calendarioPayersAPI.get();
+    this.payers = response.data;
   },
   methods: {
     onCancel() {
@@ -164,6 +212,10 @@ export default {
       this.name = name || '';
       this.email = emailAddress || '';
       this.phoneNumber = phoneNumber || '';
+      this.documentType = this.contact.document_type || 'cc';
+      this.identifier = this.contact.identifier || '';
+      this.secondaryPhoneNumber = this.contact.secondary_phone_number || '';
+      this.payerId = this.contact.payer_id || '';
       this.companyName = additionalAttributes.company_name || '';
       this.country = {
         id: additionalAttributes.country_code || '',
@@ -201,6 +253,10 @@ export default {
         name: this.name,
         email: this.email,
         phone_number: this.setPhoneNumber,
+        document_type: this.documentType,
+        identifier: this.identifier,
+        secondary_phone_number: this.secondaryPhoneNumber,
+        payer_id: this.payerId || null,
         additional_attributes: {
           ...this.contact.additional_attributes,
           description: this.description,
@@ -368,6 +424,49 @@ export default {
           {{ $t('CONTACT_FORM.FORM.PHONE_NUMBER.HELP') }}
         </div>
       </div>
+    </div>
+    <woot-input
+      v-model="secondaryPhoneNumber"
+      class="w-full"
+      :label="$t('CONTACT_FORM.FORM.SECONDARY_PHONE_NUMBER.LABEL')"
+      :placeholder="$t('CONTACT_FORM.FORM.SECONDARY_PHONE_NUMBER.PLACEHOLDER')"
+    />
+    <div class="flex gap-2 w-full">
+      <label class="w-1/3">
+        {{ $t('CONTACT_FORM.FORM.DOCUMENT_TYPE.LABEL') }}
+        <select v-model="documentType" class="mb-4">
+          <option
+            v-for="option in documentTypeOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
+      <woot-input
+        v-model="identifier"
+        class="w-2/3"
+        :label="$t('CONTACT_FORM.FORM.DOCUMENT_NUMBER.LABEL')"
+        :placeholder="$t('CONTACT_FORM.FORM.DOCUMENT_NUMBER.PLACEHOLDER')"
+      />
+    </div>
+    <div class="w-full mb-4">
+      <label>
+        {{ $t('CONTACT_FORM.FORM.PAYER.LABEL') }}
+      </label>
+      <select v-model="payerId" class="mb-0">
+        <option value="">
+          {{ $t('CONTACT_FORM.FORM.PAYER.PLACEHOLDER') }}
+        </option>
+        <option
+          v-for="option in payerOptions"
+          :key="option.value"
+          :value="option.value"
+        >
+          {{ option.label }}
+        </option>
+      </select>
     </div>
     <woot-input
       v-model="companyName"

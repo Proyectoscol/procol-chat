@@ -4,6 +4,8 @@
     "EMAIL_ADDRESS": "Email Address",
     "PHONE_NUMBER": "Phone number",
     "IDENTIFIER": "Identifier",
+    "PAYER": "Insurer / EPS",
+    "NEW_APPOINTMENT": "Book appointment",
     "COPY_SUCCESSFUL": "Copied to clipboard successfully",
     "COMPANY": "Company",
     "LOCATION": "Location",
@@ -109,6 +111,21 @@
         "ERROR": "Phone number should be either empty or of E.164 format",
         "DIAL_CODE_ERROR": "Please select a dial code from the list",
         "DUPLICATE": "This phone number is in use for another contact."
+      },
+      "SECONDARY_PHONE_NUMBER": {
+        "LABEL": "Secondary phone",
+        "PLACEHOLDER": "Backup calls only (mom, spouse, child...)"
+      },
+      "DOCUMENT_TYPE": {
+        "LABEL": "Document type"
+      },
+      "DOCUMENT_NUMBER": {
+        "LABEL": "Document number",
+        "PLACEHOLDER": "Enter the document number"
+      },
+      "PAYER": {
+        "LABEL": "Insurer / EPS",
+        "PLACEHOLDER": "No insurer assigned"
       },
       "LOCATION": {
         "PLACEHOLDER": "Enter the location of the contact",
@@ -511,6 +528,7 @@
         "ATTRIBUTES": "Attributes",
         "HISTORY": "History",
         "NOTES": "Notes",
+        "APPOINTMENTS": "Appointments",
         "MERGE": "Merge"
       },
       "HISTORY": {

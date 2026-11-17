@@ -11,6 +11,15 @@ import auditlogs from './modules/auditlogs';
 import auth from './modules/auth';
 import automations from './modules/automations';
 import bulkActions from './modules/bulkActions';
+import calendarioAppointmentEventTriggers from './modules/calendarioAppointmentEventTriggers';
+import calendarioAppointments from './modules/calendarioAppointments';
+import calendarioOpenDays from './modules/calendarioOpenDays';
+import calendarioPayers from './modules/calendarioPayers';
+import calendarioProfessionalAvailabilities from './modules/calendarioProfessionalAvailabilities';
+import calendarioProfessionals from './modules/calendarioProfessionals';
+import calendarioServices from './modules/calendarioServices';
+import calendarioSpecialties from './modules/calendarioSpecialties';
+import calendarioWaitlistEntries from './modules/calendarioWaitlistEntries';
 import campaigns from './modules/campaigns';
 import cannedResponse from './modules/cannedResponse';
 import categories from './modules/helpCenterCategories';
@@ -36,6 +45,7 @@ import globalConfig from 'shared/store/globalConfig';
 import inboxAssignableAgents from './modules/inboxAssignableAgents';
 import inboxes from './modules/inboxes';
 import inboxMembers from './modules/inboxMembers';
+import importWhatsappChatBatches from './modules/importWhatsappChatBatches';
 import integrations from './modules/integrations';
 import labels from './modules/labels';
 import macros from './modules/macros';
@@ -75,6 +85,15 @@ export default createStore({
     auth,
     automations,
     bulkActions,
+    calendarioAppointmentEventTriggers,
+    calendarioAppointments,
+    calendarioOpenDays,
+    calendarioPayers,
+    calendarioProfessionalAvailabilities,
+    calendarioProfessionals,
+    calendarioServices,
+    calendarioSpecialties,
+    calendarioWaitlistEntries,
     campaigns,
     cannedResponse,
     categories,
@@ -100,6 +119,7 @@ export default createStore({
     inboxAssignableAgents,
     inboxes,
     inboxMembers,
+    importWhatsappChatBatches,
     integrations,
     labels,
     macros,

@@ -13,6 +13,7 @@ import ContactNotes from 'dashboard/components-next/Contacts/ContactsSidebar/Con
 import ContactHistory from 'dashboard/components-next/Contacts/ContactsSidebar/ContactHistory.vue';
 import ContactMerge from 'dashboard/components-next/Contacts/ContactsSidebar/ContactMerge.vue';
 import ContactCustomAttributes from 'dashboard/components-next/Contacts/ContactsSidebar/ContactCustomAttributes.vue';
+import ContactAppointments from 'dashboard/components-next/Contacts/ContactsSidebar/ContactAppointments.vue';
 
 const store = useStore();
 const route = useRoute();
@@ -40,6 +41,7 @@ const CONTACT_TABS_OPTIONS = [
   { key: 'ATTRIBUTES', value: 'attributes' },
   { key: 'HISTORY', value: 'history' },
   { key: 'NOTES', value: 'notes' },
+  { key: 'APPOINTMENTS', value: 'appointments' },
   { key: 'MERGE', value: 'merge' },
 ];
 
@@ -171,6 +173,7 @@ onMounted(() => {
           />
           <ContactNotes v-if="activeTab === 'notes'" />
           <ContactHistory v-if="activeTab === 'history'" />
+          <ContactAppointments v-if="activeTab === 'appointments'" />
           <ContactMerge
             v-if="activeTab === 'merge'"
             ref="contactMergeRef"

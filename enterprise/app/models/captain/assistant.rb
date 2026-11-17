@@ -4,7 +4,7 @@
 #
 #  id                  :bigint           not null, primary key
 #  config              :jsonb            not null
-#  description         :string
+#  description         :text
 #  guardrails          :jsonb
 #  name                :string           not null
 #  response_guidelines :jsonb

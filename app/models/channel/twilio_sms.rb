@@ -12,6 +12,7 @@
 #  medium                         :integer          default("sms")
 #  messaging_service_sid          :string
 #  phone_number                   :string
+#  provider_config                :jsonb
 #  twiml_app_sid                  :string
 #  voice_enabled                  :boolean          default(FALSE), not null
 #  created_at                     :datetime         not null

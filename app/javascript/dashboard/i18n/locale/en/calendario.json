@@ -1,0 +1,554 @@
+{
+  "CALENDARIO": {
+    "TABS": {
+      "AGENDA": "Today's Agenda",
+      "CALENDAR": "Calendar view",
+      "SCHEDULES": "Schedules",
+      "SPECIALTIES": "Specialties",
+      "PROFESSIONALS": "Professionals",
+      "SERVICES": "Services",
+      "PAYERS": "Insurers",
+      "STATS": "Stats",
+      "TRIGGERS": "Notifications"
+    },
+    "CONTACT_APPOINTMENTS": {
+      "EMPTY": "No appointments for this contact yet.",
+      "AVAILABLE_CREDITS": "{count} free control(s) available from a prior procedure"
+    },
+    "STATS": {
+      "DESCRIPTION": "Appointment volume and outcomes over the selected range.",
+      "DESCRIPTION_CREATED": "Appointment volume by the day it was created (booked) -- useful for audits, regardless of what day each one was scheduled for.",
+      "GROUP_BY": {
+        "SCHEDULED": "By scheduled date",
+        "CREATED": "By creation date"
+      },
+      "AVG_PER_DAY": "Avg. appointments / day",
+      "ATTENDED_PCT": "Attended",
+      "NO_SHOW_PCT": "No-show",
+      "CANCELLED_PCT": "Cancelled",
+      "CHART_LABEL": "Appointments",
+      "CHART_LABEL_CREATED": "Appointments created",
+      "CREATED_LIST_TITLE": "Appointments created in this range",
+      "CREATED_LIST_EMPTY": "No appointment was created in this range.",
+      "SCHEDULED_FOR": "for {when}",
+      "CREATED_BY": "created by {name}",
+      "FETCH_ERROR": "Could not load the stats.",
+      "EMPTY": "No appointments in this range."
+    },
+    "AGENDA": {
+      "DESCRIPTION": "Today's appointments.",
+      "EMPTY": "No appointments scheduled for today.",
+      "FETCH_ERROR": "Could not load today's agenda.",
+      "FILTERS": {
+        "SPECIALTY_LABEL": "Specialty",
+        "PROFESSIONAL_LABEL": "Professional"
+      },
+      "TABLE": {
+        "TIME": "Time",
+        "CONTACT": "Contact",
+        "SERVICE": "Service",
+        "PROFESSIONAL": "Professional",
+        "STATUS": "Status",
+        "ACTIONS": "Actions"
+      }
+    },
+    "CALENDAR": {
+      "FETCH_ERROR": "Could not load the calendar.",
+      "FILTERS": {
+        "SPECIALTY_LABEL": "Specialty",
+        "PROFESSIONAL_LABEL": "Professional",
+        "SERVICE_LABEL": "Service",
+        "PAYER_LABEL": "Insurer"
+      }
+    },
+    "APPOINTMENTS": {
+      "DESCRIPTION": "Upcoming appointments across all professionals.",
+      "ADD_BUTTON": "New appointment",
+      "EMPTY": "No upcoming appointments.",
+      "FETCH_ERROR": "Could not load appointments.",
+      "UPDATE_ERROR": "Could not update the appointment.",
+      "TABLE": {
+        "WHEN": "When",
+        "CONTACT": "Contact",
+        "SERVICE": "Service",
+        "PROFESSIONAL": "Professional",
+        "STATUS": "Status",
+        "ACTIONS": "Actions"
+      },
+      "STATUS": {
+        "PENDING": "Pending",
+        "CONFIRMED": "Confirmed",
+        "ATTENDED": "Attended",
+        "NO_SHOW": "No-show",
+        "CANCELLED": "Cancelled"
+      },
+      "ACTIONS": {
+        "PENDING": "Pending",
+        "CONFIRM": "Confirm",
+        "ATTENDED": "Attended",
+        "NO_SHOW": "No-show",
+        "CANCEL": "Cancel",
+        "RESCHEDULE": "Reschedule"
+      },
+      "DETAIL": {
+        "TITLE": "Appointment details",
+        "CONTACT": "Contact",
+        "SERVICE": "Service",
+        "PROFESSIONAL": "Professional",
+        "WHEN": "Date and time",
+        "PAYER": "Insurer / EPS",
+        "NO_PAYER": "Self-pay / no insurer",
+        "PRICE": "Price",
+        "STATUS": "Status",
+        "CREATED_AT": "Created",
+        "CREATED_BY": "by {name}",
+        "NOTES": "Notes",
+        "OPEN_CONVERSATION": "Open conversation",
+        "ACTIONS_TITLE": "Actions",
+        "HISTORY_TITLE": "History",
+        "FETCH_ERROR": "Could not load the appointment details.",
+        "HISTORY": {
+          "CREATED": "Appointment created",
+          "RESCHEDULED": "Rescheduled from {from} to {to}",
+          "STATUS_CHANGED": "Status changed from {from} to {to}"
+        }
+      },
+      "RESCHEDULE": {
+        "TITLE": "Reschedule appointment",
+        "SUBMIT": "Reschedule",
+        "SUCCESS": "Appointment rescheduled",
+        "ERROR": "Could not reschedule the appointment",
+        "COUNT_ONE": "Rescheduled once",
+        "COUNT_OTHER": "Rescheduled {count} times",
+        "NOTES_LABEL": "Notes (required)",
+        "NOTES_PLACEHOLDER": "Why is this appointment being rescheduled?"
+      },
+      "CANCEL_APPOINTMENT": {
+        "TITLE": "Cancel appointment",
+        "TYPE_LABEL": "Cancellation type",
+        "TYPE_DEFINITIVE": "Definitive",
+        "TYPE_DEFINITIVE_HINT": "The patient no longer needs this appointment -- does not return to the waitlist.",
+        "TYPE_TEMPORARY": "Temporary",
+        "TYPE_TEMPORARY_HINT": "E.g. they're sick and don't know when they can attend -- goes back to the waitlist with no date.",
+        "NOTES_LABEL": "Cancellation reason (required)",
+        "NOTES_PLACEHOLDER": "Why is this appointment being cancelled?",
+        "SUBMIT": "Cancel appointment",
+        "SUCCESS": "Appointment cancelled",
+        "ERROR": "Could not cancel the appointment"
+      },
+      "FORM": {
+        "CREATE_TITLE": "New appointment",
+        "CONTACT_LABEL": "Contact",
+        "CONTACT_PLACEHOLDER": "Search by name, email or phone",
+        "SERVICE_LABEL": "Service",
+        "SERVICE_PLACEHOLDER": "Select a service",
+        "PROFESSIONAL_LABEL": "Professional",
+        "PROFESSIONAL_PLACEHOLDER": "Select a professional",
+        "PAYER_LABEL": "Insurer / EPS",
+        "CREATE_CONTACT_LINK": "Can't find \"{query}\" -- create new contact",
+        "CREATE_CONTACT_TITLE": "New contact",
+        "CREATE_CONTACT_SUBMIT": "Create and continue",
+        "CREATE_CONTACT_ERROR": "Could not create the contact",
+        "CONTACT_DATA_INCOMPLETE": "No document or insurer on file",
+        "NEW_CONTACT_NAME": "Name",
+        "NEW_CONTACT_PHONE": "Phone",
+        "SECONDARY_PHONE_LABEL": "Secondary phone",
+        "SECONDARY_PHONE_PLACEHOLDER": "Backup calls only (mom, spouse, child...)",
+        "DOCUMENT_TYPE_LABEL": "Document type",
+        "DOCUMENT_NUMBER_LABEL": "Document number",
+        "DOCUMENT_TYPES": {
+          "CC": "Citizenship ID",
+          "TI": "ID card (minor)",
+          "CE": "Foreigner ID",
+          "PA": "Passport",
+          "RC": "Civil registry",
+          "PEP": "Special permit",
+          "PPT": "Temporary protection permit"
+        },
+        "STARTS_AT_LABEL": "Date and time",
+        "NOTES_LABEL": "Notes",
+        "CANCEL": "Cancel",
+        "CREATE": "Create appointment",
+        "CONFIRM_ANYWAY": "Yes, create anyway",
+        "OVERLAP_WARNING": "{contact} already has an appointment at {when} with this professional.",
+        "CONTACT_CONFLICT_WARNING": "{contact} already has an appointment at {when}.",
+        "OUTSIDE_AVAILABILITY_WARNING": "This time falls outside the professional's configured availability.",
+        "OPEN_DAY_MISSING_WARNING": "There is no open schedule yet on {date} in the {window} for this professional. If you continue, it will be opened automatically.",
+        "OPEN_DAY_HINT": "Marked days already have an open schedule for this professional.",
+        "SEND_TO_WAITLIST_BUTTON": "Add to waitlist instead",
+        "CREATE_SUCCESS": "Appointment created",
+        "ERROR": "Could not create the appointment"
+      }
+    },
+    "SCHEDULES": {
+      "DESCRIPTION": "Agenda by professional -- replaces the copy-pasted Excel blocks.",
+      "EMPTY": "This professional has no open agenda yet.",
+      "EMPTY_WITH_WAITLIST": "But there are {count} people on the waiting list for her.",
+      "EMPTY_OPEN_DAY": "Agenda open, no appointments yet.",
+      "HIDDEN_BY_FILTERS": "There are appointments this day, but none match the filters.",
+      "FETCH_ERROR": "Could not load the schedule.",
+      "ADD_APPOINTMENT_BUTTON": "Add appointment",
+      "BOOK_HERE_BUTTON": "Book here for {name}",
+      "EXPAND_BUTTON": "Expand",
+      "COLLAPSE_BUTTON": "Collapse",
+      "LOAD_MORE": "See earlier dates",
+      "SHOW_RATE_LABEL": "Attendance (30 days)",
+      "FILTERS": {
+        "SPECIALTY_LABEL": "Specialty",
+        "SPECIALTY_ALL": "All specialties",
+        "SERVICE_LABEL": "Service",
+        "SERVICE_ALL": "All services",
+        "PAYER_LABEL": "Insurer"
+      },
+      "TIME_WINDOW": {
+        "MORNING": "Morning",
+        "AFTERNOON": "Afternoon",
+        "FULL_DAY": "Full day"
+      },
+      "OPEN_MULTIPLE": {
+        "BUTTON": "Open agenda",
+        "RANGE_LABEL": "Date range",
+        "WINDOW_LABEL": "Time window",
+        "WINDOW_MORNING": "Morning",
+        "WINDOW_AFTERNOON": "Afternoon",
+        "WINDOW_FULL_DAY": "Full day",
+        "SUBMIT": "Apply",
+        "SUMMARY": "{opened} date(s) opened, {skipped} already open"
+      },
+      "CSV": {
+        "BUTTON": "Export CSV",
+        "DATE": "Date",
+        "TIME": "Time",
+        "CONTACT": "Patient",
+        "DOCUMENT": "Document",
+        "PHONE": "Phone",
+        "SERVICE": "Service",
+        "PAYER": "Insurer",
+        "STATUS": "Status",
+        "NOTES": "Notes"
+      }
+    },
+    "WAITLIST": {
+      "TITLE": "Waitlist",
+      "OPEN_BUTTON": "Waitlist",
+      "EMPTY": "No one on the waitlist.",
+      "BOOK_BUTTON": "Book",
+      "ADD_BUTTON": "Add",
+      "ORIGIN_CANCELLATION_BADGE": "From cancellation",
+      "ORIGIN_MANUAL_BADGE": "New",
+      "DAYS_WAITING_ONE": "{count} day waiting",
+      "DAYS_WAITING_OTHER": "{count} days waiting",
+      "FILTERS": {
+        "ORIGIN_LABEL": "Origin",
+        "ORIGIN_ALL": "All",
+        "ORIGIN_MANUAL": "New",
+        "ORIGIN_CANCELLATION": "From cancellation",
+        "SERVICE_LABEL": "Service",
+        "SERVICE_ALL": "All",
+        "SORT_LABEL": "Sort by",
+        "SORT_OLDEST": "Oldest first",
+        "SORT_NEWEST": "Newest first",
+        "SORT_SERVICE": "Service (A-Z)"
+      },
+      "DELETE_ERROR": "Could not remove from the waitlist",
+      "DELETE_CONFIRM": {
+        "TITLE": "Remove from the waitlist",
+        "MESSAGE": "This contact will be removed from the waitlist.",
+        "CONFIRM": "Remove",
+        "CANCEL": "Cancel"
+      },
+      "ADD_FORM": {
+        "CREATE_TITLE": "New waitlist entry",
+        "EDIT_TITLE": "Edit waitlist entry",
+        "CONTACT_LABEL": "Contact",
+        "CONTACT_PLACEHOLDER": "Search by name, email or phone",
+        "SERVICE_LABEL": "Service",
+        "SERVICE_PLACEHOLDER": "Select a service",
+        "PROFESSIONAL_LABEL": "Professional",
+        "PROFESSIONAL_PLACEHOLDER": "Select a professional",
+        "NOTES_LABEL": "Notes",
+        "SUBMIT": "Add to the waitlist",
+        "SAVE": "Save changes",
+        "SUCCESS": "Contact added to the waitlist",
+        "EDIT_SUCCESS": "Entry updated",
+        "ERROR": "Could not add to the waitlist"
+      },
+      "QUICK_BOOK": {
+        "ARMED_BANNER": "Booking {name} -- pick a day",
+        "TITLE": "Book {name}",
+        "TIME_LABEL": "Time",
+        "CANCEL": "Cancel",
+        "CONFIRM": "Confirm",
+        "CONFIRM_ANYWAY": "Confirm anyway",
+        "ERROR": "Could not book the appointment"
+      }
+    },
+    "PROFESSIONALS": {
+      "DESCRIPTION": "People who provide services and can be booked for appointments.",
+      "ADD_BUTTON": "Add professional",
+      "EMPTY": "No professionals yet.",
+      "FETCH_ERROR": "Could not load professionals.",
+      "DELETE_SUCCESS": "Professional deleted",
+      "DELETE_ERROR": "Could not delete the professional",
+      "TABLE": {
+        "NAME": "Name",
+        "SPECIALTY": "Specialty",
+        "SERVICES": "Services",
+        "STATUS": "Status",
+        "ACTIONS": "Actions"
+      },
+      "STATUS": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Delete professional",
+        "MESSAGE": "This professional will be removed. Existing appointments are kept.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Add professional",
+        "EDIT_TITLE": "Edit professional",
+        "AGENT_LABEL": "Link to an existing agent",
+        "AGENT_HINT": "Optional. A professional without a linked agent can still be booked, without needing a Chatwoot login.",
+        "NO_AGENT": "No linked agent",
+        "NAME_LABEL": "Name",
+        "NAME_PLACEHOLDER": "e.g. Dr. Jane Doe",
+        "SPECIALTY_LABEL": "Specialty",
+        "SPECIALTY_PLACEHOLDER": "Select a specialty",
+        "ACTIVE_LABEL": "Active",
+        "ACTIVE_HINT": "Uncheck this to archive this professional: they stop showing up in Schedules, Today's Agenda, Calendar view, and in the pickers for new appointments or waitlist entries. Their existing appointments are NOT deleted or changed.",
+        "CANCEL": "Cancel",
+        "SAVE": "Save",
+        "CREATE": "Create",
+        "CREATE_SUCCESS": "Professional created",
+        "EDIT_SUCCESS": "Professional updated",
+        "ERROR": "Could not save the professional"
+      },
+      "AVAILABILITY": {
+        "BUTTON": "Manage availability",
+        "TITLE": "Availability for {name}",
+        "DESCRIPTION": "Appointments can only be booked inside these windows. With no windows configured, this professional can be booked any time.",
+        "EMPTY": "No availability windows configured yet.",
+        "WEEKDAYS_LABEL": "Repeats on",
+        "WEEKDAYS_SHORT": {
+          "SUNDAY": "Sun",
+          "MONDAY": "Mon",
+          "TUESDAY": "Tue",
+          "WEDNESDAY": "Wed",
+          "THURSDAY": "Thu",
+          "FRIDAY": "Fri",
+          "SATURDAY": "Sat"
+        },
+        "START_TIME_LABEL": "From",
+        "END_TIME_LABEL": "To",
+        "ADD_BUTTON": "Add window",
+        "CLOSE": "Close",
+        "CREATE_SUCCESS": "Availability window added",
+        "DELETE_ERROR": "Could not remove the availability window",
+        "ERROR": "Could not add the availability window"
+      }
+    },
+    "SERVICES": {
+      "DESCRIPTION": "Services that can be booked, and who provides each one.",
+      "ADD_BUTTON": "Add service",
+      "EMPTY": "No services yet.",
+      "FETCH_ERROR": "Could not load services.",
+      "DELETE_SUCCESS": "Service deleted",
+      "DELETE_ERROR": "Could not delete the service",
+      "TABLE": {
+        "NAME": "Name",
+        "DURATION": "Duration",
+        "DURATION_MINUTES": "{count} min",
+        "KIND": "Kind",
+        "KIND_VALUES": {
+          "CONSULTATION": "Consultation",
+          "CONTROL": "Control",
+          "PROCEDURE": "Procedure"
+        },
+        "PRICE": "Base price",
+        "PROFESSIONALS": "Professionals",
+        "STATUS": "Status",
+        "ACTIONS": "Actions"
+      },
+      "STATUS": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Delete service",
+        "MESSAGE": "This service will be removed. Existing appointments are kept.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Add service",
+        "EDIT_TITLE": "Edit service",
+        "NAME_LABEL": "Name",
+        "NAME_PLACEHOLDER": "e.g. General check-up",
+        "DURATION_LABEL": "Duration (minutes)",
+        "COLOR_LABEL": "Color",
+        "KIND_LABEL": "Kind",
+        "KIND_OPTIONS": {
+          "CONSULTATION": "Consultation",
+          "CONTROL": "Control (requires a prior consultation or procedure)",
+          "PROCEDURE": "Procedure"
+        },
+        "BASE_PRICE_LABEL": "Base price (COP)",
+        "INCLUDED_SESSIONS_LABEL": "Included controls (procedures only)",
+        "PROFESSIONALS_LABEL": "Professionals who offer this service",
+        "ACTIVE_LABEL": "Active",
+        "CANCEL": "Cancel",
+        "SAVE": "Save",
+        "CREATE": "Create",
+        "CREATE_SUCCESS": "Service created",
+        "EDIT_SUCCESS": "Service updated",
+        "ERROR": "Could not save the service"
+      },
+      "MANAGE_PAYERS_LINK": "Manage insurers"
+    },
+    "PAYERS": {
+      "DESCRIPTION": "Insurers, policies and plans that can pay for an appointment.",
+      "ADD_BUTTON": "Add insurer",
+      "EMPTY": "No insurers yet.",
+      "FETCH_ERROR": "Could not load the insurers.",
+      "DELETE_SUCCESS": "Insurer deleted",
+      "DELETE_ERROR": "Could not delete the insurer",
+      "TABLE": {
+        "NAME": "Name",
+        "KIND": "Kind",
+        "STATUS": "Status",
+        "ACTIONS": "Actions"
+      },
+      "KIND_VALUES": {
+        "PARTICULAR": "Self-pay",
+        "EPS": "EPS",
+        "PLAN_COMPLEMENTARIO": "Supplementary plan",
+        "PREPAGADA": "Prepaid healthcare",
+        "POLIZA": "Policy"
+      },
+      "STATUS": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Delete insurer",
+        "MESSAGE": "This insurer will be removed. Existing appointments are left without an insurer.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Add insurer",
+        "EDIT_TITLE": "Edit insurer",
+        "NAME_LABEL": "Name",
+        "NAME_PLACEHOLDER": "e.g. New Insurer",
+        "KIND_LABEL": "Kind",
+        "ACTIVE_LABEL": "Active",
+        "CANCEL": "Cancel",
+        "SAVE": "Save",
+        "CREATE": "Create",
+        "CREATE_SUCCESS": "Insurer created",
+        "EDIT_SUCCESS": "Insurer updated",
+        "ERROR": "Could not save the insurer"
+      }
+    },
+    "SPECIALTIES": {
+      "DESCRIPTION": "Specialties for the practice -- every professional is linked to one.",
+      "ADD_BUTTON": "Add specialty",
+      "EMPTY": "No specialties yet.",
+      "FETCH_ERROR": "Could not load the specialties.",
+      "DELETE_SUCCESS": "Specialty deleted",
+      "DELETE_ERROR": "Could not delete the specialty",
+      "TABLE": {
+        "NAME": "Name",
+        "STATUS": "Status",
+        "ACTIONS": "Actions"
+      },
+      "STATUS": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Delete specialty",
+        "MESSAGE": "This specialty will be removed. Existing professionals are left without a specialty.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Add specialty",
+        "EDIT_TITLE": "Edit specialty",
+        "NAME_LABEL": "Name",
+        "NAME_PLACEHOLDER": "e.g. Urology",
+        "ACTIVE_LABEL": "Active",
+        "CANCEL": "Cancel",
+        "SAVE": "Save",
+        "CREATE": "Create",
+        "CREATE_SUCCESS": "Specialty created",
+        "EDIT_SUCCESS": "Specialty updated",
+        "ERROR": "Could not save the specialty"
+      }
+    },
+    "TRIGGERS": {
+      "DESCRIPTION": "Automatic WhatsApp messages when an appointment is created, its status changes, or before it starts.",
+      "ADD_BUTTON": "New notification",
+      "EMPTY": "No notifications configured yet.",
+      "FETCH_ERROR": "Could not load the notifications.",
+      "DELETE_SUCCESS": "Notification deleted",
+      "DELETE_ERROR": "Could not delete the notification",
+      "NO_WHATSAPP_INBOX_WARNING": "This account has no WhatsApp inbox configured -- connect a WhatsApp inbox first to create notifications.",
+      "TABLE": {
+        "KIND": "Sent when",
+        "SERVICE": "Service",
+        "INBOX": "Inbox",
+        "TEMPLATE": "Template",
+        "STATUS": "Status",
+        "ACTIONS": "Actions"
+      },
+      "ALL_SERVICES": "All services",
+      "KIND_VALUES": {
+        "ON_CREATE": "When the appointment is created",
+        "ON_STATUS_CHANGE": "When status changes to \"{status}\"",
+        "BEFORE_START": "{minutes} min before the appointment"
+      },
+      "STATUS": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Delete notification",
+        "MESSAGE": "This notification will be removed. Appointments already created are not affected.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
+      },
+      "FORM": {
+        "CREATE_TITLE": "New notification",
+        "EDIT_TITLE": "Edit notification",
+        "KIND_LABEL": "Sent when",
+        "KIND_OPTIONS": {
+          "ON_CREATE": "The appointment is created (confirmation)",
+          "ON_STATUS_CHANGE": "The appointment status changes",
+          "BEFORE_START": "Before the appointment starts (reminder)"
+        },
+        "TARGET_STATUS_LABEL": "New status",
+        "TARGET_STATUS_PLACEHOLDER": "Select the status",
+        "OFFSET_MINUTES_LABEL": "Minutes before the appointment",
+        "SERVICE_LABEL": "Service",
+        "SERVICE_PLACEHOLDER": "All services",
+        "INBOX_LABEL": "WhatsApp inbox",
+        "INBOX_PLACEHOLDER": "Select an inbox",
+        "TEMPLATE_LABEL": "WhatsApp template",
+        "TEMPLATE_PLACEHOLDER": "Select an approved template",
+        "TEMPLATE_HINT": "You can use appointment variables in the template parameters (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) by writing them inside double curly braces -- they're automatically replaced with each appointment's real data.",
+        "NO_TEMPLATES": "This inbox has no approved templates available.",
+        "ACTIVE_LABEL": "Active",
+        "CANCEL": "Cancel",
+        "SAVE": "Save",
+        "CREATE": "Create",
+        "CREATE_SUCCESS": "Notification created",
+        "EDIT_SUCCESS": "Notification updated",
+        "ERROR": "Could not save the notification"
+      }
+    }
+  }
+}

@@ -21,6 +21,7 @@ import SharedFiles from './SharedFiles.vue';
 import Draggable from 'vuedraggable';
 import MacrosList from './Macros/List.vue';
 import ShopifyOrdersList from 'dashboard/components/widgets/conversation/ShopifyOrdersList.vue';
+import ContactCalendar from 'dashboard/routes/dashboard/conversation/contact/ContactCalendar.vue';
 import SidebarActionsHeader from 'dashboard/components-next/SidebarActionsHeader.vue';
 import LinearIssuesList from 'dashboard/components/widgets/conversation/linear/IssuesList.vue';
 import LinearSetupCTA from 'dashboard/components/widgets/conversation/linear/LinearSetupCTA.vue';
@@ -137,7 +138,11 @@ onMounted(() => {
       :title="$t('CONVERSATION.SIDEBAR.CONTACT')"
       @close="closeContactPanel"
     />
-    <ContactInfo :contact="contact" :channel-type="channelType" />
+    <ContactInfo
+      :contact="contact"
+      :channel-type="channelType"
+      :conversation-id="conversationId"
+    />
     <div class="px-2 pb-8 list-group">
       <Draggable
         :list="conversationSidebarItems"
@@ -296,6 +301,22 @@ onMounted(() => {
               "
             >
               <ContactNotes :contact-id="contactId" />
+            </AccordionItem>
+          </div>
+          <div v-else-if="element.name === 'calendario_appointments'">
+            <AccordionItem
+              v-if="contact.id"
+              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CALENDARIO')"
+              :is-open="isContactSidebarItemOpen('is_calendario_open')"
+              compact
+              @toggle="
+                value => toggleSidebarUIState('is_calendario_open', value)
+              "
+            >
+              <ContactCalendar
+                :contact="contact"
+                :conversation-id="conversationId"
+              />
             </AccordionItem>
           </div>
           <div v-else-if="element.name === 'shared_files'">

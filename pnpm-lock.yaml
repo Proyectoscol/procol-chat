@@ -37,6 +37,27 @@ importers:
       '@formkit/vue':
         specifier: ^1.7.2
         version: 1.7.2(vue@3.5.12(typescript@5.6.2))
+      '@fullcalendar/core':
+        specifier: ^6.1.22
+        version: 6.1.22
+      '@fullcalendar/daygrid':
+        specifier: ^6.1.22
+        version: 6.1.22(@fullcalendar/core@6.1.22)
+      '@fullcalendar/interaction':
+        specifier: ^6.1.22
+        version: 6.1.22(@fullcalendar/core@6.1.22)
+      '@fullcalendar/resource':
+        specifier: 6.1.22
+        version: 6.1.22(@fullcalendar/core@6.1.22)
+      '@fullcalendar/resource-timegrid':
+        specifier: 6.1.22
+        version: 6.1.22(@fullcalendar/core@6.1.22)(@fullcalendar/resource@6.1.22(@fullcalendar/core@6.1.22))
+      '@fullcalendar/timegrid':
+        specifier: ^6.1.22
+        version: 6.1.22(@fullcalendar/core@6.1.22)
+      '@fullcalendar/vue3':
+        specifier: ^6.1.22
+        version: 6.1.22(@fullcalendar/core@6.1.22)(vue@3.5.12(typescript@5.6.2))
       '@hcaptcha/vue3-hcaptcha':
         specifier: ^1.3.0
         version: 1.3.0(vue@3.5.12(typescript@5.6.2))
@@ -910,6 +931,52 @@ packages:
     resolution: {integrity: sha512-jrvXl2ZhS6X5klTbP4N5zc0Dg37AjbAf8SCVoz7mfligVkmwrrF4SN3waMBcH+n9gqT+vrkOYb6bQXdvjUdnCQ==}
     peerDependencies:
       vue: ^3.4.0
+
+  '@fullcalendar/core@6.1.22':
+    resolution: {integrity: sha512-ju5PJUE++zr8XXCGtlXlrodF6doUy9BDfzx+VmE0B+XDBM2A5cUi/aU3M1ANfw/StmKhwqew7Ps7bXMiv/JREg==}
+
+  '@fullcalendar/daygrid@6.1.22':
+    resolution: {integrity: sha512-cpom5+bAvsGG5nX+snsCtpMIyyhAr+QlseD9mhz5Vq7rMBTzx43mSkz6IBvQ3vz5h2idbDmT1cggEn/dzZwt9Q==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+
+  '@fullcalendar/interaction@6.1.22':
+    resolution: {integrity: sha512-r8Njw8aPNFGRwDjVAh9NTh3ZJib5tcUoLi/BM4uYJt5Cs9tDiirmImaqxhx56hclVFX7ktd5CdaMX0+ArSbm5A==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+
+  '@fullcalendar/premium-common@6.1.22':
+    resolution: {integrity: sha512-/Dwdd5ZCTzqIN/z/cqi2Vnvpw68nrRLYUydT/LAikgdEjtCUz/mXtXi4dmSwnqHMfzf83zYnU98uQIq68qVurg==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+
+  '@fullcalendar/resource-daygrid@6.1.22':
+    resolution: {integrity: sha512-xp120eS28ql9IRFVDmO40t+fGuGJUJcbVBWo6jAmhNqbytdl6Il5VtWXkWBVtblWJ6Ks01ceaQ5cXwCiTE4oyQ==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+      '@fullcalendar/resource': ~6.1.22
+
+  '@fullcalendar/resource-timegrid@6.1.22':
+    resolution: {integrity: sha512-N3S8B3XU7clY0Xph4vB0nYVFwRJeHZqvIJ2S88UPevdL8CKfSHQoqY+VkO37iuA2Or5CtCw2dqXTuXp61dzvPA==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+      '@fullcalendar/resource': ~6.1.22
+
+  '@fullcalendar/resource@6.1.22':
+    resolution: {integrity: sha512-H6q2wIPTFr6CP3mSrnhu5KB2f5SkGSRiEm16wzEhnGWjO+xh9jH6jk5tF9YoRDoIetdMN7C0/BXVvMI6mY/Bnw==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+
+  '@fullcalendar/timegrid@6.1.22':
+    resolution: {integrity: sha512-gNMtkXrkfN3iszXty+pYbJwGxcozL0xBVKYmEd1lm0DMEbrffpVJyV+vifmtl/eIbWCNRWrMWUtGLbYy/ukykA==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+
+  '@fullcalendar/vue3@6.1.22':
+    resolution: {integrity: sha512-D0tiBjn7qbvf5e2RiiK8m8g5ZjD0jVopEfHQJ/ogabGgXowRlscryCvXv8EDiV8wFTx4feLVeuC42dsZ//vKag==}
+    peerDependencies:
+      '@fullcalendar/core': ~6.1.22
+      vue: ^3.0.11
 
   '@hcaptcha/vue3-hcaptcha@1.3.0':
     resolution: {integrity: sha512-IEonS6JiYdU7uy6aeib8cYtMO4nj8utwStbA9bWHyYbOvOvhpkV+AW8vfSKh6SntYxqle/TRwhv+kU9p92CfsA==}
@@ -3820,6 +3887,9 @@ packages:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
 
+  preact@10.12.1:
+    resolution: {integrity: sha512-l8386ixSsBdbreOAkqtrwqHwdvR35ID8c3rKPa8lCWuO86dBi32QWHV4vfsZK1utLLFMvw+Z5Ad4XLkZzchscg==}
+
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
@@ -5431,6 +5501,52 @@ snapshots:
       '@formkit/themes': 1.7.2
       '@formkit/utils': 1.7.2
       '@formkit/validation': 1.7.2
+      vue: 3.5.12(typescript@5.6.2)
+
+  '@fullcalendar/core@6.1.22':
+    dependencies:
+      preact: 10.12.1
+
+  '@fullcalendar/daygrid@6.1.22(@fullcalendar/core@6.1.22)':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+
+  '@fullcalendar/interaction@6.1.22(@fullcalendar/core@6.1.22)':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+
+  '@fullcalendar/premium-common@6.1.22(@fullcalendar/core@6.1.22)':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+
+  '@fullcalendar/resource-daygrid@6.1.22(@fullcalendar/core@6.1.22)(@fullcalendar/resource@6.1.22(@fullcalendar/core@6.1.22))':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+      '@fullcalendar/daygrid': 6.1.22(@fullcalendar/core@6.1.22)
+      '@fullcalendar/premium-common': 6.1.22(@fullcalendar/core@6.1.22)
+      '@fullcalendar/resource': 6.1.22(@fullcalendar/core@6.1.22)
+
+  '@fullcalendar/resource-timegrid@6.1.22(@fullcalendar/core@6.1.22)(@fullcalendar/resource@6.1.22(@fullcalendar/core@6.1.22))':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+      '@fullcalendar/premium-common': 6.1.22(@fullcalendar/core@6.1.22)
+      '@fullcalendar/resource': 6.1.22(@fullcalendar/core@6.1.22)
+      '@fullcalendar/resource-daygrid': 6.1.22(@fullcalendar/core@6.1.22)(@fullcalendar/resource@6.1.22(@fullcalendar/core@6.1.22))
+      '@fullcalendar/timegrid': 6.1.22(@fullcalendar/core@6.1.22)
+
+  '@fullcalendar/resource@6.1.22(@fullcalendar/core@6.1.22)':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+      '@fullcalendar/premium-common': 6.1.22(@fullcalendar/core@6.1.22)
+
+  '@fullcalendar/timegrid@6.1.22(@fullcalendar/core@6.1.22)':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
+      '@fullcalendar/daygrid': 6.1.22(@fullcalendar/core@6.1.22)
+
+  '@fullcalendar/vue3@6.1.22(@fullcalendar/core@6.1.22)(vue@3.5.12(typescript@5.6.2))':
+    dependencies:
+      '@fullcalendar/core': 6.1.22
       vue: 3.5.12(typescript@5.6.2)
 
   '@hcaptcha/vue3-hcaptcha@1.3.0(vue@3.5.12(typescript@5.6.2))':
@@ -8732,6 +8848,8 @@ snapshots:
       nanoid: 3.3.11
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  preact@10.12.1: {}
 
   prelude-ls@1.2.1: {}
 

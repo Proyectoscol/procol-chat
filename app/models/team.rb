@@ -5,15 +5,23 @@
 #  id                :bigint           not null, primary key
 #  allow_auto_assign :boolean          default(TRUE)
 #  description       :text
+#  icon              :string           default("")
+#  icon_color        :string           default("")
 #  name              :string           not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  account_id        :bigint           not null
+#  inbox_id          :bigint
 #
 # Indexes
 #
 #  index_teams_on_account_id           (account_id)
+#  index_teams_on_inbox_id             (inbox_id) UNIQUE
 #  index_teams_on_name_and_account_id  (name,account_id) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (inbox_id => inboxes.id) ON DELETE => cascade
 #
 class Team < ApplicationRecord
   include AccountCacheRevalidator

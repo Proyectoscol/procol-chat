@@ -4,6 +4,33 @@
 # or operating system, you probably want to add a global ignore instead:
 #   git config --global core.excludesfile '~/.gitignore_global'
 
+# Datos reales de pacientes (nombres, cedulas, telefonos, historia clinica) --
+# nunca deben llegar al historial de git.
+/*.xlsx
+# El codigo del pipeline (.py/.rb) y la documentacion (.md) de
+# data_imports/ SI se versionan -- son logica y decisiones de negocio, no
+# datos de pacientes. Lo que nunca debe llegar al historial es el dato real:
+# los .xlsx fuente, los .csv generados (traen nombre/cedula/telefono) y los
+# reportes de texto (listan nombres de pacientes en los errores). OJO: un
+# patron de gitignore nunca admite comentario al final de la misma linea
+# (se toma como parte literal del patron) -- eso rompio por un rato el
+# bloqueo anterior de toda la carpeta, ver commit de este fix.
+data_imports/**/source/
+data_imports/**/*.csv
+data_imports/**/*.txt
+data_imports/**/__pycache__/
+data_imports/**/.DS_Store
+
+# Otros artefactos sueltos con datos reales encontrados en la raiz del repo
+# (logs de Rails con contenido de jobs/mensajes, un export real de
+# conversaciones via pgweb, una captura de pantalla con paciente real) --
+# nunca deben llegar al historial de git.
+/logs.txt
+/logs-watemplatetwilio.txt
+/warning2.jpg
+/burbujasmsm/
+/twiliocrearplantillas
+
 # Ignore bundler config.
 /.bundle
 

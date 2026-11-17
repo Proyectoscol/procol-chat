@@ -82,9 +82,18 @@ class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
     @contact.save!
   end
 
+  # El documento es obligatorio SOLO en esta superficie de creacion manual
+  # (el formulario "Nuevo contacto" del panel) -- nunca a nivel de modelo, y
+  # nunca para los builders de creacion automatica por canal (WhatsApp,
+  # Facebook, widget, etc.), que no tienen documento disponible al momento de
+  # crear el contacto. Ver design doc de Calendario, Premisa 7.
   def create
     ActiveRecord::Base.transaction do
       @contact = Current.account.contacts.new(permitted_params.except(:avatar_url))
+      if @contact.identifier.blank? || @contact.document_type.blank?
+        @contact.errors.add(:identifier, I18n.t('errors.contacts.identifier.required', default: 'document is required'))
+        raise ActiveRecord::RecordInvalid, @contact
+      end
       @contact.save!
       @contact_inbox = build_contact_inbox
       process_avatar_from_url
@@ -171,7 +180,8 @@ class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
   end
 
   def permitted_params
-    params.permit(:name, :identifier, :email, :phone_number, :avatar, :blocked, :avatar_url, additional_attributes: {}, custom_attributes: {})
+    params.permit(:name, :identifier, :email, :phone_number, :avatar, :blocked, :avatar_url, :document_type,
+                  :secondary_phone_number, :payer_id, additional_attributes: {}, custom_attributes: {})
   end
 
   def contact_custom_attributes
