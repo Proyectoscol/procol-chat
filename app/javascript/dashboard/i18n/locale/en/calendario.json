@@ -630,7 +630,10 @@
         "ACTIVE_LABEL": "Active",
         "CANCEL": "Cancel",
         "SAVE": "Save",
-        "CREATE": "Create"
+        "CREATE": "Create",
+        "ESCALATION_MESSAGE_LABEL": "Escalation message (if nobody answers the 2 reminders)",
+        "ESCALATION_MESSAGE_PLACEHOLDER": "e.g. Hi, my name is Beatriz. I saw you reached out — how can I help?",
+        "ESCALATION_MESSAGE_HINT": "Sent 20 minutes after the second reminder, as if a human agent is taking over. The conversation is also assigned to an available agent in this inbox at that point. Leave blank to use a generic message."
       }
     }
   }

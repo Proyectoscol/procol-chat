@@ -630,7 +630,10 @@
         "ACTIVE_LABEL": "Activo",
         "CANCEL": "Cancelar",
         "SAVE": "Guardar",
-        "CREATE": "Crear"
+        "CREATE": "Crear",
+        "ESCALATION_MESSAGE_LABEL": "Mensaje de escalamiento (si no responde a los 2 recordatorios)",
+        "ESCALATION_MESSAGE_PLACEHOLDER": "ej. Hola, mi nombre es Beatriz. Vi que tuviste interés en escribirnos, ¿en qué te puedo ayudar?",
+        "ESCALATION_MESSAGE_HINT": "Se envía 20 minutos después del segundo recordatorio, como si un asesor humano tomara la conversación. En ese momento también se asigna a un agente disponible de esta bandeja. Déjalo vacío para usar un mensaje genérico."
       }
     }
   }

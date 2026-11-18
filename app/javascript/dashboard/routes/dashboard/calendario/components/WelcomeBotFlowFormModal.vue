@@ -30,6 +30,7 @@ const matchType = ref('default');
 const matchValue = ref('');
 const priority = ref(0);
 const active = ref(true);
+const escalationMessage = ref('');
 const isSaving = ref(false);
 
 // Cada paso en memoria guarda las opciones como texto (una por linea) para
@@ -53,6 +54,7 @@ const setFormValues = () => {
   matchValue.value = props.flow?.match_value || '';
   priority.value = props.flow?.priority ?? 0;
   active.value = props.flow ? props.flow.active : true;
+  escalationMessage.value = props.flow?.escalation_message || '';
   steps.value = (props.flow?.steps || []).map(step => ({
     ask: step.ask || '',
     optionsText: (step.options || []).join('\n'),
@@ -169,6 +171,7 @@ const submit = async () => {
     match_value: matchType.value === 'keyword' ? matchValue.value.trim() : null,
     priority: Number(priority.value),
     active: active.value,
+    escalation_message: escalationMessage.value.trim(),
     steps: stepsForSubmit(),
   };
   try {
@@ -349,6 +352,17 @@ const submit = async () => {
           @click="addStep"
         />
       </div>
+
+      <TextArea
+        v-model="escalationMessage"
+        :label="t('CALENDARIO.WELCOME_BOT.FORM.ESCALATION_MESSAGE_LABEL')"
+        :placeholder="
+          t('CALENDARIO.WELCOME_BOT.FORM.ESCALATION_MESSAGE_PLACEHOLDER')
+        "
+      />
+      <p class="text-xs text-n-slate-10 -mt-3">
+        {{ t('CALENDARIO.WELCOME_BOT.FORM.ESCALATION_MESSAGE_HINT') }}
+      </p>
 
       <div class="flex items-center gap-2">
         <input id="flow-active" v-model="active" type="checkbox" />

@@ -9,6 +9,34 @@
 # "if" es opcional -- sin el, el paso siempre aplica; con el, solo si la
 # respuesta de un paso anterior fue exactamente ese valor (ver
 # Calendario::WelcomeBotFlowRunner#applicable_step?).
+# == Schema Information
+#
+# Table name: calendario_welcome_bot_flows
+#
+#  id                 :bigint           not null, primary key
+#  active             :boolean          default(TRUE), not null
+#  escalation_message :text
+#  match_type         :string           default("default"), not null
+#  match_value        :string
+#  name               :string           not null
+#  priority           :integer          default(0), not null
+#  steps              :jsonb            not null
+#  created_at         :datetime         not null
+#  updated_at         :datetime         not null
+#  account_id         :bigint           not null
+#  inbox_id           :bigint           not null
+#
+# Indexes
+#
+#  index_calendario_welcome_bot_flows_on_account_id  (account_id)
+#  index_calendario_welcome_bot_flows_on_inbox_id    (inbox_id)
+#  index_one_active_default_flow_per_inbox           (inbox_id,match_type) UNIQUE WHERE (((match_type)::text = 'default'::text) AND (active = true))
+#
+# Foreign Keys
+#
+#  fk_rails_...  (account_id => accounts.id) ON DELETE => cascade
+#  fk_rails_...  (inbox_id => inboxes.id) ON DELETE => cascade
+#
 class Calendario::WelcomeBotFlow < ApplicationRecord
   self.table_name = 'calendario_welcome_bot_flows'
 

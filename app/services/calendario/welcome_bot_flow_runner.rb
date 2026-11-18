@@ -121,14 +121,21 @@ class Calendario::WelcomeBotFlowRunner
                           .exists?
   end
 
-  # ActionService#assign_team (ya existente, usado por Automatizaciones) --
-  # equipo configurable mas adelante; por ahora deja la nota y confia en la
-  # auto-asignacion (ya reactivada arriba si corresponde) para tomarla como
-  # cualquier otra conversacion abierta sin asignar.
   def hand_off_to_human(session)
     create_private_note(
       "Triage completado (#{session.welcome_bot_flow.name}). Respuestas: " \
       "#{session.answers.values.join(' / ')}"
     )
+    assign_available_agent
+  end
+
+  # Mismo servicio que usa la auto-asignacion legada de Chatwoot: hace
+  # round-robin entre los miembros de la bandeja que estan en linea Y tienen
+  # cupo disponible. Si nadie esta disponible, no asigna a nadie (se queda
+  # abierta sin asignar, igual que cualquier conversacion normal).
+  def assign_available_agent
+    AutoAssignment::AgentAssignmentService.new(
+      conversation: conversation, allowed_agent_ids: inbox.member_ids_with_assignment_capacity
+    ).perform
   end
 end
