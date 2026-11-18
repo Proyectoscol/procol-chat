@@ -25,6 +25,7 @@ import {
   dateKeyInColombia,
   formatDateOnlyEs,
   formatInstantTimeEs,
+  hourInColombia,
 } from '../helpers/calendarioDateTime';
 
 const { t } = useI18n();
@@ -33,6 +34,12 @@ const router = useRouter();
 
 const PAGE_SIZE = 10;
 const WINDOW_ORDER = { morning: 0, afternoon: 1, full_day: 2 };
+// Mismo corte que ya usaba defaultTimeForWindow (abajo) como hora sugerida
+// al agendar en la tarde -- el OpenDay no guarda una hora de corte real, asi
+// que se reutiliza esa misma convencion para decidir a que ventana
+// pertenece cada cita cuando el profesional tiene manana Y tarde abiertas
+// el mismo dia (antes, ambas tarjetas mostraban TODAS las citas del dia).
+const AFTERNOON_START_HOUR = 14;
 
 const professionals = useMapGetter('calendarioProfessionals/getProfessionals');
 const openDays = useMapGetter('calendarioOpenDays/getOpenDays');
@@ -207,10 +214,42 @@ watch(selectedSpecialtyId, () => {
   }
 });
 
-const allAppointmentsForOpenDay = openDay =>
-  appointments.value
-    .filter(a => dateKeyInColombia(a.starts_at) === openDay.date)
-    .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+// Cuantos OpenDay distintos hay para una misma fecha -- si el profesional
+// abrio manana Y tarde el mismo dia, hay que repartir las citas entre las
+// dos tarjetas; si solo abrio una ventana (el caso normal), esa tarjeta
+// sigue mostrando TODAS las citas del dia sin importar la hora, como
+// siempre (un "full_day" o una unica ventana no deberia perder una cita
+// por caer "del lado equivocado" de AFTERNOON_START_HOUR).
+const openDayWindowCountByDate = computed(() => {
+  const counts = new Map();
+  openDays.value.forEach(openDay => {
+    counts.set(openDay.date, (counts.get(openDay.date) || 0) + 1);
+  });
+  return counts;
+});
+
+const appointmentMatchesWindow = (appointment, timeWindow) => {
+  if (timeWindow === 'full_day') return true;
+  const hour = hourInColombia(appointment.starts_at);
+  return timeWindow === 'afternoon'
+    ? hour >= AFTERNOON_START_HOUR
+    : hour < AFTERNOON_START_HOUR;
+};
+
+const allAppointmentsForOpenDay = openDay => {
+  const sameDateWindowCount =
+    openDayWindowCountByDate.value.get(openDay.date) || 0;
+  const forThisDate = appointments.value.filter(
+    a => dateKeyInColombia(a.starts_at) === openDay.date
+  );
+  const scoped =
+    sameDateWindowCount > 1
+      ? forThisDate.filter(a =>
+          appointmentMatchesWindow(a, openDay.time_window)
+        )
+      : forThisDate;
+  return scoped.sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+};
 
 const appointmentsForOpenDay = openDay =>
   allAppointmentsForOpenDay(openDay).filter(matchesFilters);

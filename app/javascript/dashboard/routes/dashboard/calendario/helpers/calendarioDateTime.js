@@ -47,6 +47,26 @@ export const formatInstantDateTimeEs = isoString =>
     timeStyle: 'short',
   });
 
+// Hora local (0-23) de un instante ISO, expresada en hora de Bogota -- para
+// decidir si un Appointment#starts_at cae en la ventana "morning" o
+// "afternoon" de un OpenDay (ver AFTERNOON_START_HOUR en
+// CalendarioSchedulesPage.vue). new Date(iso).getHours() usaria la zona del
+// navegador/servidor en vez de Bogota, el mismo bug que dateKeyInColombia ya
+// evita para la fecha.
+export const hourInColombia = isoString => {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: COLOMBIA_TIME_ZONE,
+      hour: 'numeric',
+      hour12: false,
+    }).format(new Date(isoString))
+  );
+  // Algunos motores devuelven "24" para medianoche con hour12:false en vez
+  // de "0" -- normalizar para que las comparaciones numericas de abajo no
+  // se rompan en ese caso limite.
+  return hour === 24 ? 0 : hour;
+};
+
 // "YYYY-MM-DD" de un instante ISO, expresado en hora de Bogota -- para
 // comparar un Appointment#starts_at contra un OpenDay#date (ya un string
 // "YYYY-MM-DD" literal).
