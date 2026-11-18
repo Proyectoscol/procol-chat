@@ -118,6 +118,10 @@ const kindOptions = computed(() => [
     value: 'before_start',
     label: t('CALENDARIO.TRIGGERS.FORM.KIND_OPTIONS.BEFORE_START'),
   },
+  {
+    value: 'on_reschedule',
+    label: t('CALENDARIO.TRIGGERS.FORM.KIND_OPTIONS.ON_RESCHEDULE'),
+  },
 ]);
 
 const targetStatusOptions = computed(() => [

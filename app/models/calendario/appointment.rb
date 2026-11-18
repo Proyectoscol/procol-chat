@@ -65,6 +65,13 @@ class Calendario::Appointment < ApplicationRecord
   # Ver data_imports/calendario_agendas_dr_corrales_2026/import_to_local.rb
   attr_accessor :historical_import
 
+  # Fecha/hora anterior, solo mientras corren los triggers on_reschedule del
+  # mismo save (ver #run_on_reschedule_triggers) -- Calendario::AppointmentDrop
+  # la usa para el texto "se movio de {{ previous_date }} a {{ date }}".
+  # saved_change_to_starts_at seguiria disponible igual, pero exponerla asi
+  # evita que el drop tenga que conocer la API de dirty-tracking de Rails.
+  attr_accessor :rescheduled_from
+
   before_validation :set_ends_at_from_service, on: :create
 
   validates :starts_at, :ends_at, presence: true
@@ -83,6 +90,7 @@ class Calendario::Appointment < ApplicationRecord
   after_create :schedule_before_start_triggers
   after_create :consume_available_credit_if_control
   after_update :log_reschedule, if: :saved_change_to_starts_at?
+  after_update :run_on_reschedule_triggers, if: :saved_change_to_starts_at?
   after_update :log_status_change, if: :saved_change_to_status?
   after_update :run_on_status_change_triggers, if: :saved_change_to_status?
   after_update :grant_included_session_credits, if: :saved_change_to_status?
@@ -163,6 +171,20 @@ class Calendario::Appointment < ApplicationRecord
         Calendario::AppointmentTriggerRunner.new(trigger: trigger, appointment: self).perform
       end
     end
+  end
+
+  # Siempre instantaneo (ver validacion de offset_minutes en
+  # Calendario::AppointmentEventTrigger) -- rescheduled_from se arma aca y
+  # se consume en el mismo request, nunca sobrevive a un job encolado (por
+  # eso este, a diferencia de run_on_status_change_triggers, nunca usa
+  # AppointmentTriggerReminderJob).
+  def run_on_reschedule_triggers
+    self.rescheduled_from = saved_change_to_starts_at.first
+    applicable_triggers(Calendario::AppointmentEventTrigger.for_kind('on_reschedule')).each do |trigger|
+      Calendario::AppointmentTriggerRunner.new(trigger: trigger, appointment: self).perform
+    end
+  ensure
+    self.rescheduled_from = nil
   end
 
   # Un job por trigger por cita, encolado con wait_until -- igual que no hay

@@ -225,4 +225,40 @@ find_or_create_trigger!(
   TEXT
 )
 
+# --- Atendida, reagendada, cancelada (pedido explicito del usuario) -------
+# "Pendiente" y "confirmada" NO generan mensaje a proposito (son estados
+# internos del flujo de agenda, no algo que el paciente necesite ver) --
+# por eso solo se crean estos 3 triggers nuevos, nada para esos dos estados.
+
+# Atendida: 30 min DESPUES de marcarla (no al instante) -- offset_minutes
+# en on_status_change es delay_minutes, ver Calendario::AppointmentEventTrigger.
+find_or_create_trigger!(
+  account: account, inbox: inbox, trigger_kind: 'on_status_change', target_status: 'attended',
+  offset_minutes: 30,
+  body: <<~TEXT.strip
+    Hola {{ contact.name }}, gracias por asistir a su cita de {{ appointment.service_name }}. Cualquier pregunta, indíquenos por favor y con gusto le ayudamos.
+  TEXT
+)
+
+# Reagendada: trigger_kind nuevo on_reschedule (ver Calendario::Appointment
+# #run_on_reschedule_triggers) -- dispara cuando cambia starts_at, sin
+# importar el estado. previous_date/previous_time vienen del
+# Calendario::AppointmentDrop, solo tienen valor durante este disparo.
+find_or_create_trigger!(
+  account: account, inbox: inbox, trigger_kind: 'on_reschedule',
+  body: <<~TEXT.strip
+    ⚠️ Hola {{ contact.name }}, su cita de {{ appointment.service_name }} del {{ appointment.previous_date }} a las {{ appointment.previous_time }} se ha movido a {{ appointment.date }} a las {{ appointment.time }}.
+
+    Por favor confirmar
+  TEXT
+)
+
+# Cancelada: instantanea (sin offset_minutes).
+find_or_create_trigger!(
+  account: account, inbox: inbox, trigger_kind: 'on_status_change', target_status: 'cancelled',
+  body: <<~TEXT.strip
+    Hola {{ contact.name }}, su cita de {{ appointment.service_name }} del {{ appointment.date }} a las {{ appointment.time }} ha sido cancelada. Si esto fue un error, por favor comuníquese con nosotros.
+  TEXT
+)
+
 puts "\nTotal triggers en la cuenta #{account.id}: #{account.calendario_appointment_event_triggers.count}"

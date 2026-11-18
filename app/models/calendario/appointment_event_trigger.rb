@@ -35,7 +35,7 @@
 class Calendario::AppointmentEventTrigger < ApplicationRecord
   self.table_name = 'calendario_appointment_event_triggers'
 
-  TRIGGER_KINDS = %w[on_create on_status_change before_start].freeze
+  TRIGGER_KINDS = %w[on_create on_status_change before_start on_reschedule].freeze
   TARGET_STATUSES = %w[pending confirmed attended no_show cancelled].freeze
 
   belongs_to :account
@@ -51,7 +51,10 @@ class Calendario::AppointmentEventTrigger < ApplicationRecord
   # mandar el mensaje (ej. "atendida" o "no_show" un rato despues, no al
   # instante) -- pedido explicito del usuario. En blanco = 0 = instantaneo.
   validates :offset_minutes, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true, if: :on_status_change?
-  validates :offset_minutes, absence: true, if: :on_create?
+  # on_reschedule siempre es instantaneo -- avisar del cambio de fecha unos
+  # minutos despues no tiene el mismo sentido que demorar un cambio de
+  # estado, asi que no se expone un delay configurable para este tipo.
+  validates :offset_minutes, absence: true, if: -> { on_create? || on_reschedule? }
   validate :inbox_belongs_to_account
   validate :services_belong_to_account
   validate :payer_kinds_are_valid
@@ -69,6 +72,10 @@ class Calendario::AppointmentEventTrigger < ApplicationRecord
 
   def before_start?
     trigger_kind == 'before_start'
+  end
+
+  def on_reschedule?
+    trigger_kind == 'on_reschedule'
   end
 
   # En blanco (nil) para on_status_change = 0 = instantaneo.

@@ -52,6 +52,9 @@ const kindLabel = trigger => {
       minutes: trigger.offset_minutes,
     });
   }
+  if (trigger.trigger_kind === 'on_reschedule') {
+    return t('CALENDARIO.TRIGGERS.KIND_VALUES.ON_RESCHEDULE');
+  }
   return t('CALENDARIO.TRIGGERS.KIND_VALUES.ON_CREATE');
 };
 

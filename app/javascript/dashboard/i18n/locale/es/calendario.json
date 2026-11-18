@@ -519,7 +519,8 @@
         "ON_CREATE": "Al crear la cita",
         "ON_STATUS_CHANGE": "Al cambiar el estado a \"{status}\"",
         "ON_STATUS_CHANGE_DELAYED": "Al cambiar el estado a \"{status}\" ({minutes} min después)",
-        "BEFORE_START": "{minutes} min antes de la cita"
+        "BEFORE_START": "{minutes} min antes de la cita",
+        "ON_RESCHEDULE": "Cuando se reagenda la cita"
       },
       "STATUS": {
         "ACTIVE": "Activa",
@@ -538,7 +539,8 @@
         "KIND_OPTIONS": {
           "ON_CREATE": "Al crear la cita",
           "ON_STATUS_CHANGE": "Al cambiar el estado de la cita",
-          "BEFORE_START": "Antes de que empiece la cita (recordatorio)"
+          "BEFORE_START": "Antes de que empiece la cita (recordatorio)",
+          "ON_RESCHEDULE": "Se reagenda la fecha/hora de la cita"
         },
         "TARGET_STATUS_LABEL": "Nuevo estado",
         "TARGET_STATUS_PLACEHOLDER": "Selecciona el estado",
@@ -554,11 +556,11 @@
         "INBOX_PLACEHOLDER": "Selecciona una bandeja",
         "TEMPLATE_LABEL": "Plantilla de WhatsApp",
         "TEMPLATE_PLACEHOLDER": "Selecciona una plantilla aprobada",
-        "TEMPLATE_HINT": "Puedes usar variables de la cita en los parámetros de la plantilla (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) escribiéndolas entre llaves dobles -- se reemplazan automáticamente por los datos reales de cada cita.",
+        "TEMPLATE_HINT": "Puedes usar variables de la cita en los parámetros de la plantilla (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) escribiéndolas entre llaves dobles -- se reemplazan automáticamente por los datos reales de cada cita. Solo en disparadores \"Al reagendar\", appointment.previous_date/appointment.previous_time tienen la fecha y hora antes del cambio.",
         "NO_TEMPLATES": "Esta bandeja no tiene plantillas aprobadas disponibles.",
         "CUSTOM_BODY_LABEL": "Texto del mensaje",
         "CUSTOM_BODY_PLACEHOLDER": "Ej: Hola contact.name, tu cita con appointment.professional_name es el appointment.date a las appointment.time (envuelve cada una entre llaves dobles).",
-        "CUSTOM_BODY_HINT": "Esta bandeja no tiene plantillas de WhatsApp aprobadas, así que escribe el mensaje directamente. Puedes usar variables de la cita (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) entre llaves dobles.",
+        "CUSTOM_BODY_HINT": "Esta bandeja no tiene plantillas de WhatsApp aprobadas, así que escribe el mensaje directamente. Puedes usar variables de la cita (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) entre llaves dobles. Solo en disparadores \"Al reagendar\", appointment.previous_date/appointment.previous_time tienen la fecha y hora antes del cambio.",
         "ACTIVE_LABEL": "Activa",
         "TEST_MODE_LABEL": "Modo de prueba: enviar como nota privada",
         "TEST_MODE_HINT": "En vez de mandar el mensaje real de WhatsApp al paciente, se crea una nota privada en la conversación con el contenido que se habría enviado. Úsalo para probar la creación de citas, confirmaciones y recordatorios antes de activar envíos reales.",

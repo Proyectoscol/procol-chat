@@ -519,7 +519,8 @@
         "ON_CREATE": "When the appointment is created",
         "ON_STATUS_CHANGE": "When status changes to \"{status}\"",
         "ON_STATUS_CHANGE_DELAYED": "When status changes to \"{status}\" ({minutes} min later)",
-        "BEFORE_START": "{minutes} min before the appointment"
+        "BEFORE_START": "{minutes} min before the appointment",
+        "ON_RESCHEDULE": "When the appointment is rescheduled"
       },
       "STATUS": {
         "ACTIVE": "Active",
@@ -538,7 +539,8 @@
         "KIND_OPTIONS": {
           "ON_CREATE": "The appointment is created",
           "ON_STATUS_CHANGE": "The appointment status changes",
-          "BEFORE_START": "Before the appointment starts (reminder)"
+          "BEFORE_START": "Before the appointment starts (reminder)",
+          "ON_RESCHEDULE": "The appointment date/time is rescheduled"
         },
         "TARGET_STATUS_LABEL": "New status",
         "TARGET_STATUS_PLACEHOLDER": "Select the status",
@@ -554,11 +556,11 @@
         "INBOX_PLACEHOLDER": "Select an inbox",
         "TEMPLATE_LABEL": "WhatsApp template",
         "TEMPLATE_PLACEHOLDER": "Select an approved template",
-        "TEMPLATE_HINT": "You can use appointment variables in the template parameters (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) by writing them inside double curly braces -- they're automatically replaced with each appointment's real data.",
+        "TEMPLATE_HINT": "You can use appointment variables in the template parameters (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) by writing them inside double curly braces -- they're automatically replaced with each appointment's real data. For \"on_reschedule\" triggers only, appointment.previous_date/appointment.previous_time hold the date and time before the change.",
         "NO_TEMPLATES": "This inbox has no approved templates available.",
         "CUSTOM_BODY_LABEL": "Message text",
         "CUSTOM_BODY_PLACEHOLDER": "E.g.: Hello contact.name, your appointment with appointment.professional_name is on appointment.date at appointment.time (wrap each one in double curly braces).",
-        "CUSTOM_BODY_HINT": "This inbox doesn't have approved WhatsApp templates, so write the message directly. You can use appointment variables (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) inside double curly braces.",
+        "CUSTOM_BODY_HINT": "This inbox doesn't have approved WhatsApp templates, so write the message directly. You can use appointment variables (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) inside double curly braces. For \"on_reschedule\" triggers only, appointment.previous_date/appointment.previous_time hold the date and time before the change.",
         "ACTIVE_LABEL": "Active",
         "TEST_MODE_LABEL": "Test mode: send as a private note",
         "TEST_MODE_HINT": "Instead of sending the real WhatsApp message to the patient, a private note is created on the conversation with the content that would have been sent. Use this to test appointment creation, confirmations and reminders before turning on real sends.",
