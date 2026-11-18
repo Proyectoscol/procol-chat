@@ -4,7 +4,7 @@ class Api::V1::Accounts::Calendario::OpenDaysController < Api::V1::Accounts::Bas
   before_action :check_authorization
 
   def index
-    open_days = Current.account.calendario_open_days.includes(:professional)
+    open_days = Current.account.calendario_open_days.includes(:professional, :opened_by)
     open_days = open_days.for_professional(params[:professional_id]) if params[:professional_id].present?
     render json: open_days.order(date: :desc).map { |open_day| serialize(open_day) }
   end

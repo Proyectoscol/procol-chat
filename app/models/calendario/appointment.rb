@@ -147,10 +147,22 @@ class Calendario::Appointment < ApplicationRecord
     end
   end
 
+  # Pedido explicito del usuario: "atendida"/"no_show"/vuelta a "pendiente"
+  # pueden mandarse unos minutos DESPUES del cambio en vez de al instante
+  # (trigger.delay_minutes, en blanco = 0 = inmediato) -- mismo mecanismo de
+  # job encolado con wait_until que ya usa schedule_before_start_triggers,
+  # solo que contado desde "ahora" en vez de desde starts_at.
   def run_on_status_change_triggers
     applicable_triggers(
       Calendario::AppointmentEventTrigger.for_kind('on_status_change').where(target_status: status)
-    ).each { |trigger| Calendario::AppointmentTriggerRunner.new(trigger: trigger, appointment: self).perform }
+    ).each do |trigger|
+      if trigger.delay_minutes.positive?
+        Calendario::AppointmentTriggerReminderJob.set(wait_until: trigger.delay_minutes.minutes.from_now)
+                                                  .perform_later(trigger.id, id)
+      else
+        Calendario::AppointmentTriggerRunner.new(trigger: trigger, appointment: self).perform
+      end
+    end
   end
 
   # Un job por trigger por cita, encolado con wait_until -- igual que no hay

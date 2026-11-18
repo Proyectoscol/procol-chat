@@ -20,6 +20,10 @@ data_imports/**/*.csv
 data_imports/**/*.txt
 data_imports/**/__pycache__/
 data_imports/**/.DS_Store
+# Export de chats de WhatsApp de pacientes reales (cualquier formato: json,
+# html, zip, imagenes, no solo csv/txt) -- carpeta entera bloqueada igual
+# que source/, nunca debe llegar al historial de git.
+data_imports/**/chatsexport/
 
 # Otros artefactos sueltos con datos reales encontrados en la raiz del repo
 # (logs de Rails con contenido de jobs/mensajes, un export real de

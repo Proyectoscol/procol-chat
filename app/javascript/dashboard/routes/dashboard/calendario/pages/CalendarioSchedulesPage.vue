@@ -12,26 +12,20 @@ import Select from 'dashboard/components-next/select/Select.vue';
 import MultiSelect from 'dashboard/components-next/filter/inputs/MultiSelect.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import CalendarioStatsAPI from 'dashboard/api/calendarioStats';
+import CalendarioAppointmentsAPI from 'dashboard/api/calendarioAppointments';
 import AppointmentFormModal from '../components/AppointmentFormModal.vue';
 import RescheduleAppointmentModal from '../components/RescheduleAppointmentModal.vue';
 import CancelAppointmentModal from '../components/CancelAppointmentModal.vue';
 import AppointmentDetailModal from '../components/AppointmentDetailModal.vue';
+import AppointmentRow from '../components/AppointmentRow.vue';
 import OpenAgendaPanel from '../components/OpenAgendaPanel.vue';
 import WaitlistPanel from '../components/WaitlistPanel.vue';
 import WaitlistQuickBookPopover from '../components/WaitlistQuickBookPopover.vue';
-import {
-  statusSelectOptions,
-  statusRowBackgroundClass,
-  RESCHEDULE_ACTION,
-  ACTION_BUTTON_VARIANT,
-  ACTION_BUTTON_CLASS,
-} from '../helpers/appointmentStatusActions';
 import {
   dateKeyInColombia,
   formatDateOnlyEs,
   formatInstantTimeEs,
 } from '../helpers/calendarioDateTime';
-import { documentTypeAbbreviation } from '../helpers/documentTypeAbbreviation';
 
 const { t } = useI18n();
 const store = useStore();
@@ -136,6 +130,13 @@ const showOpenAgendaPanel = ref(false);
 const showWaitlistPanel = ref(false);
 const updatingAppointmentId = ref(null);
 const bottomSentinel = ref(null);
+// Oculta la tarjeta de dias hasta que el scroll-al-fondo (ver mas abajo) ya
+// este aplicado -- pedido explicito del usuario: antes se veia la pagina
+// cargar desde arriba (lo mas antiguo visible) y LUEGO saltar/arrastrarse
+// hacia abajo una vez terminaba el fetch, como un bug. Ocultando el
+// contenido hasta despues de fijar el scroll, lo primero que se ve ya esta
+// en la posicion correcta -- no hay salto visible.
+const contentReady = ref(false);
 
 // --- Agendar rapido desde la lista de espera (modo expandido) -----------
 // "Expandir" pone la lista de espera al lado de las agendas (en vez de
@@ -253,8 +254,45 @@ const visibleDateGroups = computed(() =>
 const hasMoreOpenDays = computed(
   () => visibleCount.value < groupedByDate.value.length
 );
-const loadMore = () => {
+
+// Limite inferior (mas antiguo) de lo que esta cargado de appointments para
+// este profesional -- ver fetchForActiveProfessional/loadMore. null = nada
+// cargado todavia.
+const appointmentsFetchedSince = ref(null);
+
+const dateFromDateKey = dateKey => {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
+// La fecha mas antigua que hace falta tener cargada en appointments para
+// que la porcion VISIBLE de dias (ver visibleDateGroups) tenga sus citas --
+// null si todavia no hay ningun dia abierto.
+const earliestNeededDate = () => {
+  const earliestVisible = groupedByDate.value.slice(-visibleCount.value)[0];
+  return earliestVisible ? dateFromDateKey(earliestVisible.date) : null;
+};
+
+// "Cargar mas" extiende la ventana visible hacia atras -- si eso saca a la
+// luz dias mas antiguos que lo que appointments ya tiene cargado, pide ESE
+// tramo nuevo nada mas (no vuelve a pedir todo desde cero, ver
+// extendRange) antes de dejar ver los dias nuevos.
+const loadMore = async () => {
   visibleCount.value += PAGE_SIZE;
+  const needed = earliestNeededDate();
+  if (!needed || !appointmentsFetchedSince.value) return;
+  if (needed >= appointmentsFetchedSince.value) return;
+
+  const until = new Date(appointmentsFetchedSince.value);
+  const since = new Date(needed);
+  since.setDate(since.getDate() - 1);
+  appointmentsFetchedSince.value = since;
+
+  await store.dispatch('calendarioAppointments/extendRange', {
+    since: since.toISOString(),
+    until: until.toISOString(),
+    professionalId: activeProfessionalId.value,
+  });
 };
 
 const formatOpenDayDate = dateString =>
@@ -270,11 +308,6 @@ const windowLabel = timeWindow =>
 
 const statusLabel = status =>
   t(`CALENDARIO.APPOINTMENTS.STATUS.${status.toUpperCase()}`);
-
-const statusOptions = computed(() => statusSelectOptions(t));
-
-const contactUrl = appointment =>
-  frontendURL(`accounts/${accountId.value}/contacts/${appointment.contact_id}`);
 
 const openConversation = appointment => {
   if (!appointment.conversation_id) return;
@@ -335,21 +368,39 @@ const closeDetailModal = () => {
   showDetailModal.value = false;
 };
 
+// Antes esto pedia SIEMPRE un rango fijo de 4 anios (-3/+1) de appointments
+// sin importar cuanto se fuera a mostrar -- para un profesional con mucho
+// historial (encontrado en auditoria real: 1592 citas, 1.08MB, 2.6s solo en
+// esa llamada, y esa carga pesada competia por los mismos hilos de Ruby con
+// el resto de requests del montaje de la pagina, demorando TODO -- "inboxes"
+// y "teams" tambien aparecian en 1-2s en el mismo momento). Pedido explicito
+// del usuario: "si mas bien buscamos primeramente lo mas reciente". Ahora
+// open_days (barato, sin filtro de fecha, ~30KB) se pide primero, y de ahi
+// se calcula la fecha mas antigua que hace falta para los ultimos
+// PAGE_SIZE dias visibles -- appointments solo pide ESE tramo angosto al
+// entrar. "Cargar mas" (ver loadMore) extiende hacia atras pidiendo tramos
+// adicionales, nunca todo el historico de una sola vez.
 const fetchForActiveProfessional = async () => {
   const professionalId = activeProfessionalId.value;
   if (!professionalId) return;
   visibleCount.value = PAGE_SIZE;
+  contentReady.value = false;
+  appointmentsFetchedSince.value = null;
 
-  const since = new Date();
-  since.setFullYear(since.getFullYear() - 3);
+  await store.dispatch('calendarioOpenDays/get', { professionalId });
+
   const until = new Date();
   until.setFullYear(until.getFullYear() + 1);
+  const needed = earliestNeededDate();
+  const since = needed || new Date();
+  if (!needed) since.setDate(since.getDate() - 90);
+  since.setDate(since.getDate() - 1);
+  appointmentsFetchedSince.value = since;
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   await Promise.all([
-    store.dispatch('calendarioOpenDays/get', { professionalId }),
     store.dispatch('calendarioAppointments/getRange', {
       since: since.toISOString(),
       until: until.toISOString(),
@@ -378,8 +429,12 @@ const fetchForActiveProfessional = async () => {
   // reciente -- igual que la chica lo ve siempre en el Excel -- pero el
   // orden de la lista se mantiene antiguo-arriba/reciente-abajo para poder
   // seguir haciendo scroll hacia arriba y ver fechas pasadas.
+  // behavior: 'instant' (no 'smooth'/'auto') + contentReady recien despues
+  // de fijarlo: asi el navegador nunca pinta el contenido en la posicion
+  // vieja (arriba) antes de saltar -- lo primero visible ya es lo correcto.
   nextTick(() => {
-    bottomSentinel.value?.scrollIntoView({ block: 'end' });
+    bottomSentinel.value?.scrollIntoView({ block: 'end', behavior: 'instant' });
+    contentReady.value = true;
   });
 };
 
@@ -450,42 +505,62 @@ const onQuickBooked = async () => {
   await inlineWaitlistRef.value?.fetchEntries();
 };
 
-const exportCsv = () => {
-  const professionalName =
-    professionals.value.find(p => p.id === activeProfessionalId.value)?.name ||
-    '';
-  const headers = [
-    t('CALENDARIO.SCHEDULES.CSV.DATE'),
-    t('CALENDARIO.SCHEDULES.CSV.TIME'),
-    t('CALENDARIO.SCHEDULES.CSV.CONTACT'),
-    t('CALENDARIO.SCHEDULES.CSV.DOCUMENT'),
-    t('CALENDARIO.SCHEDULES.CSV.PHONE'),
-    t('CALENDARIO.SCHEDULES.CSV.SERVICE'),
-    t('CALENDARIO.SCHEDULES.CSV.PAYER'),
-    t('CALENDARIO.SCHEDULES.CSV.STATUS'),
-    t('CALENDARIO.SCHEDULES.CSV.NOTES'),
-  ];
-  const sorted = [...appointments.value].sort(
-    (a, b) => new Date(a.starts_at) - new Date(b.starts_at)
-  );
-  const escapeCsv = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
-  const rows = sorted.map(appointment =>
-    [
-      dateKeyInColombia(appointment.starts_at),
-      formatInstantTimeEs(appointment.starts_at),
-      appointment.contact_name,
-      appointment.contact_identifier,
-      appointment.contact_phone_number,
-      appointment.service_name,
-      appointment.payer_name,
-      statusLabel(appointment.status),
-      appointment.notes,
-    ]
-      .map(escapeCsv)
-      .join(',')
-  );
-  const content = [headers.map(escapeCsv).join(','), ...rows].join('\n');
-  downloadCsvFile(`${professionalName}-agenda.csv`, content);
+// El CSV es una exportacion completa deliberada (no algo que pase en cada
+// carga de pantalla) -- pide su propio rango historico amplio directo a la
+// API en vez de usar `appointments` (que desde el fix de carga de abajo ya
+// NO trae todo el historico, solo lo visible, ver fetchForActiveProfessional).
+const isExportingCsv = ref(false);
+const exportCsv = async () => {
+  isExportingCsv.value = true;
+  try {
+    const since = new Date();
+    since.setFullYear(since.getFullYear() - 3);
+    const until = new Date();
+    until.setFullYear(until.getFullYear() + 1);
+    const response = await CalendarioAppointmentsAPI.getRange({
+      since: since.toISOString(),
+      until: until.toISOString(),
+      professionalId: activeProfessionalId.value,
+    });
+
+    const professionalName =
+      professionals.value.find(p => p.id === activeProfessionalId.value)
+        ?.name || '';
+    const headers = [
+      t('CALENDARIO.SCHEDULES.CSV.DATE'),
+      t('CALENDARIO.SCHEDULES.CSV.TIME'),
+      t('CALENDARIO.SCHEDULES.CSV.CONTACT'),
+      t('CALENDARIO.SCHEDULES.CSV.DOCUMENT'),
+      t('CALENDARIO.SCHEDULES.CSV.PHONE'),
+      t('CALENDARIO.SCHEDULES.CSV.SERVICE'),
+      t('CALENDARIO.SCHEDULES.CSV.PAYER'),
+      t('CALENDARIO.SCHEDULES.CSV.STATUS'),
+      t('CALENDARIO.SCHEDULES.CSV.NOTES'),
+    ];
+    const sorted = [...response.data].sort(
+      (a, b) => new Date(a.starts_at) - new Date(b.starts_at)
+    );
+    const escapeCsv = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const rows = sorted.map(appointment =>
+      [
+        dateKeyInColombia(appointment.starts_at),
+        formatInstantTimeEs(appointment.starts_at),
+        appointment.contact_name,
+        appointment.contact_identifier,
+        appointment.contact_phone_number,
+        appointment.service_name,
+        appointment.payer_name,
+        statusLabel(appointment.status),
+        appointment.notes,
+      ]
+        .map(escapeCsv)
+        .join(',')
+    );
+    const content = [headers.map(escapeCsv).join(','), ...rows].join('\n');
+    downloadCsvFile(`${professionalName}-agenda.csv`, content);
+  } finally {
+    isExportingCsv.value = false;
+  }
 };
 
 onMounted(async () => {
@@ -597,7 +672,7 @@ onMounted(async () => {
           size="sm"
           icon="i-lucide-download"
           :label="t('CALENDARIO.SCHEDULES.CSV.BUTTON')"
-          :disabled="!appointments.length"
+          :is-loading="isExportingCsv"
           @click="exportCsv"
         />
       </div>
@@ -676,6 +751,7 @@ onMounted(async () => {
         asistencia, CSV) quede siempre visible mientras se revisan fechas. -->
             <div
               class="flex-1 min-h-0 flex flex-col gap-3 rounded-xl border border-n-weak p-3 overflow-y-auto"
+              :class="contentReady ? 'visible' : 'invisible'"
             >
               <div
                 v-if="!openDays.length"
@@ -777,89 +853,17 @@ onMounted(async () => {
                     v-if="appointmentsForOpenDay(openDay).length"
                     class="flex flex-col divide-y divide-n-weak"
                   >
-                    <div
+                    <AppointmentRow
                       v-for="appointment in appointmentsForOpenDay(openDay)"
                       :key="appointment.id"
-                      class="flex items-center justify-between gap-2 py-2 cursor-pointer hover:bg-n-alpha-1 rounded-lg px-1"
-                      :class="statusRowBackgroundClass(appointment.status)"
-                      @click="openDetailModal(appointment)"
-                    >
-                      <div
-                        class="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0"
-                      >
-                        <span class="text-xs text-n-slate-10 w-14 shrink-0">{{
-                          formatInstantTimeEs(appointment.starts_at)
-                        }}</span>
-                        <router-link
-                          :to="contactUrl(appointment)"
-                          class="text-sm hover:underline text-n-blue-text truncate"
-                          @click.stop
-                        >
-                          {{ appointment.contact_name }}
-                        </router-link>
-                        <span
-                          v-if="appointment.contact_identifier"
-                          class="text-xs text-n-slate-10 truncate"
-                        >
-                          {{
-                            documentTypeAbbreviation(
-                              appointment.contact_document_type
-                            )
-                          }}
-                          {{ appointment.contact_identifier }}
-                        </span>
-                        <a
-                          v-if="appointment.contact_phone_number"
-                          :href="`tel:${appointment.contact_phone_number}`"
-                          class="text-xs text-n-slate-10 hover:text-n-teal-9 hover:underline shrink-0"
-                          @click.stop
-                        >
-                          {{ appointment.contact_phone_number }}
-                        </a>
-                        <a
-                          v-if="appointment.contact_secondary_phone_number"
-                          :href="`tel:${appointment.contact_secondary_phone_number}`"
-                          class="text-xs text-n-slate-10 hover:text-n-teal-9 hover:underline shrink-0"
-                          @click.stop
-                        >
-                          {{ appointment.contact_secondary_phone_number }}
-                        </a>
-                        <button
-                          v-if="appointment.conversation_id"
-                          type="button"
-                          class="i-lucide-message-circle size-4 text-n-slate-10 hover:text-n-blue-text shrink-0"
-                          @click.stop="openConversation(appointment)"
-                        />
-                        <span class="text-xs text-n-slate-10 truncate">{{
-                          appointment.service_name
-                        }}</span>
-                        <span
-                          v-if="appointment.payer_name"
-                          class="text-xs text-n-slate-10 truncate before:content-['·'] before:mr-2"
-                        >
-                          {{ appointment.payer_name }}
-                        </span>
-                      </div>
-                      <div class="flex items-center gap-2 shrink-0" @click.stop>
-                        <Select
-                          :model-value="appointment.status"
-                          :options="statusOptions"
-                          :disabled="updatingAppointmentId === appointment.id"
-                          @update:model-value="
-                            status => setStatus(appointment, status)
-                          "
-                        />
-                        <Button
-                          size="sm"
-                          :variant="ACTION_BUTTON_VARIANT"
-                          :class="ACTION_BUTTON_CLASS"
-                          :color="RESCHEDULE_ACTION.color"
-                          :icon="RESCHEDULE_ACTION.icon"
-                          :label="t(RESCHEDULE_ACTION.labelKey)"
-                          @click="openRescheduleModal(appointment)"
-                        />
-                      </div>
-                    </div>
+                      :appointment="appointment"
+                      :account-id="accountId"
+                      :updating="updatingAppointmentId === appointment.id"
+                      @open-detail="openDetailModal"
+                      @open-conversation="openConversation"
+                      @set-status="setStatus"
+                      @reschedule="openRescheduleModal"
+                    />
                   </div>
                   <p v-else class="text-xs text-n-slate-10 italic">
                     {{

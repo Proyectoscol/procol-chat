@@ -1,14 +1,15 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import FullCalendar from '@fullcalendar/vue3';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import esLocale from '@fullcalendar/core/locales/es';
 import MultiSelect from 'dashboard/components-next/filter/inputs/MultiSelect.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
+import CalendarioDayGrid from '../components/CalendarioDayGrid.vue';
 import AppointmentFormModal from '../components/AppointmentFormModal.vue';
 import RescheduleAppointmentModal from '../components/RescheduleAppointmentModal.vue';
 import CancelAppointmentModal from '../components/CancelAppointmentModal.vue';
@@ -211,23 +212,42 @@ const refreshVisibleRange = () => {
   fetchRange(lastFetchedRange.value.since, lastFetchedRange.value.until);
 };
 
+// "Dia" (columna por profesional) ya NO usa @fullcalendar/resource-timegrid
+// -- ese plugin es parte del paquete pago "Scheduler" de FullCalendar
+// (ver aviso "Your license key is invalid"), y el usuario pidio
+// explicitamente no pagar esa licencia: "mejor construyelo tu". CalendarioDayGrid
+// es la grilla propia (ver helpers/dayGridLayout.js) que reemplaza esa unica
+// pieza paga reutilizando los mismos "events"/"resources" ya calculados
+// aqui. "Semana" sigue usando FullCalendar normal (gratis, sin resources).
+const activeView = ref('week');
+const currentDayDate = ref(new Date());
+
+const fetchDayRange = () => {
+  const since = new Date(currentDayDate.value);
+  since.setDate(since.getDate() - 1);
+  const until = new Date(currentDayDate.value);
+  until.setDate(until.getDate() + 2);
+  fetchRange(since, until);
+};
+watch([activeView, currentDayDate], () => {
+  if (activeView.value === 'day') fetchDayRange();
+});
+
+const onDaySlotClick = ({ date, resourceId }) => {
+  presetStartsAt.value = date;
+  presetProfessionalId.value = resourceId;
+  showFormModal.value = true;
+};
+
 const calendarOptions = computed(() => ({
-  plugins: [timeGridPlugin, resourceTimeGridPlugin, interactionPlugin],
-  // Una columna por profesional (ver "resources"/"resourceId" arriba) -- sin
-  // esto, las citas de todos los profesionales a la misma hora se apilaban
-  // en una sola columna angosta e ilegible (el bug reportado). "Dia" agrupa
-  // por profesional para trabajar la agenda de hoy; "Semana" (sin recursos,
-  // pedido explicito del usuario como vista por defecto) sirve para una
-  // vista general rapida, igual que el calendario semanal de Google.
+  plugins: [timeGridPlugin, interactionPlugin],
   initialView: 'timeGridWeek',
-  resources: resources.value,
   locale: esLocale,
   headerToolbar: {
     left: 'prev,next today',
     center: 'title',
-    right: 'resourceTimeGridDay,timeGridWeek',
+    right: '',
   },
-  buttonText: { resourceTimeGridDay: 'Día', timeGridWeek: 'Semana' },
   allDaySlot: false,
   // Horario real del consultorio (7am-6pm) -- antes se mostraban las 24h,
   // lo que dejaba la franja util comprimida en una fraccion minuscula de la
@@ -271,9 +291,7 @@ const calendarOptions = computed(() => ({
   },
   dateClick: info => {
     presetStartsAt.value = info.date;
-    presetProfessionalId.value = info.resource
-      ? Number(info.resource.id)
-      : null;
+    presetProfessionalId.value = null;
     showFormModal.value = true;
   },
   eventClick: info => {
@@ -334,9 +352,26 @@ onMounted(async () => {
         }}</label>
         <MultiSelect v-model="selectedPayers" :options="payerOptions" />
       </div>
+
+      <div class="flex gap-1 ml-auto">
+        <Button
+          size="sm"
+          :slate="activeView !== 'week'"
+          :faded="activeView !== 'week'"
+          :label="t('CALENDARIO.CALENDAR.VIEW_WEEK')"
+          @click="activeView = 'week'"
+        />
+        <Button
+          size="sm"
+          :slate="activeView !== 'day'"
+          :faded="activeView !== 'day'"
+          :label="t('CALENDARIO.CALENDAR.VIEW_DAY')"
+          @click="activeView = 'day'"
+        />
+      </div>
     </div>
 
-    <FullCalendar :options="calendarOptions">
+    <FullCalendar v-if="activeView === 'week'" :options="calendarOptions">
       <template #eventContent="arg">
         <div class="flex items-start gap-1 px-1 py-0.5 overflow-hidden w-full">
           <span
@@ -354,6 +389,15 @@ onMounted(async () => {
         </div>
       </template>
     </FullCalendar>
+
+    <CalendarioDayGrid
+      v-else
+      v-model="currentDayDate"
+      :resources="resources"
+      :events="events"
+      @slot-click="onDaySlotClick"
+      @event-click="openDetailModal"
+    />
 
     <woot-modal v-model:show="showFormModal" :on-close="closeFormModal">
       <AppointmentFormModal

@@ -6,21 +6,11 @@ import { useAlert } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
-import Button from 'dashboard/components-next/button/Button.vue';
-import Select from 'dashboard/components-next/select/Select.vue';
 import MultiSelect from 'dashboard/components-next/filter/inputs/MultiSelect.vue';
 import RescheduleAppointmentModal from '../components/RescheduleAppointmentModal.vue';
 import CancelAppointmentModal from '../components/CancelAppointmentModal.vue';
 import AppointmentDetailModal from '../components/AppointmentDetailModal.vue';
-import {
-  statusSelectOptions,
-  statusRowBackgroundClass,
-  RESCHEDULE_ACTION,
-  ACTION_BUTTON_VARIANT,
-  ACTION_BUTTON_CLASS,
-} from '../helpers/appointmentStatusActions';
-import { formatInstantTimeEs } from '../helpers/calendarioDateTime';
-import { documentTypeAbbreviation } from '../helpers/documentTypeAbbreviation';
+import AppointmentRow from '../components/AppointmentRow.vue';
 
 const { t } = useI18n();
 const store = useStore();
@@ -115,11 +105,6 @@ const groupedByProfessional = computed(() => {
     a.professionalName.localeCompare(b.professionalName, 'es')
   );
 });
-
-const statusOptions = computed(() => statusSelectOptions(t));
-
-const contactUrl = appointment =>
-  frontendURL(`accounts/${accountId.value}/contacts/${appointment.contact_id}`);
 
 const openConversation = appointment => {
   if (!appointment.conversation_id) return;
@@ -243,83 +228,17 @@ onMounted(async () => {
         }}</span>
 
         <div class="flex flex-col divide-y divide-n-weak">
-          <div
+          <AppointmentRow
             v-for="appointment in group.appointments"
             :key="appointment.id"
-            class="flex items-center justify-between gap-2 py-2 cursor-pointer hover:bg-n-alpha-1 rounded-lg px-1"
-            :class="statusRowBackgroundClass(appointment.status)"
-            @click="openDetailModal(appointment)"
-          >
-            <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 min-w-0">
-              <span class="text-xs text-n-slate-10 w-14 shrink-0">{{
-                formatInstantTimeEs(appointment.starts_at)
-              }}</span>
-              <router-link
-                :to="contactUrl(appointment)"
-                class="text-sm hover:underline text-n-blue-text truncate"
-                @click.stop
-              >
-                {{ appointment.contact_name }}
-              </router-link>
-              <span
-                v-if="appointment.contact_identifier"
-                class="text-xs text-n-slate-10 truncate"
-              >
-                {{
-                  documentTypeAbbreviation(appointment.contact_document_type)
-                }}
-                {{ appointment.contact_identifier }}
-              </span>
-              <a
-                v-if="appointment.contact_phone_number"
-                :href="`tel:${appointment.contact_phone_number}`"
-                class="text-xs text-n-slate-10 hover:text-n-teal-9 hover:underline shrink-0"
-                @click.stop
-              >
-                {{ appointment.contact_phone_number }}
-              </a>
-              <a
-                v-if="appointment.contact_secondary_phone_number"
-                :href="`tel:${appointment.contact_secondary_phone_number}`"
-                class="text-xs text-n-slate-10 hover:text-n-teal-9 hover:underline shrink-0"
-                @click.stop
-              >
-                {{ appointment.contact_secondary_phone_number }}
-              </a>
-              <button
-                v-if="appointment.conversation_id"
-                type="button"
-                class="i-lucide-message-circle size-4 text-n-slate-10 hover:text-n-blue-text shrink-0"
-                @click.stop="openConversation(appointment)"
-              />
-              <span class="text-xs text-n-slate-10 truncate">{{
-                appointment.service_name
-              }}</span>
-              <span
-                v-if="appointment.payer_name"
-                class="text-xs text-n-slate-10 truncate before:content-['·'] before:mr-2"
-              >
-                {{ appointment.payer_name }}
-              </span>
-            </div>
-            <div class="flex items-center gap-2 shrink-0" @click.stop>
-              <Select
-                :model-value="appointment.status"
-                :options="statusOptions"
-                :disabled="updatingAppointmentId === appointment.id"
-                @update:model-value="status => setStatus(appointment, status)"
-              />
-              <Button
-                size="sm"
-                :variant="ACTION_BUTTON_VARIANT"
-                :class="ACTION_BUTTON_CLASS"
-                :color="RESCHEDULE_ACTION.color"
-                :icon="RESCHEDULE_ACTION.icon"
-                :label="t(RESCHEDULE_ACTION.labelKey)"
-                @click="openRescheduleModal(appointment)"
-              />
-            </div>
-          </div>
+            :appointment="appointment"
+            :account-id="accountId"
+            :updating="updatingAppointmentId === appointment.id"
+            @open-detail="openDetailModal"
+            @open-conversation="openConversation"
+            @set-status="setStatus"
+            @reschedule="openRescheduleModal"
+          />
         </div>
       </div>
     </div>

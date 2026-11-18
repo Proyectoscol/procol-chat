@@ -48,6 +48,20 @@ export const actions = {
     }
   },
 
+  // Agrega un lote de citas de un rango MAS ANTIGUO al ya cargado (ver
+  // "cargar mas" en CalendarioSchedulesPage) en vez de reemplazar `records`
+  // -- lo que ya esta cargado (lo reciente, que es lo que se ve al entrar)
+  // no se debe perder ni re-pedir cada vez que se extiende hacia el pasado.
+  extendRange: async ({ commit }, range) => {
+    commit('setUIFlags', { isFetching: true });
+    try {
+      const response = await CalendarioAppointmentsAPI.getRange(range);
+      commit('mergeAppointments', response.data);
+    } finally {
+      commit('setUIFlags', { isFetching: false });
+    }
+  },
+
   getAgenda: async ({ commit }) => {
     commit('setUIFlags', { isFetchingAgenda: true });
     try {
@@ -110,6 +124,11 @@ export const mutations = {
     _state.uiFlags = { ..._state.uiFlags, ...data };
   },
   setAppointments: MutationHelpers.set,
+  mergeAppointments(_state, data) {
+    const existingIds = new Set(_state.records.map(record => record.id));
+    const newOnes = data.filter(record => !existingIds.has(record.id));
+    _state.records = [..._state.records, ...newOnes];
+  },
   addAppointment: MutationHelpers.create,
   editAppointment(_state, data) {
     MutationHelpers.update(_state, data);

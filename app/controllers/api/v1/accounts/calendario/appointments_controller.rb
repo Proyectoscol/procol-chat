@@ -21,7 +21,7 @@ class Api::V1::Accounts::Calendario::AppointmentsController < Api::V1::Accounts:
     zone = ActiveSupport::TimeZone[Current.account.reporting_timezone.presence || 'UTC']
     today = zone.now
     appointments = Current.account.calendario_appointments
-                          .includes(:contact, :professional, :service)
+                          .includes({ contact: :payer }, :professional, :service)
                           .where(starts_at: today.all_day)
                           .order(:starts_at)
     render json: appointments.map { |appointment| serialize(appointment) }
@@ -53,7 +53,7 @@ class Api::V1::Accounts::Calendario::AppointmentsController < Api::V1::Accounts:
   end
 
   def filtered_appointments
-    appointments = Current.account.calendario_appointments.includes(:contact, :professional, :service)
+    appointments = Current.account.calendario_appointments.includes({ contact: :payer }, :professional, :service)
     appointments = filter_by_starts_at(appointments)
     appointments = filter_by_created_at(appointments)
     appointments = appointments.where(contact_id: params[:contact_id]) if params[:contact_id].present?

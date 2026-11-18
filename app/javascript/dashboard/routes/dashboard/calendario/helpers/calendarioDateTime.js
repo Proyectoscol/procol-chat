@@ -29,11 +29,15 @@ export const formatInstantDateEs = (isoString, options = {}) =>
     ...options,
   });
 
+// 24h (sin a. m./p. m.) a proposito -- pedido explicito del usuario: ancho
+// fijo tipo Excel en las tablas de citas, y "a. m."/"p. m." hace que la
+// columna de hora varie de ancho (o se parta en dos lineas) segun el caso.
 export const formatInstantTimeEs = isoString =>
   new Date(isoString).toLocaleTimeString(LOCALE, {
     timeZone: COLOMBIA_TIME_ZONE,
-    hour: 'numeric',
+    hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   });
 
 export const formatInstantDateTimeEs = isoString =>
