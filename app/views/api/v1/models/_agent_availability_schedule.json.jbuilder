@@ -1,0 +1,11 @@
+json.id resource.id
+json.user_id resource.user_id
+json.agent_name resource.user.name
+json.agent_email resource.user.email
+json.starts_on resource.starts_on
+json.ends_on resource.ends_on
+json.start_time resource.start_time.strftime('%H:%M')
+json.end_time resource.end_time.strftime('%H:%M')
+json.weekdays resource.weekdays
+json.active resource.active
+json.currently_locked resource.currently_locked
