@@ -9,7 +9,8 @@
       "SERVICES": "Services",
       "PAYERS": "Insurers",
       "STATS": "Stats",
-      "TRIGGERS": "Notifications"
+      "TRIGGERS": "Notifications",
+      "WELCOME_BOT": "Welcome bot"
     },
     "CONTACT_APPOINTMENTS": {
       "EMPTY": "No appointments for this contact yet.",
@@ -59,6 +60,11 @@
         "PROFESSIONAL_LABEL": "Professional",
         "SERVICE_LABEL": "Service",
         "PAYER_LABEL": "Insurer"
+      },
+      "VIEW_WEEK": "Week",
+      "VIEW_DAY": "Day",
+      "DAY_VIEW": {
+        "TODAY": "Today"
       }
     },
     "APPOINTMENTS": {
@@ -497,18 +503,22 @@
       "DELETE_SUCCESS": "Notification deleted",
       "DELETE_ERROR": "Could not delete the notification",
       "NO_WHATSAPP_INBOX_WARNING": "This account has no WhatsApp inbox configured -- connect a WhatsApp inbox first to create notifications.",
+      "TEST_MODE_BADGE": "Test",
       "TABLE": {
         "KIND": "Sent when",
-        "SERVICE": "Service",
+        "SERVICE": "Service(s)",
+        "PAYER_KIND": "Payer type",
         "INBOX": "Inbox",
         "TEMPLATE": "Template",
         "STATUS": "Status",
         "ACTIONS": "Actions"
       },
       "ALL_SERVICES": "All services",
+      "ALL_PAYER_KINDS": "All payer types",
       "KIND_VALUES": {
         "ON_CREATE": "When the appointment is created",
         "ON_STATUS_CHANGE": "When status changes to \"{status}\"",
+        "ON_STATUS_CHANGE_DELAYED": "When status changes to \"{status}\" ({minutes} min later)",
         "BEFORE_START": "{minutes} min before the appointment"
       },
       "STATUS": {
@@ -526,28 +536,101 @@
         "EDIT_TITLE": "Edit notification",
         "KIND_LABEL": "Sent when",
         "KIND_OPTIONS": {
-          "ON_CREATE": "The appointment is created (confirmation)",
+          "ON_CREATE": "The appointment is created",
           "ON_STATUS_CHANGE": "The appointment status changes",
           "BEFORE_START": "Before the appointment starts (reminder)"
         },
         "TARGET_STATUS_LABEL": "New status",
         "TARGET_STATUS_PLACEHOLDER": "Select the status",
         "OFFSET_MINUTES_LABEL": "Minutes before the appointment",
-        "SERVICE_LABEL": "Service",
-        "SERVICE_PLACEHOLDER": "All services",
+        "DELAY_MINUTES_LABEL": "Minutes after the status change (optional)",
+        "DELAY_MINUTES_PLACEHOLDER": "0 = immediately",
+        "DELAY_MINUTES_HINT": "Leave blank to send right away. Useful, for example, to send the \"attended\" or \"no-show\" message a while after the change instead of instantly.",
+        "SERVICE_LABEL": "Services",
+        "SERVICE_HINT": "Leave all unchecked to apply to every service.",
+        "PAYER_KIND_LABEL": "Payer type",
+        "PAYER_KIND_HINT": "Leave all unchecked to apply to every payer type (EPS, private, plans, policies).",
         "INBOX_LABEL": "WhatsApp inbox",
         "INBOX_PLACEHOLDER": "Select an inbox",
         "TEMPLATE_LABEL": "WhatsApp template",
         "TEMPLATE_PLACEHOLDER": "Select an approved template",
         "TEMPLATE_HINT": "You can use appointment variables in the template parameters (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) by writing them inside double curly braces -- they're automatically replaced with each appointment's real data.",
         "NO_TEMPLATES": "This inbox has no approved templates available.",
+        "CUSTOM_BODY_LABEL": "Message text",
+        "CUSTOM_BODY_PLACEHOLDER": "E.g.: Hello contact.name, your appointment with appointment.professional_name is on appointment.date at appointment.time (wrap each one in double curly braces).",
+        "CUSTOM_BODY_HINT": "This inbox doesn't have approved WhatsApp templates, so write the message directly. You can use appointment variables (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) inside double curly braces.",
         "ACTIVE_LABEL": "Active",
+        "TEST_MODE_LABEL": "Test mode: send as a private note",
+        "TEST_MODE_HINT": "Instead of sending the real WhatsApp message to the patient, a private note is created on the conversation with the content that would have been sent. Use this to test appointment creation, confirmations and reminders before turning on real sends.",
+        "TEST_MODE_FORCED_HINT": "This inbox has no approved WhatsApp templates, so it can only send private notes for now.",
         "CANCEL": "Cancel",
         "SAVE": "Save",
         "CREATE": "Create",
         "CREATE_SUCCESS": "Notification created",
         "EDIT_SUCCESS": "Notification updated",
         "ERROR": "Could not save the notification"
+      }
+    },
+    "WELCOME_BOT": {
+      "DESCRIPTION": "Automatic triage bot: greets new WhatsApp conversations, asks a few questions, then hands off to a human.",
+      "ADD_BUTTON": "New flow",
+      "EMPTY": "No welcome bot flows configured yet.",
+      "FETCH_ERROR": "Could not load the welcome bot flows.",
+      "DELETE_SUCCESS": "Flow deleted",
+      "DELETE_ERROR": "Could not delete the flow",
+      "TABLE": {
+        "NAME": "Name",
+        "MATCH": "Match",
+        "PRIORITY": "Priority",
+        "STEPS": "Steps",
+        "INBOX": "Inbox",
+        "STATUS": "Status",
+        "ACTIONS": "Actions",
+        "KEYWORD_MATCH": "Keyword: \"{value}\"",
+        "DEFAULT_MATCH": "Default (any first message)"
+      },
+      "STATUS": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Delete flow",
+        "MESSAGE": "This welcome bot flow will be removed. Conversations already handed off are not affected.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
+      },
+      "FORM": {
+        "CREATE_TITLE": "New flow",
+        "EDIT_TITLE": "Edit flow",
+        "CREATE_SUCCESS": "Flow created",
+        "EDIT_SUCCESS": "Flow updated",
+        "ERROR": "Could not save the flow",
+        "NAME_LABEL": "Name",
+        "INBOX_LABEL": "WhatsApp inbox",
+        "INBOX_PLACEHOLDER": "Select an inbox",
+        "MATCH_TYPE_LABEL": "When does this flow start?",
+        "MATCH_TYPE_HINT": "Only one \"default\" flow can be active per inbox -- it runs for any first message that does not match a keyword flow.",
+        "MATCH_TYPE_OPTIONS": {
+          "DEFAULT": "Any first message (default)",
+          "KEYWORD": "Only when the first message contains a keyword"
+        },
+        "MATCH_VALUE_LABEL": "Keyword",
+        "MATCH_VALUE_PLACEHOLDER": "e.g. urodinamia",
+        "PRIORITY_LABEL": "Priority",
+        "PRIORITY_HINT": "Keyword flows are checked from highest to lowest priority; the default flow is used only if none match.",
+        "STEPS_LABEL": "Steps",
+        "STEP_NUMBER": "Step {number}",
+        "STEP_ASK_LABEL": "Question",
+        "STEP_OPTIONS_LABEL": "Options (one per line, optional)",
+        "STEP_OPTIONS_PLACEHOLDER": "e.g.\n1. Particular\n2. EPS",
+        "STEP_CONDITION_LABEL": "Only ask this if a previous answer matches",
+        "STEP_CONDITION_IF": "If",
+        "STEP_CONDITION_EQUALS": "equals",
+        "ADD_STEP_BUTTON": "Add step",
+        "ACTIVE_LABEL": "Active",
+        "CANCEL": "Cancel",
+        "SAVE": "Save",
+        "CREATE": "Create"
       }
     }
   }

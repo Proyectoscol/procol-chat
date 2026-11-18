@@ -3,8 +3,10 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
+import { INBOX_TYPES, isWhatsAppCapableInbox } from 'dashboard/helper/inbox';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
+import Textarea from 'dashboard/components-next/textarea/TextArea.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import WhatsAppTemplateParser from 'dashboard/components-next/whatsapp/WhatsAppTemplateParser.vue';
 
@@ -16,7 +18,10 @@ const emit = defineEmits(['close']);
 const { t } = useI18n();
 const store = useStore();
 
-const whatsappInboxes = useMapGetter('inboxes/getWhatsAppInboxes');
+const allInboxes = useMapGetter('inboxes/getInboxes');
+const whatsappInboxes = computed(() =>
+  allInboxes.value.filter(isWhatsAppCapableInbox)
+);
 const getFilteredWhatsAppTemplates = useMapGetter(
   'inboxes/getFilteredWhatsAppTemplates'
 );
@@ -32,29 +37,68 @@ const TARGET_STATUSES = [
   'cancelled',
 ];
 
+const PAYER_KINDS = [
+  'particular',
+  'eps',
+  'plan_complementario',
+  'prepagada',
+  'poliza',
+];
+
 const triggerKind = ref('on_create');
 const targetStatus = ref('');
 const offsetMinutes = ref('');
-const serviceId = ref('');
+const serviceIds = ref([]);
+const payerKinds = ref([]);
 const inboxId = ref('');
 const templateId = ref('');
 const active = ref(true);
+const testMode = ref(false);
 const isSaving = ref(false);
 const templateParserRef = ref(null);
+const customBody = ref('');
+
+// Las bandejas de Twilio con medium whatsapp no tienen catalogo de
+// plantillas aprobadas por Meta (ver inboxes.js#getWhatsAppInboxes) -- para
+// esas, en vez del selector de plantillas se escribe el texto a mano y el
+// disparador queda forzado a test_mode (nunca hay una plantilla real que
+// mandarle a la API de Twilio).
+const selectedInbox = computed(() =>
+  whatsappInboxes.value.find(
+    inbox => String(inbox.id) === String(inboxId.value)
+  )
+);
+const selectedInboxIsMetaWhatsapp = computed(
+  () => selectedInbox.value?.channel_type === INBOX_TYPES.WHATSAPP
+);
 
 const setFormValues = () => {
   triggerKind.value = props.trigger?.trigger_kind || 'on_create';
   targetStatus.value = props.trigger?.target_status || '';
   offsetMinutes.value = props.trigger?.offset_minutes ?? '';
-  serviceId.value = props.trigger?.service_id ?? '';
+  serviceIds.value = props.trigger?.service_ids ?? [];
+  payerKinds.value = props.trigger?.payer_kinds ?? [];
   inboxId.value = props.trigger?.inbox_id ?? '';
   active.value = props.trigger ? props.trigger.active : true;
+  testMode.value = props.trigger ? !!props.trigger.test_mode : false;
+  customBody.value =
+    props.trigger?.template_params?.processed_params?.body ?? '';
   // La plantilla elegida se resuelve de nuevo por nombre+idioma una vez
   // carguen los templates del inbox (ver watch de inboxId más abajo);
   // no se puede resolver aquí porque todavía no sabemos el id interno.
   templateId.value = '';
 };
 watch(() => props.trigger, setFormValues, { immediate: true });
+
+// Si la bandeja elegida no tiene plantillas reales, no tiene sentido
+// mandar un mensaje real -- se fuerza y bloquea test_mode.
+watch(
+  selectedInboxIsMetaWhatsapp,
+  isMeta => {
+    if (!isMeta) testMode.value = true;
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   store.dispatch('inboxes/get');
@@ -87,13 +131,23 @@ const targetStatusOptions = computed(() => [
   })),
 ]);
 
-const serviceOptions = computed(() => [
-  { value: '', label: t('CALENDARIO.TRIGGERS.FORM.SERVICE_PLACEHOLDER') },
-  ...services.value.map(service => ({
-    value: service.id,
-    label: service.name,
-  })),
-]);
+const payerKindOptions = computed(() =>
+  PAYER_KINDS.map(kind => ({
+    value: kind,
+    label: t(`CALENDARIO.PAYERS.KIND_VALUES.${kind.toUpperCase()}`),
+  }))
+);
+
+const toggleInArray = (arrayRef, value) => {
+  const index = arrayRef.value.indexOf(value);
+  if (index === -1) {
+    arrayRef.value = [...arrayRef.value, value];
+  } else {
+    arrayRef.value = arrayRef.value.filter(item => item !== value);
+  }
+};
+const toggleService = id => toggleInArray(serviceIds, id);
+const togglePayerKind = kind => toggleInArray(payerKinds, kind);
 
 const inboxOptions = computed(() => [
   { value: '', label: t('CALENDARIO.TRIGGERS.FORM.INBOX_PLACEHOLDER') },
@@ -148,7 +202,12 @@ watch(
 );
 
 const isFormInvalid = computed(() => {
-  if (!inboxId.value || !templateId.value) return true;
+  if (!inboxId.value) return true;
+  if (selectedInboxIsMetaWhatsapp.value) {
+    if (!templateId.value) return true;
+  } else if (!customBody.value.trim()) {
+    return true;
+  }
   if (triggerKind.value === 'on_status_change' && !targetStatus.value) {
     return true;
   }
@@ -160,29 +219,56 @@ const isFormInvalid = computed(() => {
 
 const onClose = () => emit('close');
 
-const submit = async () => {
-  if (!selectedTemplate.value) return;
-  templateParserRef.value?.v$?.$touch();
-  if (templateParserRef.value?.v$?.$invalid) return;
+// before_start: minutos ANTES, obligatorio (validado arriba en isFormInvalid).
+// on_status_change: minutos DESPUES, opcional -- vacio = 0 = instantaneo
+// (ver Calendario::AppointmentEventTrigger#delay_minutes en el backend).
+const offsetMinutesForSubmit = () => {
+  if (triggerKind.value === 'before_start') return Number(offsetMinutes.value);
+  if (triggerKind.value === 'on_status_change') {
+    return offsetMinutes.value === '' ? null : Number(offsetMinutes.value);
+  }
+  return null;
+};
 
-  isSaving.value = true;
-  const { name, category, language, namespace } = selectedTemplate.value;
-  const payload = {
-    trigger_kind: triggerKind.value,
-    target_status:
-      triggerKind.value === 'on_status_change' ? targetStatus.value : null,
-    offset_minutes:
-      triggerKind.value === 'before_start' ? Number(offsetMinutes.value) : null,
-    service_id: serviceId.value || null,
-    inbox_id: inboxId.value,
-    active: active.value,
-    template_params: {
+const submit = async () => {
+  let templateParams;
+  if (selectedInboxIsMetaWhatsapp.value) {
+    if (!selectedTemplate.value) return;
+    templateParserRef.value?.v$?.$touch();
+    if (templateParserRef.value?.v$?.$invalid) return;
+
+    const { name, category, language, namespace } = selectedTemplate.value;
+    templateParams = {
       name,
       category,
       language,
       namespace,
       processed_params: templateParserRef.value?.processedParams || {},
-    },
+    };
+  } else {
+    // Bandeja sin catalogo de plantillas de Meta (ej. Twilio): texto libre,
+    // siempre en test_mode -- ver watch de selectedInboxIsMetaWhatsapp.
+    templateParams = {
+      name: 'custom_test',
+      category: 'custom',
+      language: null,
+      namespace: null,
+      processed_params: { body: customBody.value },
+    };
+  }
+
+  isSaving.value = true;
+  const payload = {
+    trigger_kind: triggerKind.value,
+    target_status:
+      triggerKind.value === 'on_status_change' ? targetStatus.value : null,
+    offset_minutes: offsetMinutesForSubmit(),
+    service_ids: serviceIds.value,
+    payer_kinds: payerKinds.value,
+    inbox_id: inboxId.value,
+    active: active.value,
+    test_mode: testMode.value,
+    template_params: templateParams,
   };
   try {
     if (isEditMode.value) {
@@ -247,11 +333,82 @@ const submit = async () => {
         :label="t('CALENDARIO.TRIGGERS.FORM.OFFSET_MINUTES_LABEL')"
       />
 
+      <div
+        v-if="triggerKind === 'on_status_change'"
+        class="flex flex-col gap-1"
+      >
+        <Input
+          v-model="offsetMinutes"
+          type="number"
+          min="0"
+          :label="t('CALENDARIO.TRIGGERS.FORM.DELAY_MINUTES_LABEL')"
+          :placeholder="t('CALENDARIO.TRIGGERS.FORM.DELAY_MINUTES_PLACEHOLDER')"
+        />
+        <p class="text-xs text-n-slate-10">
+          {{ t('CALENDARIO.TRIGGERS.FORM.DELAY_MINUTES_HINT') }}
+        </p>
+      </div>
+
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium text-n-slate-12">
           {{ t('CALENDARIO.TRIGGERS.FORM.SERVICE_LABEL') }}
         </label>
-        <Select v-model="serviceId" :options="serviceOptions" />
+        <div
+          class="grid grid-cols-2 gap-x-3 gap-y-1 p-2 border rounded-lg border-n-weak max-h-40 overflow-y-auto"
+        >
+          <div
+            v-for="service in services"
+            :key="service.id"
+            class="flex items-center gap-2"
+          >
+            <input
+              :id="`trigger-service-${service.id}`"
+              type="checkbox"
+              :checked="serviceIds.includes(service.id)"
+              @change="toggleService(service.id)"
+            />
+            <label
+              :for="`trigger-service-${service.id}`"
+              class="text-sm text-n-slate-12"
+            >
+              {{ service.name }}
+            </label>
+          </div>
+        </div>
+        <p class="text-xs text-n-slate-10">
+          {{ t('CALENDARIO.TRIGGERS.FORM.SERVICE_HINT') }}
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-n-slate-12">
+          {{ t('CALENDARIO.TRIGGERS.FORM.PAYER_KIND_LABEL') }}
+        </label>
+        <div
+          class="grid grid-cols-2 gap-x-3 gap-y-1 p-2 border rounded-lg border-n-weak"
+        >
+          <div
+            v-for="option in payerKindOptions"
+            :key="option.value"
+            class="flex items-center gap-2"
+          >
+            <input
+              :id="`trigger-payer-kind-${option.value}`"
+              type="checkbox"
+              :checked="payerKinds.includes(option.value)"
+              @change="togglePayerKind(option.value)"
+            />
+            <label
+              :for="`trigger-payer-kind-${option.value}`"
+              class="text-sm text-n-slate-12"
+            >
+              {{ option.label }}
+            </label>
+          </div>
+        </div>
+        <p class="text-xs text-n-slate-10">
+          {{ t('CALENDARIO.TRIGGERS.FORM.PAYER_KIND_HINT') }}
+        </p>
       </div>
 
       <div class="flex flex-col gap-1">
@@ -261,7 +418,10 @@ const submit = async () => {
         <Select v-model="inboxId" :options="inboxOptions" />
       </div>
 
-      <div v-if="inboxId" class="flex flex-col gap-1">
+      <div
+        v-if="inboxId && selectedInboxIsMetaWhatsapp"
+        class="flex flex-col gap-1"
+      >
         <label class="text-sm font-medium text-n-slate-12">
           {{ t('CALENDARIO.TRIGGERS.FORM.TEMPLATE_LABEL') }}
         </label>
@@ -278,15 +438,63 @@ const submit = async () => {
       </div>
 
       <WhatsAppTemplateParser
-        v-if="selectedTemplate"
+        v-if="selectedInboxIsMetaWhatsapp && selectedTemplate"
         ref="templateParserRef"
         :template="selectedTemplate"
       />
+
+      <!-- Bandejas de Twilio (medium whatsapp) no tienen catalogo de
+      plantillas aprobadas por Meta: el texto se escribe a mano y el envio
+      queda forzado a nota privada de prueba (ver watch de
+      selectedInboxIsMetaWhatsapp). -->
+      <div
+        v-if="inboxId && !selectedInboxIsMetaWhatsapp"
+        class="flex flex-col gap-1"
+      >
+        <label class="text-sm font-medium text-n-slate-12">
+          {{ t('CALENDARIO.TRIGGERS.FORM.CUSTOM_BODY_LABEL') }}
+        </label>
+        <Textarea
+          v-model="customBody"
+          auto-height
+          min-height="6rem"
+          :placeholder="t('CALENDARIO.TRIGGERS.FORM.CUSTOM_BODY_PLACEHOLDER')"
+        />
+        <p class="text-xs text-n-slate-10">
+          {{ t('CALENDARIO.TRIGGERS.FORM.CUSTOM_BODY_HINT') }}
+        </p>
+      </div>
 
       <div class="flex items-center gap-2">
         <input id="trigger-active" v-model="active" type="checkbox" />
         <label for="trigger-active">
           {{ t('CALENDARIO.TRIGGERS.FORM.ACTIVE_LABEL') }}
+        </label>
+      </div>
+
+      <!-- Pedido explicito del usuario antes de pasar a produccion: poder
+      probar como queda el mensaje sin mandarlo de verdad por WhatsApp. -->
+      <div
+        class="flex items-start gap-2 rounded-lg border border-n-amber-5 bg-n-amber-2 p-3"
+      >
+        <input
+          id="trigger-test-mode"
+          v-model="testMode"
+          type="checkbox"
+          class="mt-0.5"
+          :disabled="!selectedInboxIsMetaWhatsapp"
+        />
+        <label for="trigger-test-mode" class="flex flex-col gap-0.5">
+          <span class="text-sm font-medium text-n-slate-12">
+            {{ t('CALENDARIO.TRIGGERS.FORM.TEST_MODE_LABEL') }}
+          </span>
+          <span class="text-xs text-n-slate-11">
+            {{
+              selectedInboxIsMetaWhatsapp
+                ? t('CALENDARIO.TRIGGERS.FORM.TEST_MODE_HINT')
+                : t('CALENDARIO.TRIGGERS.FORM.TEST_MODE_FORCED_HINT')
+            }}
+          </span>
         </label>
       </div>
 

@@ -42,6 +42,18 @@ export const TWILIO_CHANNEL_MEDIUM = {
   SMS: 'sms',
 };
 
+// Channel::Whatsapp (Meta Cloud API/360dialog) tiene plantillas aprobadas
+// sincronizadas (inbox.message_templates); una bandeja de Twilio con medium
+// whatsapp manda y recibe WhatsApp pero no tiene ese catalogo de plantillas.
+export const isWhatsAppCapableInbox = inbox => {
+  const channelType = inbox.channel_type || inbox.channelType;
+  return (
+    channelType === INBOX_TYPES.WHATSAPP ||
+    (channelType === INBOX_TYPES.TWILIO &&
+      inbox.medium === TWILIO_CHANNEL_MEDIUM.WHATSAPP)
+  );
+};
+
 const INBOX_ICON_MAP_FILL = {
   [INBOX_TYPES.WEB]: 'i-ri-global-fill',
   [INBOX_TYPES.FB]: 'i-ri-messenger-fill',

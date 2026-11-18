@@ -145,6 +145,7 @@ Rails.application.routes.draw do
             end
             resource :stats, only: [:show], controller: 'stats'
             resources :appointment_event_triggers, only: [:index, :create, :update, :destroy]
+            resources :welcome_bot_flows, only: [:index, :create, :update, :destroy]
           end
           namespace :import do
             resources :whatsapp_chat_batches, only: [:index, :create]

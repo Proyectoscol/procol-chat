@@ -47,6 +47,10 @@ const tabs = computed(() => {
       name: 'calendario_notifications_index',
       label: t('CALENDARIO.TABS.TRIGGERS'),
     },
+    {
+      name: 'calendario_welcome_bot_flows_index',
+      label: t('CALENDARIO.TABS.WELCOME_BOT'),
+    },
     { name: 'calendario_stats_index', label: t('CALENDARIO.TABS.STATS') },
   ];
 });

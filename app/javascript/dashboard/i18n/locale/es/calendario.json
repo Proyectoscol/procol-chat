@@ -9,7 +9,8 @@
       "SERVICES": "Servicios",
       "PAYERS": "EPS",
       "STATS": "Estadísticas",
-      "TRIGGERS": "Notificaciones"
+      "TRIGGERS": "Notificaciones",
+      "WELCOME_BOT": "Bot de bienvenida"
     },
     "CONTACT_APPOINTMENTS": {
       "EMPTY": "Este contacto todavía no tiene citas.",
@@ -59,6 +60,11 @@
         "PROFESSIONAL_LABEL": "Profesional",
         "SERVICE_LABEL": "Servicio",
         "PAYER_LABEL": "EPS"
+      },
+      "VIEW_WEEK": "Semana",
+      "VIEW_DAY": "Día",
+      "DAY_VIEW": {
+        "TODAY": "Hoy"
       }
     },
     "APPOINTMENTS": {
@@ -497,18 +503,22 @@
       "DELETE_SUCCESS": "Notificación eliminada",
       "DELETE_ERROR": "No se pudo eliminar la notificación",
       "NO_WHATSAPP_INBOX_WARNING": "No hay ninguna bandeja de WhatsApp configurada en esta cuenta -- primero conecta una bandeja de WhatsApp para poder crear notificaciones.",
+      "TEST_MODE_BADGE": "Prueba",
       "TABLE": {
         "KIND": "Cuándo se envía",
-        "SERVICE": "Servicio",
+        "SERVICE": "Servicio(s)",
+        "PAYER_KIND": "Tipo de pagador",
         "INBOX": "Bandeja",
         "TEMPLATE": "Plantilla",
         "STATUS": "Estado",
         "ACTIONS": "Acciones"
       },
       "ALL_SERVICES": "Todos los servicios",
+      "ALL_PAYER_KINDS": "Todos los tipos de pagador",
       "KIND_VALUES": {
         "ON_CREATE": "Al crear la cita",
         "ON_STATUS_CHANGE": "Al cambiar el estado a \"{status}\"",
+        "ON_STATUS_CHANGE_DELAYED": "Al cambiar el estado a \"{status}\" ({minutes} min después)",
         "BEFORE_START": "{minutes} min antes de la cita"
       },
       "STATUS": {
@@ -526,28 +536,101 @@
         "EDIT_TITLE": "Editar notificación",
         "KIND_LABEL": "Cuándo se envía",
         "KIND_OPTIONS": {
-          "ON_CREATE": "Al crear la cita (confirmación)",
+          "ON_CREATE": "Al crear la cita",
           "ON_STATUS_CHANGE": "Al cambiar el estado de la cita",
           "BEFORE_START": "Antes de que empiece la cita (recordatorio)"
         },
         "TARGET_STATUS_LABEL": "Nuevo estado",
         "TARGET_STATUS_PLACEHOLDER": "Selecciona el estado",
         "OFFSET_MINUTES_LABEL": "Minutos antes de la cita",
-        "SERVICE_LABEL": "Servicio",
-        "SERVICE_PLACEHOLDER": "Todos los servicios",
+        "DELAY_MINUTES_LABEL": "Minutos después del cambio de estado (opcional)",
+        "DELAY_MINUTES_PLACEHOLDER": "0 = inmediato",
+        "DELAY_MINUTES_HINT": "Déjalo vacío para enviar al instante. Útil, por ejemplo, para mandar el mensaje de \"atendida\" o \"no asistió\" un rato después del cambio en vez de al momento.",
+        "SERVICE_LABEL": "Servicios",
+        "SERVICE_HINT": "Déjalos todos sin marcar para que aplique a cualquier servicio.",
+        "PAYER_KIND_LABEL": "Tipo de pagador",
+        "PAYER_KIND_HINT": "Déjalos todos sin marcar para que aplique a cualquier tipo de pagador (EPS, particular, planes, pólizas).",
         "INBOX_LABEL": "Bandeja de WhatsApp",
         "INBOX_PLACEHOLDER": "Selecciona una bandeja",
         "TEMPLATE_LABEL": "Plantilla de WhatsApp",
         "TEMPLATE_PLACEHOLDER": "Selecciona una plantilla aprobada",
         "TEMPLATE_HINT": "Puedes usar variables de la cita en los parámetros de la plantilla (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) escribiéndolas entre llaves dobles -- se reemplazan automáticamente por los datos reales de cada cita.",
         "NO_TEMPLATES": "Esta bandeja no tiene plantillas aprobadas disponibles.",
+        "CUSTOM_BODY_LABEL": "Texto del mensaje",
+        "CUSTOM_BODY_PLACEHOLDER": "Ej: Hola contact.name, tu cita con appointment.professional_name es el appointment.date a las appointment.time (envuelve cada una entre llaves dobles).",
+        "CUSTOM_BODY_HINT": "Esta bandeja no tiene plantillas de WhatsApp aprobadas, así que escribe el mensaje directamente. Puedes usar variables de la cita (contact.name, appointment.date, appointment.time, appointment.service_name, appointment.professional_name) entre llaves dobles.",
         "ACTIVE_LABEL": "Activa",
+        "TEST_MODE_LABEL": "Modo de prueba: enviar como nota privada",
+        "TEST_MODE_HINT": "En vez de mandar el mensaje real de WhatsApp al paciente, se crea una nota privada en la conversación con el contenido que se habría enviado. Úsalo para probar la creación de citas, confirmaciones y recordatorios antes de activar envíos reales.",
+        "TEST_MODE_FORCED_HINT": "Esta bandeja no tiene plantillas de WhatsApp aprobadas, así que por ahora solo puede mandar notas privadas.",
         "CANCEL": "Cancelar",
         "SAVE": "Guardar",
         "CREATE": "Crear",
         "CREATE_SUCCESS": "Notificación creada",
         "EDIT_SUCCESS": "Notificación actualizada",
         "ERROR": "No se pudo guardar la notificación"
+      }
+    },
+    "WELCOME_BOT": {
+      "DESCRIPTION": "Bot de triaje automatico: saluda las conversaciones nuevas de WhatsApp, hace unas preguntas y luego entrega a un humano.",
+      "ADD_BUTTON": "Nuevo flujo",
+      "EMPTY": "Todavia no hay flujos de bot de bienvenida configurados.",
+      "FETCH_ERROR": "No se pudieron cargar los flujos del bot de bienvenida.",
+      "DELETE_SUCCESS": "Flujo eliminado",
+      "DELETE_ERROR": "No se pudo eliminar el flujo",
+      "TABLE": {
+        "NAME": "Nombre",
+        "MATCH": "Coincidencia",
+        "PRIORITY": "Prioridad",
+        "STEPS": "Pasos",
+        "INBOX": "Bandeja",
+        "STATUS": "Estado",
+        "ACTIONS": "Acciones",
+        "KEYWORD_MATCH": "Palabra clave: \"{value}\"",
+        "DEFAULT_MATCH": "Por defecto (cualquier primer mensaje)"
+      },
+      "STATUS": {
+        "ACTIVE": "Activo",
+        "INACTIVE": "Inactivo"
+      },
+      "DELETE_CONFIRM": {
+        "TITLE": "Eliminar flujo",
+        "MESSAGE": "Este flujo del bot de bienvenida sera eliminado. Las conversaciones ya entregadas a un humano no se ven afectadas.",
+        "CONFIRM": "Eliminar",
+        "CANCEL": "Cancelar"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Nuevo flujo",
+        "EDIT_TITLE": "Editar flujo",
+        "CREATE_SUCCESS": "Flujo creado",
+        "EDIT_SUCCESS": "Flujo actualizado",
+        "ERROR": "No se pudo guardar el flujo",
+        "NAME_LABEL": "Nombre",
+        "INBOX_LABEL": "Bandeja de WhatsApp",
+        "INBOX_PLACEHOLDER": "Selecciona una bandeja",
+        "MATCH_TYPE_LABEL": "Cuando arranca este flujo?",
+        "MATCH_TYPE_HINT": "Solo puede haber un flujo \"por defecto\" activo por bandeja -- se usa para cualquier primer mensaje que no coincida con un flujo de palabra clave.",
+        "MATCH_TYPE_OPTIONS": {
+          "DEFAULT": "Cualquier primer mensaje (por defecto)",
+          "KEYWORD": "Solo cuando el primer mensaje contiene una palabra clave"
+        },
+        "MATCH_VALUE_LABEL": "Palabra clave",
+        "MATCH_VALUE_PLACEHOLDER": "ej. urodinamia",
+        "PRIORITY_LABEL": "Prioridad",
+        "PRIORITY_HINT": "Los flujos de palabra clave se revisan de mayor a menor prioridad; el flujo por defecto se usa solo si ninguno coincide.",
+        "STEPS_LABEL": "Pasos",
+        "STEP_NUMBER": "Paso {number}",
+        "STEP_ASK_LABEL": "Pregunta",
+        "STEP_OPTIONS_LABEL": "Opciones (una por linea, opcional)",
+        "STEP_OPTIONS_PLACEHOLDER": "ej.\n1. Particular\n2. EPS",
+        "STEP_CONDITION_LABEL": "Preguntar solo si una respuesta anterior coincide",
+        "STEP_CONDITION_IF": "Si",
+        "STEP_CONDITION_EQUALS": "es igual a",
+        "ADD_STEP_BUTTON": "Agregar paso",
+        "ACTIVE_LABEL": "Activo",
+        "CANCEL": "Cancelar",
+        "SAVE": "Guardar",
+        "CREATE": "Crear"
       }
     }
   }

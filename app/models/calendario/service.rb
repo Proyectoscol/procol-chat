@@ -47,8 +47,18 @@ class Calendario::Service < ApplicationRecord
     control?
   end
 
+  # prices.to_a (en vez de find_by dos veces) carga la coleccion completa UNA
+  # sola vez y la deja en memoria en la instancia -- como appointment#price
+  # (unico caller) se llama una vez POR CITA en listas de cientos/miles de
+  # citas, y las citas de un mismo servicio comparten la misma instancia de
+  # Service (gracias a includes(:service)), esto evita 2 queries de mas por
+  # cita (encontrado como N+1 real: 1592 citas -> 1092 queries antes de este
+  # fix). find_by repetido SI estaba usando la cache de consultas de Rails,
+  # pero el overhead de reconstruir el Relation/Arel en Ruby para cada
+  # llamada seguia siendo real.
   def price_for(payer)
-    specific = payer.present? ? prices.find_by(payer_id: payer.id) : nil
-    specific&.price || prices.find_by(payer_id: nil)&.price || base_price
+    loaded_prices = prices.to_a
+    specific = payer.present? ? loaded_prices.find { |p| p.payer_id == payer.id } : nil
+    specific&.price || loaded_prices.find { |p| p.payer_id.nil? }&.price || base_price
   end
 end

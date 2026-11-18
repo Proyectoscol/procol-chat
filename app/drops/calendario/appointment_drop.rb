@@ -1,10 +1,10 @@
 class Calendario::AppointmentDrop < BaseDrop
   def starts_at
-    @obj.starts_at.in_time_zone(zone).strftime('%d/%m/%Y %I:%M %p')
+    Calendario::SpanishDateFormatter.long_date_time(@obj.starts_at.in_time_zone(zone))
   end
 
   def date
-    @obj.starts_at.in_time_zone(zone).strftime('%d/%m/%Y')
+    Calendario::SpanishDateFormatter.long_date(@obj.starts_at.in_time_zone(zone))
   end
 
   def time

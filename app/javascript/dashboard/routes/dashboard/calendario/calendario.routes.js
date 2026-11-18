@@ -10,6 +10,7 @@ import CalendarioServicesPage from './pages/CalendarioServicesPage.vue';
 import CalendarioPayersPage from './pages/CalendarioPayersPage.vue';
 import CalendarioStatsPage from './pages/CalendarioStatsPage.vue';
 import CalendarioNotificationsPage from './pages/CalendarioNotificationsPage.vue';
+import CalendarioWelcomeBotFlowsPage from './pages/CalendarioWelcomeBotFlowsPage.vue';
 
 const meta = {
   permissions: ['administrator', 'agent'],
@@ -82,6 +83,12 @@ const calendarioRoutes = {
           name: 'calendario_notifications_index',
           meta: adminMeta,
           component: CalendarioNotificationsPage,
+        },
+        {
+          path: 'welcome-bot',
+          name: 'calendario_welcome_bot_flows_index',
+          meta: adminMeta,
+          component: CalendarioWelcomeBotFlowsPage,
         },
       ],
     },

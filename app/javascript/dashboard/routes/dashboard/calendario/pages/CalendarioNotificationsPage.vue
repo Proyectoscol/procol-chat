@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
+import { isWhatsAppCapableInbox } from 'dashboard/helper/inbox';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import {
@@ -22,7 +23,10 @@ const deletingId = ref(null);
 
 const triggers = useMapGetter('calendarioAppointmentEventTriggers/getTriggers');
 const uiFlags = useMapGetter('calendarioAppointmentEventTriggers/getUIFlags');
-const whatsappInboxes = useMapGetter('inboxes/getWhatsAppInboxes');
+const allInboxes = useMapGetter('inboxes/getInboxes');
+const whatsappInboxes = computed(() =>
+  allInboxes.value.filter(isWhatsAppCapableInbox)
+);
 
 const hasNoWhatsappInbox = computed(() => whatsappInboxes.value.length === 0);
 
@@ -32,11 +36,16 @@ const sortedTriggers = computed(() =>
 
 const kindLabel = trigger => {
   if (trigger.trigger_kind === 'on_status_change') {
-    return t('CALENDARIO.TRIGGERS.KIND_VALUES.ON_STATUS_CHANGE', {
-      status: t(
-        `CALENDARIO.APPOINTMENTS.STATUS.${trigger.target_status?.toUpperCase()}`
-      ),
-    });
+    const status = t(
+      `CALENDARIO.APPOINTMENTS.STATUS.${trigger.target_status?.toUpperCase()}`
+    );
+    if (trigger.offset_minutes) {
+      return t('CALENDARIO.TRIGGERS.KIND_VALUES.ON_STATUS_CHANGE_DELAYED', {
+        status,
+        minutes: trigger.offset_minutes,
+      });
+    }
+    return t('CALENDARIO.TRIGGERS.KIND_VALUES.ON_STATUS_CHANGE', { status });
   }
   if (trigger.trigger_kind === 'before_start') {
     return t('CALENDARIO.TRIGGERS.KIND_VALUES.BEFORE_START', {
@@ -44,6 +53,20 @@ const kindLabel = trigger => {
     });
   }
   return t('CALENDARIO.TRIGGERS.KIND_VALUES.ON_CREATE');
+};
+
+const servicesLabel = trigger => {
+  if (!trigger.services?.length) return t('CALENDARIO.TRIGGERS.ALL_SERVICES');
+  return trigger.services.map(service => service.name).join(', ');
+};
+
+const payerKindsLabel = trigger => {
+  if (!trigger.payer_kinds?.length) {
+    return t('CALENDARIO.TRIGGERS.ALL_PAYER_KINDS');
+  }
+  return trigger.payer_kinds
+    .map(kind => t(`CALENDARIO.PAYERS.KIND_VALUES.${kind.toUpperCase()}`))
+    .join(', ');
 };
 
 const openCreateModal = () => {
@@ -84,6 +107,7 @@ const confirmDeletion = async () => {
 const tableHeaders = computed(() => [
   t('CALENDARIO.TRIGGERS.TABLE.KIND'),
   t('CALENDARIO.TRIGGERS.TABLE.SERVICE'),
+  t('CALENDARIO.TRIGGERS.TABLE.PAYER_KIND'),
   t('CALENDARIO.TRIGGERS.TABLE.INBOX'),
   t('CALENDARIO.TRIGGERS.TABLE.TEMPLATE'),
   t('CALENDARIO.TRIGGERS.TABLE.STATUS'),
@@ -134,19 +158,29 @@ onMounted(async () => {
         >
           <template #default>
             <BaseTableCell>{{ kindLabel(trigger) }}</BaseTableCell>
-            <BaseTableCell>
-              {{
-                trigger.service_name || t('CALENDARIO.TRIGGERS.ALL_SERVICES')
-              }}
-            </BaseTableCell>
+            <BaseTableCell>{{ servicesLabel(trigger) }}</BaseTableCell>
+            <BaseTableCell>{{ payerKindsLabel(trigger) }}</BaseTableCell>
             <BaseTableCell>{{ trigger.inbox_name }}</BaseTableCell>
             <BaseTableCell>{{ trigger.template_params?.name }}</BaseTableCell>
             <BaseTableCell>
-              {{
-                trigger.active
-                  ? t('CALENDARIO.TRIGGERS.STATUS.ACTIVE')
-                  : t('CALENDARIO.TRIGGERS.STATUS.INACTIVE')
-              }}
+              <div class="flex items-center gap-1.5">
+                <span>
+                  {{
+                    trigger.active
+                      ? t('CALENDARIO.TRIGGERS.STATUS.ACTIVE')
+                      : t('CALENDARIO.TRIGGERS.STATUS.INACTIVE')
+                  }}
+                </span>
+                <!-- Burbuja visible de un vistazo -- pedido explicito del
+                usuario antes de produccion: saber cuales disparadores
+                mandan nota privada (prueba) vs mensaje real. -->
+                <span
+                  v-if="trigger.test_mode"
+                  class="text-[10px] font-medium rounded px-1.5 py-0.5 bg-n-amber-3 text-n-amber-11"
+                >
+                  {{ t('CALENDARIO.TRIGGERS.TEST_MODE_BADGE') }}
+                </span>
+              </div>
             </BaseTableCell>
             <BaseTableCell align="end">
               <div class="flex gap-2 justify-end">

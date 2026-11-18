@@ -68,6 +68,14 @@ remove_old_notification_job:
   class: 'Notification::RemoveOldNotificationJob'
   queue: purgable
 
+# executed every minute -- ventana de recordatorio del bot de Bienvenida es
+# de 5 minutos (ver Calendario::BotSessionReminderJob), necesita granularidad
+# fina para no acumular atraso visible para el paciente
+calendario_bot_session_reminder_job:
+  cron: '*/1 * * * *'
+  class: 'Calendario::BotSessionReminderJob'
+  queue: low
+
 # executed every 12 hours
 # to remove orphan conversations without contact
 remove_orphan_conversations_job:

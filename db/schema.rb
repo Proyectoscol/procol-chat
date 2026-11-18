@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_13_120002) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_18_090100) do
   # These extensions should be enabled to support this database
   enable_extension "btree_gist"
   enable_extension "pg_stat_statements"
@@ -455,7 +455,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_120002) do
 
   create_table "calendario_appointment_event_triggers", force: :cascade do |t|
     t.bigint "account_id", null: false
-    t.bigint "service_id"
     t.bigint "inbox_id", null: false
     t.string "trigger_kind", null: false
     t.string "target_status"
@@ -464,10 +463,13 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_120002) do
     t.jsonb "template_params", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "test_mode", default: false, null: false
+    t.bigint "service_ids", default: [], null: false, array: true
+    t.string "payer_kinds", default: [], null: false, array: true
     t.index ["account_id", "trigger_kind"], name: "index_calendario_triggers_on_account_and_kind"
     t.index ["account_id"], name: "index_calendario_appointment_event_triggers_on_account_id"
     t.index ["inbox_id"], name: "index_calendario_appointment_event_triggers_on_inbox_id"
-    t.index ["service_id"], name: "index_calendario_appointment_event_triggers_on_service_id"
+    t.index ["service_ids"], name: "index_calendario_appointment_event_triggers_on_service_ids", using: :gin
   end
 
   create_table "calendario_appointment_trigger_firings", force: :cascade do |t|
@@ -502,6 +504,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_120002) do
     t.index ["created_by_id"], name: "index_calendario_appointments_on_created_by_id"
     t.index ["professional_id"], name: "index_calendario_appointments_on_professional_id"
     t.index ["service_id"], name: "index_calendario_appointments_on_service_id"
+  end
+
+  create_table "calendario_bot_sessions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "welcome_bot_flow_id", null: false
+    t.integer "current_step", default: 0, null: false
+    t.jsonb "answers", default: {}, null: false
+    t.integer "reminder_count", default: 0, null: false
+    t.datetime "last_prompted_at"
+    t.string "status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_calendario_bot_sessions_on_account_id"
+    t.index ["conversation_id"], name: "index_calendario_bot_sessions_on_conversation_id"
+    t.index ["conversation_id"], name: "index_one_active_bot_session_per_conversation", unique: true, where: "((status)::text = 'active'::text)"
+    t.index ["welcome_bot_flow_id"], name: "index_calendario_bot_sessions_on_welcome_bot_flow_id"
   end
 
   create_table "calendario_contact_session_credits", force: :cascade do |t|
@@ -637,6 +656,22 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_120002) do
     t.index ["professional_id", "status"], name: "index_calendario_waitlist_entries_on_professional_status"
     t.index ["professional_id"], name: "index_calendario_waitlist_entries_on_professional_id"
     t.index ["service_id"], name: "index_calendario_waitlist_entries_on_service_id"
+  end
+
+  create_table "calendario_welcome_bot_flows", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.string "name", null: false
+    t.string "match_type", default: "default", null: false
+    t.string "match_value"
+    t.integer "priority", default: 0, null: false
+    t.jsonb "steps", default: [], null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_calendario_welcome_bot_flows_on_account_id"
+    t.index ["inbox_id", "match_type"], name: "index_one_active_default_flow_per_inbox", unique: true, where: "(((match_type)::text = 'default'::text) AND (active = true))"
+    t.index ["inbox_id"], name: "index_calendario_welcome_bot_flows_on_inbox_id"
   end
 
   create_table "calls", force: :cascade do |t|
@@ -2320,7 +2355,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_120002) do
   add_foreign_key "calendario_appointment_audit_logs", "calendario_appointments", column: "appointment_id", on_delete: :cascade
   add_foreign_key "calendario_appointment_audit_logs", "users", on_delete: :nullify
   add_foreign_key "calendario_appointment_event_triggers", "accounts", on_delete: :cascade
-  add_foreign_key "calendario_appointment_event_triggers", "calendario_services", column: "service_id", on_delete: :cascade
   add_foreign_key "calendario_appointment_event_triggers", "inboxes", on_delete: :cascade
   add_foreign_key "calendario_appointment_trigger_firings", "calendario_appointment_event_triggers", column: "trigger_id", on_delete: :cascade
   add_foreign_key "calendario_appointment_trigger_firings", "calendario_appointments", column: "appointment_id", on_delete: :cascade
@@ -2330,6 +2364,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_120002) do
   add_foreign_key "calendario_appointments", "contacts", on_delete: :cascade
   add_foreign_key "calendario_appointments", "conversations", on_delete: :nullify
   add_foreign_key "calendario_appointments", "users", column: "created_by_id", on_delete: :nullify
+  add_foreign_key "calendario_bot_sessions", "accounts", on_delete: :cascade
+  add_foreign_key "calendario_bot_sessions", "calendario_welcome_bot_flows", column: "welcome_bot_flow_id", on_delete: :cascade
+  add_foreign_key "calendario_bot_sessions", "conversations", on_delete: :cascade
   add_foreign_key "calendario_contact_session_credits", "accounts", on_delete: :cascade
   add_foreign_key "calendario_contact_session_credits", "calendario_appointments", column: "consumed_by_appointment_id", on_delete: :nullify
   add_foreign_key "calendario_contact_session_credits", "calendario_appointments", column: "granted_by_appointment_id", on_delete: :cascade
@@ -2353,6 +2390,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_120002) do
   add_foreign_key "calendario_waitlist_entries", "calendario_professionals", column: "professional_id", on_delete: :cascade
   add_foreign_key "calendario_waitlist_entries", "calendario_services", column: "service_id", on_delete: :cascade
   add_foreign_key "calendario_waitlist_entries", "contacts", on_delete: :cascade
+  add_foreign_key "calendario_welcome_bot_flows", "accounts", on_delete: :cascade
+  add_foreign_key "calendario_welcome_bot_flows", "inboxes", on_delete: :cascade
   add_foreign_key "campaign_recipients", "accounts", on_delete: :cascade
   add_foreign_key "campaign_recipients", "campaigns", on_delete: :cascade
   add_foreign_key "campaign_recipients", "contacts", on_delete: :cascade
