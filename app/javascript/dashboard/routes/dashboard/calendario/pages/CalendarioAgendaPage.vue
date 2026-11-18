@@ -272,12 +272,14 @@ onMounted(async () => {
   </div>
   <div v-else class="flex flex-col gap-4">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <p class="text-sm text-n-slate-11">
-        {{
-          isViewingToday
-            ? t('CALENDARIO.AGENDA.DESCRIPTION')
-            : t('CALENDARIO.AGENDA.VIEWING_DATE', { date: viewedDateLabel })
-        }}
+      <p v-if="isViewingToday" class="text-sm text-n-slate-11">
+        {{ t('CALENDARIO.AGENDA.DESCRIPTION') }}
+      </p>
+      <p
+        v-else
+        class="text-sm font-semibold text-n-slate-12 bg-n-amber-3 border border-n-amber-6 rounded-lg px-3 py-1.5"
+      >
+        {{ t('CALENDARIO.AGENDA.VIEWING_DATE', { date: viewedDateLabel }) }}
       </p>
       <div class="flex items-center gap-2">
         <Button
@@ -289,6 +291,7 @@ onMounted(async () => {
           @click="goToToday"
         />
         <Button
+          v-if="isViewingToday"
           faded
           slate
           sm
