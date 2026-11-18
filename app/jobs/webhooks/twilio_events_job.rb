@@ -4,7 +4,7 @@ class Webhooks::TwilioEventsJob < ApplicationJob
   def perform(params = {})
     # Skip processing if Body parameter, MediaUrl0, or location data is not present
     # This is to skip processing delivery events being delivered to this endpoint
-    return if params[:Body].blank? && params[:MediaUrl0].blank? && !valid_location_message?(params)
+    return if params[:Body].blank? && params[:MediaUrl0].blank? && !valid_location_message?(params) && !valid_interactive_message?(params)
 
     ::Twilio::IncomingMessageService.new(params: params).perform
   end
@@ -13,5 +13,9 @@ class Webhooks::TwilioEventsJob < ApplicationJob
 
   def valid_location_message?(params)
     params[:MessageType] == 'location' && params[:Latitude].present? && params[:Longitude].present?
+  end
+
+  def valid_interactive_message?(params)
+    params[:MessageType] == 'interactive'
   end
 end

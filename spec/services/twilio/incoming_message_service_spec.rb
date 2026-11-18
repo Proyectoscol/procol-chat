@@ -49,6 +49,55 @@ describe Twilio::IncomingMessageService do
       expect(conversation.reload.messages.last.content).to be_nil
     end
 
+    context 'with an interactive message (WhatsApp Flow response)' do
+      it 'formats InteractiveData items into a readable body and preserves the raw JSON' do
+        interactive_data = {
+          pages: [{ items: [{ label: 'Nombre', value: 'Maria' }, { label: 'Servicios', value: %w[Urodinamia Cistoscopia] }] }]
+        }.to_json
+        params = {
+          SmsSid: 'SMxx',
+          From: '+12345',
+          AccountSid: 'ACxxx',
+          MessagingServiceSid: twilio_channel.messaging_service_sid,
+          MessageType: 'interactive',
+          InteractiveData: interactive_data,
+          FlowData: { flow_token: 'tok123' }.to_json
+        }
+
+        described_class.new(params: params).perform
+        message = conversation.reload.messages.last
+        expect(message.content).to eq("Nombre: Maria\nServicios: Urodinamia / Cistoscopia")
+        expect(message.content_attributes['interactive_data']).to eq(JSON.parse(interactive_data))
+        expect(message.content_attributes['flow_data']).to eq({ 'flow_token' => 'tok123' })
+      end
+
+      it 'falls back to FlowData (excluding flow_token) when InteractiveData has no items' do
+        params = {
+          SmsSid: 'SMxx',
+          From: '+12345',
+          AccountSid: 'ACxxx',
+          MessagingServiceSid: twilio_channel.messaging_service_sid,
+          MessageType: 'interactive',
+          FlowData: { flow_token: 'tok123', cedula: '123456789' }.to_json
+        }
+
+        described_class.new(params: params).perform
+        expect(conversation.reload.messages.last.content).to eq('cedula: 123456789')
+      end
+
+      it 'does not create a message when there is no usable data' do
+        params = {
+          SmsSid: 'SMxx',
+          From: '+12345',
+          AccountSid: 'ACxxx',
+          MessagingServiceSid: twilio_channel.messaging_service_sid,
+          MessageType: 'interactive'
+        }
+
+        expect { described_class.new(params: params).perform }.not_to(change { conversation.reload.messages.count })
+      end
+    end
+
     it 'creates a new conversation when payload is from different number' do
       params = {
         SmsSid: 'SMxx',

@@ -100,4 +100,24 @@ RSpec.describe Webhooks::TwilioEventsJob do
       described_class.perform_now(params_with_location)
     end
   end
+
+  context 'when an interactive message (WhatsApp Flow response) is present' do
+    let(:params_with_interactive) do
+      {
+        From: 'whatsapp:+1234567890',
+        To: 'whatsapp:+0987654321',
+        MessageType: 'interactive',
+        InteractiveData: '{}',
+        AccountSid: 'AC123',
+        SmsSid: 'SM123'
+      }
+    end
+
+    it 'processes the event even without Body or MediaUrl0' do
+      service = double
+      expect(Twilio::IncomingMessageService).to receive(:new).with(params: params_with_interactive).and_return(service)
+      expect(service).to receive(:perform)
+      described_class.perform_now(params_with_interactive)
+    end
+  end
 end

@@ -1,4 +1,4 @@
-class Twilio::IncomingMessageService
+class Twilio::IncomingMessageService # rubocop:disable Metrics/ClassLength
   include ::FileTypeHelper
   include ::Twilio::WhatsappIdentifierHelper
 
@@ -9,14 +9,18 @@ class Twilio::IncomingMessageService
 
     set_contact
     set_conversation
+    body = message_body
+    return if interactive_message? && body.blank?
+
     @message = @conversation.messages.build(
-      content: message_body,
+      content: body,
       account_id: @inbox.account_id,
       inbox_id: @inbox.id,
       message_type: :incoming,
       sender: @contact,
       source_id: params[:SmsSid]
     )
+    @message.content_attributes = interactive_content_attributes if interactive_message?
     attach_files
     attach_location if location_message?
     @message.save!
@@ -77,7 +81,24 @@ class Twilio::IncomingMessageService
   end
 
   def message_body
+    return interactive_parser.body if interactive_message?
+
     params[:Body]&.delete("\u0000")
+  end
+
+  def interactive_message?
+    params[:MessageType] == 'interactive'
+  end
+
+  # Un formulario de WhatsApp Flow llega con Body vacio -- ver
+  # Twilio::InteractiveMessageParser para como se reconstruye el texto y se
+  # preserva el JSON crudo.
+  def interactive_parser
+    @interactive_parser ||= Twilio::InteractiveMessageParser.new(params: params)
+  end
+
+  def interactive_content_attributes
+    interactive_parser.content_attributes
   end
 
   def set_contact
