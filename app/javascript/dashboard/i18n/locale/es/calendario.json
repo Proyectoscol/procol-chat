@@ -54,7 +54,7 @@
       },
       "VIEWING_DATE": "Viendo: {date}",
       "BACK_TO_TODAY": "Volver a hoy",
-      "NEXT_DAY_BUTTON": "Siguiente día con citas",
+      "NEXT_DAY_BUTTON": "Siguiente día hábil",
       "NOW_LINE_LABEL": "Ahora",
       "NO_FUTURE_APPOINTMENTS": "No hay citas programadas en ninguna fecha futura."
     },

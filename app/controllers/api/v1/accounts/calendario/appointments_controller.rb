@@ -27,16 +27,14 @@ class Api::V1::Accounts::Calendario::AppointmentsController < Api::V1::Accounts:
     render json: appointments.map { |appointment| serialize(appointment) }
   end
 
-  # La fecha mas proxima, estrictamente despues de hoy, que tiene al menos
-  # una cita -- sin restringir a dias habiles: si el consultorio de verdad
-  # tiene una cita un sabado, el usuario quiere verla igual (pedido
-  # explicito: "el siguiente dia donde hayan examenes o cosas"). nil si no
-  # hay ninguna cita futura.
+  # El dia habil (lunes a viernes) mas proximo, estrictamente despues de hoy,
+  # que tiene al menos una cita -- salta sabados/domingos aunque tengan citas
+  # agendadas. nil si no hay ninguna cita futura en dia habil.
   def next_agenda_date
     next_appointment = Current.account.calendario_appointments
                               .where('starts_at > ?', agenda_zone.now.end_of_day)
                               .order(:starts_at)
-                              .first
+                              .find { |appointment| appointment.starts_at.in_time_zone(agenda_zone).on_weekday? }
     render json: { date: next_appointment&.starts_at&.in_time_zone(agenda_zone)&.to_date }
   end
 
