@@ -117,6 +117,23 @@ const conditionOptionsFor = stepIndex => {
     .filter(Boolean);
 };
 
+// El <select> de "equals" muestra la primera opcion seleccionada por
+// comportamiento nativo del navegador incluso cuando el v-model sigue en ''
+// -- sin esto el valor guardado queda vacio aunque se vea una opcion marcada.
+watch(
+  steps,
+  newSteps => {
+    newSteps.forEach(step => {
+      if (!step.condition.enabled) return;
+      const options = conditionOptionsFor(step.condition.stepIndex);
+      if (options.length && !options.includes(step.condition.equals)) {
+        step.condition.equals = options[0];
+      }
+    });
+  },
+  { deep: true }
+);
+
 const isFormInvalid = computed(() => {
   if (!name.value.trim() || !inboxId.value) return true;
   if (matchType.value === 'keyword' && !matchValue.value.trim()) return true;
