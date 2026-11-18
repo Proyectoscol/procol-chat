@@ -51,7 +51,12 @@
         "PROFESSIONAL": "Professional",
         "STATUS": "Status",
         "ACTIONS": "Actions"
-      }
+      },
+      "VIEWING_DATE": "Viewing: {date}",
+      "BACK_TO_TODAY": "Back to today",
+      "NEXT_DAY_BUTTON": "Next day with appointments",
+      "NOW_LINE_LABEL": "Now",
+      "NO_FUTURE_APPOINTMENTS": "There are no appointments scheduled on any future date."
     },
     "CALENDAR": {
       "FETCH_ERROR": "Could not load the calendar.",

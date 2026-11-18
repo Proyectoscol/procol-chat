@@ -51,7 +51,12 @@
         "PROFESSIONAL": "Profesional",
         "STATUS": "Estado",
         "ACTIONS": "Acciones"
-      }
+      },
+      "VIEWING_DATE": "Viendo: {date}",
+      "BACK_TO_TODAY": "Volver a hoy",
+      "NEXT_DAY_BUTTON": "Siguiente día con citas",
+      "NOW_LINE_LABEL": "Ahora",
+      "NO_FUTURE_APPOINTMENTS": "No hay citas programadas en ninguna fecha futura."
     },
     "CALENDAR": {
       "FETCH_ERROR": "No se pudo cargar el calendario.",

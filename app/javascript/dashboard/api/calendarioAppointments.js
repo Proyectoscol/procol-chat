@@ -22,8 +22,12 @@ class CalendarioAppointmentsAPI extends ApiClient {
     });
   }
 
-  getAgenda() {
-    return axios.get(`${this.url}/agenda`);
+  getAgenda(date = null) {
+    return axios.get(`${this.url}/agenda`, { params: { date } });
+  }
+
+  getNextAgendaDate() {
+    return axios.get(`${this.url}/next_agenda_date`);
   }
 
   getByContact(contactId) {

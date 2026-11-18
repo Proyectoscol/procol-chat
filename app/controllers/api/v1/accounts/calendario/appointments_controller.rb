@@ -17,14 +17,27 @@ class Api::V1::Accounts::Calendario::AppointmentsController < Api::V1::Accounts:
   def agenda
     # "Hoy" tiene que decidirse en la zona del consultorio, no en la del
     # servidor -- Date.current/for_day usan Time.zone (UTC por defecto), lo
-    # que recorta o adelanta la agenda unas horas en America/Bogota.
-    zone = ActiveSupport::TimeZone[Current.account.reporting_timezone.presence || 'UTC']
-    today = zone.now
+    # que recorta o adelanta la agenda unas horas en America/Bogota. ?date
+    # opcional reusa este mismo endpoint para "siguiente dia con citas" (ver
+    # #next_agenda_date) en vez de duplicar el include/serialize de arriba.
     appointments = Current.account.calendario_appointments
                           .includes({ contact: :payer }, :professional, :service)
-                          .where(starts_at: today.all_day)
+                          .where(starts_at: agenda_date.all_day)
                           .order(:starts_at)
     render json: appointments.map { |appointment| serialize(appointment) }
+  end
+
+  # La fecha mas proxima, estrictamente despues de hoy, que tiene al menos
+  # una cita -- sin restringir a dias habiles: si el consultorio de verdad
+  # tiene una cita un sabado, el usuario quiere verla igual (pedido
+  # explicito: "el siguiente dia donde hayan examenes o cosas"). nil si no
+  # hay ninguna cita futura.
+  def next_agenda_date
+    next_appointment = Current.account.calendario_appointments
+                              .where('starts_at > ?', agenda_zone.now.end_of_day)
+                              .order(:starts_at)
+                              .first
+    render json: { date: next_appointment&.starts_at&.in_time_zone(agenda_zone)&.to_date }
   end
 
   def create
@@ -47,6 +60,18 @@ class Api::V1::Accounts::Calendario::AppointmentsController < Api::V1::Accounts:
   end
 
   private
+
+  def agenda_zone
+    @agenda_zone ||= ActiveSupport::TimeZone[Current.account.reporting_timezone.presence || 'UTC']
+  end
+
+  # params[:date] = "YYYY-MM-DD" interpretado como fecha de calendario en la
+  # zona del consultorio (no UTC) -- en blanco = hoy.
+  def agenda_date
+    return agenda_zone.now if params[:date].blank?
+
+    agenda_zone.parse(params[:date]) || agenda_zone.now
+  end
 
   def fetch_appointment
     @appointment = Current.account.calendario_appointments.find(params[:id])

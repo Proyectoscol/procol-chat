@@ -18,4 +18,8 @@ class Calendario::AppointmentsPolicy < ApplicationPolicy
   def agenda?
     index?
   end
+
+  def next_agenda_date?
+    index?
+  end
 end

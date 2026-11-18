@@ -142,6 +142,7 @@ Rails.application.routes.draw do
             resources :appointments, only: [:index, :show, :create, :update] do
               collection do
                 get :agenda
+                get :next_agenda_date
               end
             end
             resource :stats, only: [:show], controller: 'stats'

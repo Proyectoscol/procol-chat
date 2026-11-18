@@ -62,14 +62,22 @@ export const actions = {
     }
   },
 
-  getAgenda: async ({ commit }) => {
+  getAgenda: async ({ commit }, date = null) => {
     commit('setUIFlags', { isFetchingAgenda: true });
     try {
-      const response = await CalendarioAppointmentsAPI.getAgenda();
+      const response = await CalendarioAppointmentsAPI.getAgenda(date);
       commit('setAgendaAppointments', response.data);
     } finally {
       commit('setUIFlags', { isFetchingAgenda: false });
     }
+  },
+
+  // No toca agendaRecords -- solo responde "cual es la proxima fecha con
+  // citas" para que la pagina decida si hay a donde saltar antes de pedir
+  // esa agenda (ver CalendarioAgendaPage.vue#goToNextAgendaDay).
+  getNextAgendaDate: async () => {
+    const response = await CalendarioAppointmentsAPI.getNextAgendaDate();
+    return response.data.date;
   },
 
   getByContact: async ({ commit }, contactId) => {

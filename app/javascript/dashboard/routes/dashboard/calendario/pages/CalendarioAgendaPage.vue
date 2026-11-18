@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useAlert } from 'dashboard/composables';
@@ -7,10 +7,15 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import MultiSelect from 'dashboard/components-next/filter/inputs/MultiSelect.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 import RescheduleAppointmentModal from '../components/RescheduleAppointmentModal.vue';
 import CancelAppointmentModal from '../components/CancelAppointmentModal.vue';
 import AppointmentDetailModal from '../components/AppointmentDetailModal.vue';
 import AppointmentRow from '../components/AppointmentRow.vue';
+import {
+  dateKeyInColombia,
+  formatDateOnlyEs,
+} from '../helpers/calendarioDateTime';
 
 const { t } = useI18n();
 const store = useStore();
@@ -81,6 +86,56 @@ const filteredAppointments = computed(() =>
   appointments.value.filter(matchesFilters)
 );
 
+// null = viendo hoy. Un string "YYYY-MM-DD" cuando se salto a "Siguiente
+// dia con citas" (ver goToNextAgendaDay) -- se manda tal cual a la API
+// (ver Api::V1::Accounts::Calendario::AppointmentsController#agenda_date),
+// nunca se reconstruye como Date en el navegador para no arriesgar un
+// corrimiento de zona horaria.
+const viewedDate = ref(null);
+const isLoadingNextDay = ref(false);
+
+const todayKey = () => dateKeyInColombia(new Date().toISOString());
+const isViewingToday = computed(
+  () => !viewedDate.value || viewedDate.value === todayKey()
+);
+const viewedDateLabel = computed(() => {
+  if (!viewedDate.value) return null;
+  return formatDateOnlyEs(viewedDate.value, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+});
+
+// Linea roja de "ahora" -- solo tiene sentido mirando el dia de hoy, nunca
+// en "Siguiente dia con citas" (pedido explicito del usuario: "para que me
+// quede facil guiarme en que paciente vamos", esto por profesional). Se
+// recalcula cada minuto, no en cada render, para no generar timers
+// invisibles costosos en una pagina que puede quedar abierta horas.
+const now = ref(new Date());
+let nowTimer = null;
+onMounted(() => {
+  nowTimer = setInterval(() => {
+    now.value = new Date();
+  }, 60000);
+});
+onUnmounted(() => {
+  if (nowTimer) clearInterval(nowTimer);
+});
+
+// Indice donde insertar la linea roja dentro de las citas YA ordenadas de
+// un profesional -- justo antes de la primera cita que todavia no deberia
+// haber pasado. length = ya paso la ultima (linea al final); 0 = todavia no
+// empieza ninguna (linea al inicio).
+const nowLineIndexFor = group => {
+  if (!isViewingToday.value) return -1;
+  const index = group.appointments.findIndex(
+    appointment => new Date(appointment.starts_at) > now.value
+  );
+  return index === -1 ? group.appointments.length : index;
+};
+
 // Misma tarjeta que Agendas (CalendarioSchedulesPage) -- esta vista solo
 // cambia el agrupador: ahi es por franja horaria de UN profesional, aqui es
 // por profesional porque "hoy" junta a los 5 doctores en un solo dia.
@@ -142,7 +197,38 @@ const closeDetailModal = () => {
   showDetailModal.value = false;
 };
 
-const refresh = () => store.dispatch('calendarioAppointments/getAgenda');
+const fetchAgenda = async () => {
+  try {
+    await store.dispatch('calendarioAppointments/getAgenda', viewedDate.value);
+  } catch (error) {
+    useAlert(t('CALENDARIO.AGENDA.FETCH_ERROR'));
+  }
+};
+const refresh = fetchAgenda;
+
+const goToNextAgendaDay = async () => {
+  isLoadingNextDay.value = true;
+  try {
+    const nextDate = await store.dispatch(
+      'calendarioAppointments/getNextAgendaDate'
+    );
+    if (!nextDate) {
+      useAlert(t('CALENDARIO.AGENDA.NO_FUTURE_APPOINTMENTS'));
+      return;
+    }
+    viewedDate.value = nextDate;
+    await fetchAgenda();
+  } catch (error) {
+    useAlert(t('CALENDARIO.AGENDA.FETCH_ERROR'));
+  } finally {
+    isLoadingNextDay.value = false;
+  }
+};
+
+const goToToday = async () => {
+  viewedDate.value = null;
+  await fetchAgenda();
+};
 
 const setStatus = async (appointment, status) => {
   if (status === 'cancelled') {
@@ -167,7 +253,7 @@ const setStatus = async (appointment, status) => {
 onMounted(async () => {
   try {
     await Promise.all([
-      store.dispatch('calendarioAppointments/getAgenda'),
+      fetchAgenda(),
       store.dispatch('calendarioProfessionals/get'),
       store.dispatch('calendarioSpecialties/get'),
     ]);
@@ -185,9 +271,33 @@ onMounted(async () => {
     <Spinner />
   </div>
   <div v-else class="flex flex-col gap-4">
-    <p class="text-sm text-n-slate-11">
-      {{ t('CALENDARIO.AGENDA.DESCRIPTION') }}
-    </p>
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <p class="text-sm text-n-slate-11">
+        {{
+          isViewingToday
+            ? t('CALENDARIO.AGENDA.DESCRIPTION')
+            : t('CALENDARIO.AGENDA.VIEWING_DATE', { date: viewedDateLabel })
+        }}
+      </p>
+      <div class="flex items-center gap-2">
+        <Button
+          v-if="!isViewingToday"
+          faded
+          slate
+          sm
+          :label="t('CALENDARIO.AGENDA.BACK_TO_TODAY')"
+          @click="goToToday"
+        />
+        <Button
+          faded
+          slate
+          sm
+          :is-loading="isLoadingNextDay"
+          :label="t('CALENDARIO.AGENDA.NEXT_DAY_BUTTON')"
+          @click="goToNextAgendaDay"
+        />
+      </div>
+    </div>
 
     <div class="flex flex-wrap items-end gap-3">
       <div class="flex flex-col gap-1">
@@ -228,17 +338,40 @@ onMounted(async () => {
         }}</span>
 
         <div class="flex flex-col divide-y divide-n-weak">
-          <AppointmentRow
-            v-for="appointment in group.appointments"
+          <template
+            v-for="(appointment, aptIndex) in group.appointments"
             :key="appointment.id"
-            :appointment="appointment"
-            :account-id="accountId"
-            :updating="updatingAppointmentId === appointment.id"
-            @open-detail="openDetailModal"
-            @open-conversation="openConversation"
-            @set-status="setStatus"
-            @reschedule="openRescheduleModal"
-          />
+          >
+            <div
+              v-if="aptIndex === nowLineIndexFor(group)"
+              class="relative h-0 border-t-2 border-n-ruby-9 my-0.5"
+            >
+              <span
+                class="absolute -top-2 ltr:right-0 rtl:left-0 px-1.5 rounded-full bg-n-ruby-9 text-white text-[10px] leading-4 font-medium"
+              >
+                {{ t('CALENDARIO.AGENDA.NOW_LINE_LABEL') }}
+              </span>
+            </div>
+            <AppointmentRow
+              :appointment="appointment"
+              :account-id="accountId"
+              :updating="updatingAppointmentId === appointment.id"
+              @open-detail="openDetailModal"
+              @open-conversation="openConversation"
+              @set-status="setStatus"
+              @reschedule="openRescheduleModal"
+            />
+          </template>
+          <div
+            v-if="nowLineIndexFor(group) === group.appointments.length"
+            class="relative h-0 border-t-2 border-n-ruby-9 my-0.5"
+          >
+            <span
+              class="absolute -top-2 ltr:right-0 rtl:left-0 px-1.5 rounded-full bg-n-ruby-9 text-white text-[10px] leading-4 font-medium"
+            >
+              {{ t('CALENDARIO.AGENDA.NOW_LINE_LABEL') }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
