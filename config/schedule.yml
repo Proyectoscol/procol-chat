@@ -83,9 +83,3 @@ remove_orphan_conversations_job:
   class: 'Internal::RemoveOrphanConversationsJob'
   queue: housekeeping
 
-# executed every 5 minutes
-# locks/unlocks agent availability per configured lunch-break schedules
-apply_agent_availability_schedule_job:
-  cron: '*/5 * * * *'
-  class: 'Agents::ApplyAvailabilityScheduleJob'
-  queue: scheduled_jobs

@@ -57,7 +57,6 @@ Rails.application.routes.draw do
           resources :agents, only: [:index, :create, :update, :destroy] do
             post :bulk_create, on: :collection
           end
-          resources :agent_availability_schedules, only: [:index, :create, :update, :destroy]
           namespace :captain do
             resource :preferences, only: [:show, :update]
             resources :assistants do
@@ -130,7 +129,7 @@ Rails.application.routes.draw do
             resources :specialties, only: [:index, :create, :update, :destroy]
             resources :professionals, only: [:index, :create, :update, :destroy] do
               resources :availabilities, only: [:index, :create, :destroy],
-                                          controller: 'professional_availabilities'
+                                         controller: 'professional_availabilities'
             end
             resources :services, only: [:index, :create, :update, :destroy] do
               resources :prices, only: [:index, :create, :update, :destroy], controller: 'service_prices'
@@ -138,7 +137,9 @@ Rails.application.routes.draw do
             resources :payers, only: [:index, :create, :update, :destroy]
             resources :contact_credits, only: [:index]
             resources :open_days, only: [:index, :create, :destroy]
-            resources :waitlist_entries, only: [:index, :create, :update, :destroy]
+            resources :waitlist_entries, only: [:index, :create, :update, :destroy] do
+              get :check_duplicate, on: :collection
+            end
             resources :appointments, only: [:index, :show, :create, :update] do
               collection do
                 get :agenda

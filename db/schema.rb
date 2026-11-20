@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_18_130000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_20_081633) do
   # These extensions should be enabled to support this database
   enable_extension "btree_gist"
   enable_extension "pg_stat_statements"
@@ -115,25 +115,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_18_130000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
-  end
-
-  create_table "agent_availability_schedules", force: :cascade do |t|
-    t.bigint "account_id", null: false
-    t.bigint "user_id", null: false
-    t.bigint "created_by_id"
-    t.date "starts_on", null: false
-    t.date "ends_on", null: false
-    t.time "start_time", null: false
-    t.time "end_time", null: false
-    t.integer "weekdays", default: [1, 2, 3, 4, 5], null: false, array: true
-    t.boolean "active", default: true, null: false
-    t.boolean "currently_locked", default: false, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["account_id"], name: "index_agent_availability_schedules_on_account_id"
-    t.index ["created_by_id"], name: "index_agent_availability_schedules_on_created_by_id"
-    t.index ["user_id", "active"], name: "index_agent_availability_schedules_on_user_id_and_active"
-    t.index ["user_id"], name: "index_agent_availability_schedules_on_user_id"
   end
 
   create_table "agent_bot_inboxes", force: :cascade do |t|
@@ -670,6 +651,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_18_130000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.text "escalation_message"
+    t.jsonb "reminder_schedule", default: [], null: false
     t.index ["account_id"], name: "index_calendario_welcome_bot_flows_on_account_id"
     t.index ["inbox_id", "match_type"], name: "index_one_active_default_flow_per_inbox", unique: true, where: "(((match_type)::text = 'default'::text) AND (active = true))"
     t.index ["inbox_id"], name: "index_calendario_welcome_bot_flows_on_inbox_id"
@@ -2335,9 +2317,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_18_130000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "agent_availability_schedules", "accounts", on_delete: :cascade
-  add_foreign_key "agent_availability_schedules", "users", column: "created_by_id", on_delete: :nullify
-  add_foreign_key "agent_availability_schedules", "users", on_delete: :cascade
   add_foreign_key "auditoria_advisor_daily_summaries", "accounts"
   add_foreign_key "auditoria_advisor_daily_summaries", "users"
   add_foreign_key "auditoria_ai_field_configs", "accounts", on_delete: :cascade
