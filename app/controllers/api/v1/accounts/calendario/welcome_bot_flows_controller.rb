@@ -1,6 +1,6 @@
 class Api::V1::Accounts::Calendario::WelcomeBotFlowsController < Api::V1::Accounts::BaseController
   wrap_parameters :welcome_bot_flow,
-                  include: %i[inbox_id name match_type match_value priority active steps escalation_message]
+                  include: %i[inbox_id name match_type match_value priority active steps escalation_message reminder_schedule]
 
   before_action :check_authorization
   before_action :fetch_flow, only: [:update, :destroy]
@@ -38,7 +38,11 @@ class Api::V1::Accounts::Calendario::WelcomeBotFlowsController < Api::V1::Accoun
   def flow_params
     params.require(:welcome_bot_flow).permit(
       :inbox_id, :name, :match_type, :match_value, :priority, :active, :escalation_message,
-      steps: [:ask, { options: [], if: [:step, :equals] }]
+      steps: [
+        :type, :ask, :ask_template, :empty_message, :waitlist_keyword, :ack_message, :content_sid,
+        { options: [], buttons: [], if: [:step, :equals] }
+      ],
+      reminder_schedule: [:after_minutes, :message]
     )
   end
 
@@ -46,7 +50,7 @@ class Api::V1::Accounts::Calendario::WelcomeBotFlowsController < Api::V1::Accoun
     {
       id: flow.id, name: flow.name, match_type: flow.match_type, match_value: flow.match_value,
       priority: flow.priority, active: flow.active, steps: flow.steps, escalation_message: flow.escalation_message,
-      inbox_id: flow.inbox_id, inbox_name: flow.inbox.name
+      reminder_schedule: flow.reminder_schedule, inbox_id: flow.inbox_id, inbox_name: flow.inbox.name
     }
   end
 

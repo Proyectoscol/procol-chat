@@ -58,6 +58,8 @@ class Calendario::AppointmentTriggerRunner
   end
 
   def send_template_message
+    return send_twilio_template_message if twilio_whatsapp_with_content_sid?
+
     processed = processed_template_params
     return if processed.blank?
 
@@ -70,6 +72,58 @@ class Calendario::AppointmentTriggerRunner
                           }, nil)
   rescue StandardError => e
     ChatwootExceptionTracker.new(e, account: account).capture_exception
+  end
+
+  # Bandejas Twilio no tienen catalogo de plantillas de Meta -- el trigger
+  # elige una plantilla real de Twilio (content_sid, ya sincronizada via
+  # Twilio::TemplateSyncService) en vez de name/namespace/lang_code. Mismo
+  # mecanismo que ya usa Calendario::WelcomeBotFlowRunner#send_whatsapp_buttons
+  # para los botones del bot de bienvenida.
+  def twilio_whatsapp_with_content_sid?
+    inbox.twilio_whatsapp? && trigger.template_params['content_sid'].present?
+  end
+
+  def send_twilio_template_message
+    conversation = find_or_create_conversation
+    return if conversation.blank?
+
+    message = build_twilio_message(conversation)
+    result = Twilio::SendOnTwilioService.new(message: message).send_csat_template_message(
+      phone_number: contact.phone_number, content_sid: trigger.template_params['content_sid'],
+      content_variables: resolve_content_variables
+    )
+    apply_send_result(message, result)
+  end
+
+  def build_twilio_message(conversation)
+    conversation.messages.build(
+      account: account, inbox: inbox, message_type: :outgoing,
+      content: preview_text.presence || trigger.template_params['friendly_name'].to_s
+    )
+  end
+
+  def apply_send_result(message, result)
+    message.source_id = result[:message_id] if result[:success] && result[:message_id].present?
+    message.status = :failed unless result[:success]
+    message.save!
+  end
+
+  # El mapeo { "1" => "appointment.date", "2" => "contact.name", ... } se
+  # configura en el formulario del trigger (ver AppointmentEventTriggerFormModal.vue)
+  # -- cada valor es una expresion Liquid resuelta contra los mismos drops
+  # que usa processed_template_params.
+  def resolve_content_variables
+    mapping = trigger.template_params['variable_mapping'] || {}
+    mapping.transform_values { |expression| render_liquid_expression(expression) }
+  end
+
+  def render_liquid_expression(expression)
+    Liquid::Template.parse("{{ #{expression} }}").render!(
+      'contact' => ContactDrop.new(contact), 'appointment' => Calendario::AppointmentDrop.new(appointment),
+      'inbox' => InboxDrop.new(inbox), 'account' => AccountDrop.new(account)
+    )
+  rescue Liquid::Error
+    ''
   end
 
   def create_private_note

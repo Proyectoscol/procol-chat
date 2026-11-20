@@ -26,20 +26,43 @@ class Twilio::TemplateSyncService
   end
 
   def format_template(template)
+    approval = fetch_whatsapp_approval(template.sid)
     {
       content_sid: template.sid,
       friendly_name: template.friendly_name,
       language: template.language,
-      status: derive_status(template),
+      status: approval[:status],
       template_type: derive_template_type(template),
       media_type: derive_media_type(template),
       variables: template.variables || {},
-      category: derive_category(template),
+      category: approval[:category],
       body: extract_body_content(template),
       types: template.types,
       created_at: template.date_created,
       updated_at: template.date_updated
     }
+  end
+
+  # Nunca asumir 'approved' sin preguntarle a Meta -- hallazgo real de
+  # 2026-11-20: varias plantillas de esta cuenta estaban "unsubmitted" (nunca
+  # sometidas) y una quedo reclasificada a MARKETING al aprobarse, pero esta
+  # llamada las marcaba a todas como 'approved' igual, lo cual le mentia al
+  # picker de plantillas del frontend (WelcomeBotFlowFormModal/
+  # AppointmentEventTriggerFormModal) sobre cuales son seguras de usar.
+  # status desconocido/error de red -> 'pending', nunca 'approved' por
+  # default, para que el picker (que filtra status === 'approved') nunca
+  # muestre por error algo no confirmado.
+  def fetch_whatsapp_approval(content_sid)
+    response = api_client.fetch_approval_status(content_sid)
+    whatsapp = response.success? ? JSON.parse(response.body)['whatsapp'] : nil
+    { status: whatsapp&.dig('status').presence || 'pending', category: whatsapp&.dig('category').presence || 'utility' }
+  rescue StandardError => e
+    Rails.logger.error("Twilio::TemplateSyncService approval lookup failed for #{content_sid}: #{e.message}")
+    { status: 'pending', category: 'utility' }
+  end
+
+  def api_client
+    @api_client ||= Twilio::CsatTemplateApiClient.new(channel)
   end
 
   def mark_templates_updated
@@ -48,12 +71,6 @@ class Twilio::TemplateSyncService
 
   def client
     @client ||= channel.send(:client)
-  end
-
-  def derive_status(_template)
-    # For now, assume all fetched templates are approved
-    # In the future, this could check approval status from Twilio
-    'approved'
   end
 
   def derive_template_type(template)
@@ -84,19 +101,6 @@ class Twilio::TemplateSyncService
       'video'
     elsif media_content['document']
       'document'
-    end
-  end
-
-  def derive_category(template)
-    # Map template friendly names or other attributes to categories
-    # For now, use utility as default
-    case template.friendly_name
-    when /marketing|promo|offer|sale/i
-      'marketing'
-    when /auth|otp|verify|code/i
-      'authentication'
-    else
-      'utility'
     end
   end
 

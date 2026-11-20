@@ -5,10 +5,32 @@
 # deben haber la posibilidad de configurarse varios".
 #
 # steps (jsonb), cada paso:
-#   { "ask" => "...", "options" => ["...", "..."], "if" => { "step" => 0, "equals" => "..." } }
-# "if" es opcional -- sin el, el paso siempre aplica; con el, solo si la
-# respuesta de un paso anterior fue exactamente ese valor (ver
+#   { "type" => "ask", "ask" => "...", "options" => ["...", "..."], "if" => { "step" => 0, "equals" => "..." } }
+# "type" es opcional, default "ask" (pregunta + opciones de texto, el
+# comportamiento historico, sin cambios). "if" tambien es opcional -- sin
+# el, el paso siempre aplica; con el, solo si la respuesta de un paso
+# anterior fue exactamente ese valor (ver
 # Calendario::WelcomeBotFlowRunner#applicable_step?).
+#
+# Tipos de paso adicionales (todos resueltos en WelcomeBotFlowRunner), para
+# el flujo de "cita existente" -- ninguno espera mas que el "if" para saber
+# cuando aplica, y los que no son preguntas se ejecutan y avanzan solos:
+#   "lookup_appointment" (espera respuesta): busca la proxima cita futura
+#     del contacto (nunca de otro contacto -- siempre via
+#     conversation.contact.calendario_appointments.upcoming) y la confirma
+#     con "ask_template" (texto con variables Liquid: appointment.date,
+#     appointment.time, appointment.service_name,
+#     appointment.professional_name), con "options" (default: Reagendar /
+#     Cancelar / Hablar con recepcion). Si no hay cita futura, manda
+#     "empty_message" y transfiere directo a recepcion.
+#   "perform_cancellation" (accion): lee la respuesta del paso anterior
+#     (lista de espera vs definitiva, por "waitlist_keyword"/
+#     "definitive_keyword") y cancela la cita encontrada en el paso
+#     "lookup_appointment" previo.
+#   "request_reschedule" (accion): pone la cita en pending y manda
+#     "ack_message" al paciente.
+#   "handoff" (accion): transfiere a recepcion de inmediato con
+#     "ack_message".
 # == Schema Information
 #
 # Table name: calendario_welcome_bot_flows
@@ -20,6 +42,7 @@
 #  match_value        :string
 #  name               :string           not null
 #  priority           :integer          default(0), not null
+#  reminder_schedule  :jsonb            not null
 #  steps              :jsonb            not null
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null

@@ -4,6 +4,12 @@
 # pregunta; si ya tiene sesion, guarda la respuesta y avanza al siguiente
 # paso aplicable, o entrega la conversacion a un humano si no quedan pasos.
 #
+# Los pasos de tipo "accion" (cita existente -- lookup_appointment,
+# perform_cancellation, request_reschedule, handoff) se delegan a
+# Calendario::WelcomeBotAppointmentActions, que es quien toca
+# Calendario::Appointment; este runner solo sabe el motor generico de
+# pasos/ramificacion.
+#
 # Apaga inbox.enable_auto_assignment mientras el bot este "dueno" de la
 # conversacion -- hallazgo real de la auditoria de arquitectura: toda
 # conversacion nueva nace con status: open, y
@@ -12,6 +18,8 @@
 # auto-asignacion le gana al bot en la primera cita. Ver
 # docs/designs/calendario-bienvenida-bot-notificaciones.md.
 class Calendario::WelcomeBotFlowRunner
+  include Calendario::WelcomeBotMessaging
+
   pattr_initialize [:message!]
 
   def perform
@@ -25,6 +33,10 @@ class Calendario::WelcomeBotFlowRunner
 
   def active_session
     @active_session ||= Calendario::BotSession.active.find_by(conversation: conversation)
+  end
+
+  def appointment_actions
+    @appointment_actions ||= Calendario::WelcomeBotAppointmentActions.new(conversation: conversation, message: message)
   end
 
   def start!
@@ -53,6 +65,13 @@ class Calendario::WelcomeBotFlowRunner
     answers = session.answers.merge(session.current_step.to_s => message.content)
     session.update!(answers: answers)
 
+    move_to_next_step!(session)
+  end
+
+  # Usado tanto por advance! (el paciente acaba de responder el paso actual)
+  # como por los pasos de accion (cancelar/reagendar/transferir -- se
+  # ejecutan solos, sin esperar respuesta, y llaman esto para seguir).
+  def move_to_next_step!(session)
     next_step = next_applicable_step_index(session)
     if next_step.nil?
       finish!(session)
@@ -79,28 +98,22 @@ class Calendario::WelcomeBotFlowRunner
     normalize(answers[condition['step'].to_s]) == normalize(condition['equals'])
   end
 
-  def normalize(text)
-    Calendario::WelcomeBotFlow.normalize(text)
-  end
+  ACTION_STEP_HANDLERS = {
+    'lookup_appointment' => :handle_lookup_appointment,
+    'perform_cancellation' => :perform_cancellation_step,
+    'request_reschedule' => :perform_reschedule_step,
+    'handoff' => :perform_handoff_step
+  }.freeze
 
   def ask_current_step(session)
     step = session.current_step_config
     return finish!(session) if step.blank?
 
-    body = step['ask'].to_s
-    body += "\n\n#{Array(step['options']).join("\n")}" if step['options'].present?
-    create_private_note(body)
-    session.update!(last_prompted_at: Time.current, reminder_count: 0)
-  end
+    handler = ACTION_STEP_HANDLERS[step['type']]
+    return appointment_actions.public_send(handler, session, step) if handler
 
-  # Igual que Calendario::AppointmentTriggerRunner#create_private_note --
-  # ver esa clase para por que nota privada en vez de mensaje real (pedido
-  # explicito del usuario antes de produccion).
-  def create_private_note(body)
-    conversation.messages.create!(
-      account: account, inbox: inbox, private: true, message_type: :outgoing,
-      content: "[BOT DE BIENVENIDA -- modo de prueba, nunca se envio un mensaje real]\n\n#{body}"
-    )
+    step['content_sid'].present? ? send_whatsapp_buttons(step) : send_text_question(step)
+    session.update!(last_prompted_at: Time.current, reminder_count: 0)
   end
 
   def finish!(session)
@@ -121,21 +134,15 @@ class Calendario::WelcomeBotFlowRunner
                           .exists?
   end
 
+  HANDOFF_MESSAGE = 'Gracias por indicarnos esos datos. Mi nombre es *Beatriz* y me encargaré de tu atención. ' \
+                    '¿Hay algo más que debamos saber, o prefieres esperar nuestra respuesta?'.freeze
+
   def hand_off_to_human(session)
     create_private_note(
       "Triage completado (#{session.welcome_bot_flow.name}). Respuestas: " \
       "#{session.answers.values.join(' / ')}"
     )
+    send_text_question('ask' => HANDOFF_MESSAGE)
     assign_available_agent
-  end
-
-  # Mismo servicio que usa la auto-asignacion legada de Chatwoot: hace
-  # round-robin entre los miembros de la bandeja que estan en linea Y tienen
-  # cupo disponible. Si nadie esta disponible, no asigna a nadie (se queda
-  # abierta sin asignar, igual que cualquier conversacion normal).
-  def assign_available_agent
-    AutoAssignment::AgentAssignmentService.new(
-      conversation: conversation, allowed_agent_ids: inbox.member_ids_with_assignment_capacity
-    ).perform
   end
 end
