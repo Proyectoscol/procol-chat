@@ -100,6 +100,7 @@ export default {
   watch: {
     conversationId() {
       this.fetchConversationIfUnavailable();
+      this.setActiveChat();
     },
   },
 

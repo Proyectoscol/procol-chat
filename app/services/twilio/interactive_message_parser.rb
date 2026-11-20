@@ -4,11 +4,17 @@
 # flow_token). Esta clase reconstruye un texto legible "Label: Valor" por
 # linea para el agente, y preserva el JSON crudo completo via
 # #content_attributes para que n8n/integraciones lo procesen.
+#
+# Un boton quick-reply normal (no Flow) tambien llega como
+# MessageType=interactive, pero SIN InteractiveData/FlowData -- Twilio ya
+# pone el texto del boton directamente en Body. Sin el fallback de abajo,
+# esos clics quedaban con body vacio y el mensaje nunca se creaba (ver
+# IncomingMessageService#message_body, que corta si body.blank?).
 class Twilio::InteractiveMessageParser
   pattr_initialize [:params!]
 
   def body
-    lines_from_items.presence || lines_from_flow_data
+    lines_from_items.presence || lines_from_flow_data.presence || params[:Body].to_s
   end
 
   def content_attributes
