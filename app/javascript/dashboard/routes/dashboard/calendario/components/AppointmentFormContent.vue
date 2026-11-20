@@ -408,6 +408,9 @@ const submit = async () => {
           </button>
         </li>
       </ul>
+      <!-- Mas llamativo a proposito -- pedido explicito del usuario: antes
+      era un enlace de texto chiquito, facil de no ver cuando el contacto
+      (cedula/nombre) no existe todavia y es justo lo que hay que hacer. -->
       <button
         v-if="
           !presetContact &&
@@ -416,9 +419,10 @@ const submit = async () => {
           !showCreateForm
         "
         type="button"
-        class="text-left text-xs text-n-blue-text hover:underline"
+        class="flex items-center gap-2 w-full text-left text-sm font-medium text-n-blue-text bg-n-blue-2 hover:bg-n-blue-3 border border-n-blue-6 rounded-lg px-3 py-2 transition-colors"
         @click="openCreateForm"
       >
+        <span class="i-lucide-user-plus size-4 flex-shrink-0" />
         {{
           t('CALENDARIO.APPOINTMENTS.FORM.CREATE_CONTACT_LINK', {
             query: contactQuery,
@@ -562,7 +566,11 @@ const submit = async () => {
         v-model:value="startsAt"
         type="datetime"
         :lang="ES_DATEPICKER_LANG"
-        format="DD/MM/YYYY HH:mm"
+        format="DD/MM/YYYY hh:mm A"
+        use12h
+        :minute-step="10"
+        confirm
+        confirm-text="OK"
         :get-classes="getDayClasses"
         input-class="w-full rounded-lg border border-n-weak bg-transparent px-3 py-2 text-sm"
       />

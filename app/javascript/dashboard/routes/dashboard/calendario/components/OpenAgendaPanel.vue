@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useStore } from 'dashboard/composables/store';
 import Button from 'dashboard/components-next/button/Button.vue';
-import WootDatePicker from 'dashboard/components/ui/DatePicker/DatePicker.vue';
-import { DATE_RANGE_TYPES } from 'dashboard/components/ui/DatePicker/helpers/DatePickerHelper';
+import DatePicker from 'vue-datepicker-next';
+import { ES_DATEPICKER_LANG } from '../helpers/datepickerLang';
 
 const props = defineProps({
   professionalId: { type: [Number, String], required: true },
@@ -22,19 +22,17 @@ const pad = n => String(n).padStart(2, '0');
 const formatDateInput = date =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
-const today = new Date();
-const customDateRange = ref([today, today]);
-const selectedDateRange = ref(DATE_RANGE_TYPES.CUSTOM_RANGE);
+// Antes pedia un RANGO (fecha inicio + fecha fin) aunque el 95% de las veces
+// se usa para un solo dia -- pedido explicito del usuario: "no me interesa
+// que yo tenga que darle dos veces click... debería solamente pedirme una
+// vez click en el calendario". Una sola fecha (no Date|null) en vez de
+// [from, to]; matchingDates de abajo sigue funcionando igual (un rango de
+// un solo dia), asi que el submit/la logica de creacion no cambia.
+const selectedDate = ref(new Date());
 // Sin default a proposito -- la asistente tiene que elegir la franja, un
 // clic apurado no debe abrir "manana" por omision.
 const timeWindow = ref('');
 const isSubmitting = ref(false);
-
-const onDateRangeChange = value => {
-  const [startDate, endDate, rangeType] = value;
-  customDateRange.value = [startDate, endDate];
-  selectedDateRange.value = rangeType || DATE_RANGE_TYPES.CUSTOM_RANGE;
-};
 
 const timeWindowOptions = [
   {
@@ -51,17 +49,11 @@ const timeWindowOptions = [
   },
 ];
 
-const matchingDates = computed(() => {
-  const [from, to] = customDateRange.value;
-  if (!from || !to || from > to) return [];
-  const dates = [];
-  const cursor = new Date(from);
-  while (cursor <= to) {
-    dates.push(formatDateInput(cursor));
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return dates;
-});
+// Sigue llamandose "matchingDates" (array) aunque ahora siempre tiene como
+// mucho un elemento -- asi el submit de abajo no cambia nada.
+const matchingDates = computed(() =>
+  selectedDate.value ? [formatDateInput(selectedDate.value)] : []
+);
 
 const isFormInvalid = computed(
   () => !matchingDates.value.length || !timeWindow.value
@@ -102,22 +94,38 @@ const submit = async () => {
 
 <template>
   <div
-    class="flex flex-col gap-3 rounded-xl border border-n-weak bg-n-solid-1 p-3 shadow-sm"
+    class="flex flex-col gap-6 items-center justify-center w-full h-full p-6"
   >
-    <div class="flex flex-wrap items-end gap-3">
-      <div class="flex flex-col gap-1 open-upward">
-        <label class="text-xs text-n-slate-11">{{
-          t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.RANGE_LABEL')
+    <h2 class="text-lg font-semibold text-n-slate-12">
+      {{ t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.TITLE') }}
+    </h2>
+
+    <div class="flex flex-col gap-6 w-full max-w-sm">
+      <div class="flex flex-col gap-1">
+        <span
+          class="text-xs font-medium text-n-slate-11 uppercase tracking-wide"
+        >
+          {{ t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.STEP_1') }}
+        </span>
+        <label class="text-sm text-n-slate-12">{{
+          t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.DATE_LABEL')
         }}</label>
-        <WootDatePicker
-          v-model:date-range="customDateRange"
-          v-model:range-type="selectedDateRange"
-          @date-range-changed="onDateRangeChange"
+        <DatePicker
+          v-model:value="selectedDate"
+          type="date"
+          :lang="ES_DATEPICKER_LANG"
+          format="DD/MM/YYYY"
+          input-class="w-full rounded-lg border border-n-weak bg-transparent px-3 py-2 text-sm"
         />
       </div>
 
       <div class="flex flex-col gap-1">
-        <label class="text-xs text-n-slate-11">{{
+        <span
+          class="text-xs font-medium text-n-slate-11 uppercase tracking-wide"
+        >
+          {{ t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.STEP_2') }}
+        </span>
+        <label class="text-sm text-n-slate-12">{{
           t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.WINDOW_LABEL')
         }}</label>
         <div class="flex gap-1">
@@ -125,7 +133,7 @@ const submit = async () => {
             v-for="option in timeWindowOptions"
             :key="option.value"
             type="button"
-            class="px-2.5 py-1.5 text-xs rounded-lg border"
+            class="flex-1 px-2.5 py-2 text-sm rounded-lg border"
             :class="
               timeWindow === option.value
                 ? 'bg-n-blue-9 text-white border-n-blue-9'
@@ -137,36 +145,22 @@ const submit = async () => {
           </button>
         </div>
       </div>
+    </div>
 
-      <div class="flex items-center gap-2 ml-auto">
-        <Button
-          faded
-          slate
-          size="sm"
-          type="button"
-          :label="t('CALENDARIO.APPOINTMENTS.FORM.CANCEL')"
-          @click="onClose"
-        />
-        <Button
-          size="sm"
-          :label="t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.SUBMIT')"
-          :is-loading="isSubmitting"
-          :disabled="isFormInvalid"
-          @click="submit"
-        />
-      </div>
+    <div class="flex items-center gap-2">
+      <Button
+        faded
+        slate
+        type="button"
+        :label="t('CALENDARIO.APPOINTMENTS.FORM.CANCEL')"
+        @click="onClose"
+      />
+      <Button
+        :label="t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.SUBMIT')"
+        :is-loading="isSubmitting"
+        :disabled="isFormInvalid"
+        @click="submit"
+      />
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Este panel ya vive pegado al fondo de la pagina (ver CalendarioSchedulesPage
--- se despliega arriba del boton "Abrir agenda") -- el calendario de
-WootDatePicker, en cambio, siempre se abre hacia abajo (top-9 fijo), lo que
-obligaba a bajar el scroll para verlo y volver a subir para seguir. Se
-invierte solo aqui (no en el componente compartido, que otras pantallas
-siguen usando hacia abajo sin problema). */
-.open-upward :deep(.absolute.top-9) {
-  @apply top-auto bottom-9;
-}
-</style>

@@ -114,7 +114,11 @@ const submit = async () => {
         v-model:value="startsAt"
         type="datetime"
         :lang="ES_DATEPICKER_LANG"
-        format="DD/MM/YYYY HH:mm"
+        format="DD/MM/YYYY hh:mm A"
+        use12h
+        :minute-step="10"
+        confirm
+        confirm-text="OK"
         :get-classes="getDayClasses"
         input-class="w-full rounded-lg border border-n-weak bg-transparent px-3 py-2 text-sm"
       />

@@ -10,6 +10,18 @@ class Api::V1::Accounts::Calendario::WaitlistEntriesController < Api::V1::Accoun
     render json: entries.order(created_at: :asc).map { |entry| serialize(entry) }
   end
 
+  # Para la alerta de "ya estuvo en lista de espera para este profesional y
+  # servicio" en el formulario de agregar -- deliberadamente no reusa #index
+  # (que solo trae pending, para la lista normal): aqui si importa el
+  # historico completo (fulfilled/cancelled tambien cuentan como "ya estuvo
+  # antes"), pero solo se necesita saber si existe, no traer los datos.
+  def check_duplicate
+    exists = Current.account.calendario_waitlist_entries.exists?(
+      contact_id: params[:contact_id], professional_id: params[:professional_id], service_id: params[:service_id]
+    )
+    render json: { exists: exists }
+  end
+
   def create
     entry = Current.account.calendario_waitlist_entries.create!(entry_params)
     render json: serialize(entry)

@@ -6,6 +6,7 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import calendarioWaitlistEntriesAPI from 'dashboard/api/calendarioWaitlistEntries';
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -159,6 +160,7 @@ const newEntryServiceId = ref('');
 const newEntryProfessionalId = ref('');
 const newEntryNotes = ref('');
 const isCreatingEntry = ref(false);
+const isDuplicate = ref(false);
 let searchTimeout = null;
 
 const serviceOptions = computed(() => [
@@ -191,11 +193,16 @@ const resetAddForm = () => {
   newEntryServiceId.value = '';
   newEntryProfessionalId.value = '';
   newEntryNotes.value = '';
+  isDuplicate.value = false;
 };
 
 const toggleAddForm = () => {
   showAddForm.value = !showAddForm.value;
   if (showAddForm.value) resetAddForm();
+};
+const closeAddForm = () => {
+  showAddForm.value = false;
+  resetAddForm();
 };
 
 const openEditForm = entry => {
@@ -229,6 +236,39 @@ const isAddFormInvalid = computed(
     !selectedContactId.value ||
     !newEntryServiceId.value ||
     !newEntryProfessionalId.value
+);
+
+// Alerta de duplicado -- pedido explicito: "si una persona estaba en lista
+// de espera, y la segunda vez que me lo indique, como una etiqueta".
+// Mismo contacto + mismo profesional + mismo servicio (decision confirmada
+// con el usuario), contando CUALQUIER estado historico (no solo pending --
+// ver Api::V1::Accounts::Calendario::WaitlistEntriesController#check_duplicate).
+// No aplica mientras se esta EDITANDO una entrada existente: esa entrada
+// misma siempre "matchearia" contra si misma, lo cual no es util.
+const checkForDuplicate = async () => {
+  if (
+    editingEntryId.value ||
+    !selectedContactId.value ||
+    !newEntryServiceId.value ||
+    !newEntryProfessionalId.value
+  ) {
+    isDuplicate.value = false;
+    return;
+  }
+  try {
+    const response = await calendarioWaitlistEntriesAPI.checkDuplicate({
+      contactId: selectedContactId.value,
+      professionalId: newEntryProfessionalId.value,
+      serviceId: newEntryServiceId.value,
+    });
+    isDuplicate.value = response.data.exists;
+  } catch (error) {
+    isDuplicate.value = false;
+  }
+};
+watch(
+  [selectedContactId, newEntryServiceId, newEntryProfessionalId],
+  checkForDuplicate
 );
 
 const submitAddEntry = async () => {
@@ -295,9 +335,21 @@ defineExpose({ fetchEntries });
       <div
         class="flex items-center justify-between px-4 py-3 border-b border-n-weak"
       >
-        <h3 class="text-base font-medium text-n-slate-12">
-          {{ t('CALENDARIO.WAITLIST.TITLE') }}
-        </h3>
+        <div class="flex items-center gap-2">
+          <h3 class="text-base font-medium text-n-slate-12">
+            {{ t('CALENDARIO.WAITLIST.TITLE') }}
+          </h3>
+          <!-- Contador -- pedido explicito del usuario: "que diga la
+          cantidad de personas que están en lista de espera", en rojo para
+          que resalte. entries ya viene filtrado por profesional/origen/
+          servicio, asi que el numero coincide con lo que se ve abajo. -->
+          <span
+            v-if="entries.length"
+            class="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-n-ruby-9 text-white text-xs font-medium leading-none"
+          >
+            {{ entries.length }}
+          </span>
+        </div>
         <div class="flex items-center gap-1">
           <Button
             size="sm"
@@ -312,97 +364,6 @@ defineExpose({ fetchEntries });
             type="button"
             class="i-lucide-x size-5 text-n-slate-10 hover:text-n-slate-12"
             @click="$emit('close')"
-          />
-        </div>
-      </div>
-
-      <div
-        v-if="showAddForm"
-        class="flex flex-col gap-2 p-4 border-b border-n-weak relative"
-      >
-        <p class="text-xs font-medium text-n-slate-12">
-          {{
-            editingEntryId
-              ? t('CALENDARIO.WAITLIST.ADD_FORM.EDIT_TITLE')
-              : t('CALENDARIO.WAITLIST.ADD_FORM.CREATE_TITLE')
-          }}
-        </p>
-
-        <label class="text-xs text-n-slate-11">{{
-          t('CALENDARIO.WAITLIST.ADD_FORM.CONTACT_LABEL')
-        }}</label>
-        <input
-          v-model="contactQuery"
-          :disabled="!!editingEntryId"
-          :placeholder="t('CALENDARIO.WAITLIST.ADD_FORM.CONTACT_PLACEHOLDER')"
-          class="w-full rounded-lg border border-n-weak bg-transparent px-3 py-2 text-sm disabled:opacity-60"
-          @input="onContactQueryInput"
-        />
-        <ul
-          v-if="
-            !editingEntryId &&
-            contactQuery.trim().length >= 2 &&
-            !selectedContactId &&
-            contactResults.length
-          "
-          class="flex flex-col gap-0.5 max-h-32 overflow-auto border border-n-weak rounded-lg bg-n-solid-1 p-1"
-        >
-          <li v-for="contact in contactResults" :key="contact.id">
-            <button
-              type="button"
-              class="w-full text-left text-sm px-2 py-1 rounded hover:bg-n-alpha-1"
-              @click="selectContact(contact)"
-            >
-              {{ contact.name }}
-              <span class="text-n-slate-10">{{ contact.phone_number }}</span>
-            </button>
-          </li>
-        </ul>
-
-        <label class="text-xs text-n-slate-11">{{
-          t('CALENDARIO.WAITLIST.ADD_FORM.SERVICE_LABEL')
-        }}</label>
-        <Select v-model="newEntryServiceId" :options="serviceOptions" />
-
-        <label class="text-xs text-n-slate-11">{{
-          t('CALENDARIO.WAITLIST.ADD_FORM.PROFESSIONAL_LABEL')
-        }}</label>
-        <Select
-          v-model="newEntryProfessionalId"
-          :options="professionalOptions"
-        />
-
-        <label class="text-xs text-n-slate-11">{{
-          t('CALENDARIO.WAITLIST.ADD_FORM.NOTES_LABEL')
-        }}</label>
-        <textarea
-          v-model="newEntryNotes"
-          rows="2"
-          class="w-full rounded-lg border border-n-weak bg-transparent px-3 py-2 text-sm"
-        />
-
-        <div class="flex items-center justify-end gap-2 mt-1">
-          <Button
-            faded
-            slate
-            size="sm"
-            type="button"
-            :label="t('CALENDARIO.APPOINTMENTS.FORM.CANCEL')"
-            @click="
-              showAddForm = false;
-              resetAddForm();
-            "
-          />
-          <Button
-            size="sm"
-            :label="
-              editingEntryId
-                ? t('CALENDARIO.WAITLIST.ADD_FORM.SAVE')
-                : t('CALENDARIO.WAITLIST.ADD_FORM.SUBMIT')
-            "
-            :is-loading="isCreatingEntry"
-            :disabled="isAddFormInvalid"
-            @click="submitAddEntry"
           />
         </div>
       </div>
@@ -503,6 +464,107 @@ defineExpose({ fetchEntries });
         </div>
       </div>
     </div>
+
+    <!-- Modal, no expansion inline -- pedido explicito del usuario: antes
+    esto se renderizaba en flujo normal dentro del panel y empujaba hacia
+    abajo los filtros (Origen/Servicio/Ordenar por) cada vez que se editaba
+    una entrada, moviendo la pantalla justo cuando el personal esta en medio
+    de una operacion. -->
+    <woot-modal v-model:show="showAddForm" :on-close="closeAddForm">
+      <div class="flex flex-col gap-2 p-4">
+        <p class="text-sm font-medium text-n-slate-12">
+          {{
+            editingEntryId
+              ? t('CALENDARIO.WAITLIST.ADD_FORM.EDIT_TITLE')
+              : t('CALENDARIO.WAITLIST.ADD_FORM.CREATE_TITLE')
+          }}
+        </p>
+
+        <label class="text-xs text-n-slate-11">{{
+          t('CALENDARIO.WAITLIST.ADD_FORM.CONTACT_LABEL')
+        }}</label>
+        <input
+          v-model="contactQuery"
+          :disabled="!!editingEntryId"
+          :placeholder="t('CALENDARIO.WAITLIST.ADD_FORM.CONTACT_PLACEHOLDER')"
+          class="w-full rounded-lg border border-n-weak bg-transparent px-3 py-2 text-sm disabled:opacity-60"
+          @input="onContactQueryInput"
+        />
+        <ul
+          v-if="
+            !editingEntryId &&
+            contactQuery.trim().length >= 2 &&
+            !selectedContactId &&
+            contactResults.length
+          "
+          class="flex flex-col gap-0.5 max-h-32 overflow-auto border border-n-weak rounded-lg bg-n-solid-1 p-1"
+        >
+          <li v-for="contact in contactResults" :key="contact.id">
+            <button
+              type="button"
+              class="w-full text-left text-sm px-2 py-1 rounded hover:bg-n-alpha-1"
+              @click="selectContact(contact)"
+            >
+              {{ contact.name }}
+              <span class="text-n-slate-10">{{ contact.phone_number }}</span>
+            </button>
+          </li>
+        </ul>
+
+        <label class="text-xs text-n-slate-11">{{
+          t('CALENDARIO.WAITLIST.ADD_FORM.SERVICE_LABEL')
+        }}</label>
+        <Select v-model="newEntryServiceId" :options="serviceOptions" />
+
+        <label class="text-xs text-n-slate-11">{{
+          t('CALENDARIO.WAITLIST.ADD_FORM.PROFESSIONAL_LABEL')
+        }}</label>
+        <Select
+          v-model="newEntryProfessionalId"
+          :options="professionalOptions"
+        />
+
+        <!-- Alerta de duplicado -- pedido explicito del usuario. -->
+        <p
+          v-if="isDuplicate"
+          class="flex items-center gap-1.5 text-xs font-medium text-n-ruby-11 bg-n-ruby-3 rounded-lg px-2.5 py-2"
+        >
+          <span class="i-lucide-alert-triangle size-3.5 flex-shrink-0" />
+          {{ t('CALENDARIO.WAITLIST.ADD_FORM.DUPLICATE_WARNING') }}
+        </p>
+
+        <label class="text-xs text-n-slate-11">{{
+          t('CALENDARIO.WAITLIST.ADD_FORM.NOTES_LABEL')
+        }}</label>
+        <textarea
+          v-model="newEntryNotes"
+          rows="2"
+          class="w-full rounded-lg border border-n-weak bg-transparent px-3 py-2 text-sm"
+        />
+
+        <div class="flex items-center justify-end gap-2 mt-1">
+          <Button
+            faded
+            slate
+            size="sm"
+            type="button"
+            :label="t('CALENDARIO.APPOINTMENTS.FORM.CANCEL')"
+            @click="closeAddForm"
+          />
+          <Button
+            size="sm"
+            :label="
+              editingEntryId
+                ? t('CALENDARIO.WAITLIST.ADD_FORM.SAVE')
+                : t('CALENDARIO.WAITLIST.ADD_FORM.SUBMIT')
+            "
+            :is-loading="isCreatingEntry"
+            :disabled="isAddFormInvalid"
+            @click="submitAddEntry"
+          />
+        </div>
+      </div>
+    </woot-modal>
 
     <woot-delete-modal
       v-model:show="showDeletePopup"

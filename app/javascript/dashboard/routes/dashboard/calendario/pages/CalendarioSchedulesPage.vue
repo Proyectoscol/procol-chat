@@ -47,8 +47,6 @@ const waitlistEntries = useMapGetter(
   'calendarioWaitlistEntries/getWaitlistEntries'
 );
 const appointments = useMapGetter('calendarioAppointments/getAppointments');
-const openDaysUiFlags = useMapGetter('calendarioOpenDays/getUIFlags');
-const appointmentsUiFlags = useMapGetter('calendarioAppointments/getUIFlags');
 const accountId = useMapGetter('getCurrentAccountId');
 const services = useMapGetter('calendarioServices/getServices');
 const payers = useMapGetter('calendarioPayers/getPayers');
@@ -144,6 +142,16 @@ const bottomSentinel = ref(null);
 // contenido hasta despues de fijar el scroll, lo primero que se ve ya esta
 // en la posicion correcta -- no hay salto visible.
 const contentReady = ref(false);
+// Gate independiente de los flags compartidos de Vuex (openDaysUiFlags/
+// appointmentsUiFlags) -- SOLO lo controla esta pagina (fetchForActiveProfessional
+// mas abajo). Antes el v-if de la tarjeta de dias usaba esos flags
+// directamente: cualquier OTRO componente que dispare esos mismos modulos
+// (ej. AppointmentFormContent pidiendo calendarioOpenDays/get para resaltar
+// dias con agenda abierta en su mini-calendario) destruia y volvia a montar
+// la tarjeta entera, perdiendo el scroll -- confirmado en vivo (scrollTop
+// 5332 -> 0 con un solo click en "Agregar cita"). Con este ref local, abrir
+// el modal ya no toca el gate de la pagina.
+const isInitialLoading = ref(true);
 
 // --- Agendar rapido desde la lista de espera (modo expandido) -----------
 // "Expandir" pone la lista de espera al lado de las agendas (en vez de
@@ -422,6 +430,7 @@ const closeDetailModal = () => {
 const fetchForActiveProfessional = async () => {
   const professionalId = activeProfessionalId.value;
   if (!professionalId) return;
+  isInitialLoading.value = true;
   visibleCount.value = PAGE_SIZE;
   contentReady.value = false;
   appointmentsFetchedSince.value = null;
@@ -474,8 +483,54 @@ const fetchForActiveProfessional = async () => {
   nextTick(() => {
     bottomSentinel.value?.scrollIntoView({ block: 'end', behavior: 'instant' });
     contentReady.value = true;
+    isInitialLoading.value = false;
   });
 };
+
+// Version "suave" de refresco -- la usan el auto-refresh cada 2 minutos, el
+// boton de refresco manual, y los handlers de crear/cancelar/cambiar estado.
+// A proposito NO toca visibleCount, NO fuerza scrollIntoView, y NO prende
+// isInitialLoading -- el store ya deja todo in-place (addAppointment/
+// editAppointment, ver store module), asi que un refetch de fondo solo
+// necesita traer datos nuevos (de la OTRA pestana, por ejemplo) sin
+// perturbar la posicion de scroll ni el estado ya montado.
+const isSoftRefreshing = ref(false);
+const softRefresh = async () => {
+  const professionalId = activeProfessionalId.value;
+  if (!professionalId || isSoftRefreshing.value) return;
+  isSoftRefreshing.value = true;
+  try {
+    const until = new Date();
+    until.setFullYear(until.getFullYear() + 1);
+    const since = appointmentsFetchedSince.value || new Date();
+
+    await Promise.all([
+      store.dispatch('calendarioOpenDays/get', { professionalId }),
+      store.dispatch('calendarioAppointments/getRange', {
+        since: since.toISOString(),
+        until: until.toISOString(),
+        professionalId,
+      }),
+      store.dispatch('calendarioWaitlistEntries/get', { professionalId }),
+    ]);
+  } finally {
+    isSoftRefreshing.value = false;
+  }
+};
+
+// Mismo patron de setInterval en onMounted + clearInterval en onUnmounted
+// que ya usan CalendarioAgendaPage/CalendarioDayGrid para la linea de
+// "ahora" -- pedido explicito del usuario: esta pestana queda fija todo el
+// dia mientras cambia estados desde OTRA pestana (Conversaciones/Agenda de
+// hoy), y necesita verlos sin tener que recargar a mano.
+const AUTO_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
+let autoRefreshTimer = null;
+onMounted(() => {
+  autoRefreshTimer = setInterval(softRefresh, AUTO_REFRESH_INTERVAL_MS);
+});
+onUnmounted(() => {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+});
 
 const onTabChanged = tab => {
   activeProfessionalId.value = tab.id;
@@ -488,6 +543,20 @@ const refresh = fetchForActiveProfessional;
 const onOpenDayCreated = refresh;
 const closeOpenAgendaPanel = () => {
   showOpenAgendaPanel.value = false;
+};
+
+// Crear/cancelar/cambiar el estado de una cita ya deja todo in-place en el
+// store (addAppointment/editAppointment, ver calendarioAppointments.js) --
+// antes estos 3 handlers llamaban refresh() completo (resetea paginacion +
+// vuelve a pedir todo + fuerza scroll al fondo), que era precisamente la
+// otra mitad del bug de "se me va hasta arriba". Lo unico que puede haber
+// quedado desactualizado es la lista de espera (una cita nueva puede
+// cumplir una entrada en espera; cancelar puede reactivar una).
+const refreshWaitlistOnly = () => {
+  if (!activeProfessionalId.value) return;
+  store.dispatch('calendarioWaitlistEntries/get', {
+    professionalId: activeProfessionalId.value,
+  });
 };
 
 const setStatus = async (appointment, status) => {
@@ -735,21 +804,41 @@ onMounted(async () => {
             : 'flex-1 min-h-0 flex flex-col gap-3'
         "
       >
-        <div v-if="isExpanded" class="flex items-center justify-between">
-          <span class="text-sm font-medium text-n-slate-12">
+        <div v-if="isExpanded" class="flex items-center justify-between gap-2">
+          <TabBar
+            v-if="tabs.length"
+            :tabs="tabs"
+            :initial-active-tab="activeTabIndex"
+            @tab-changed="onTabChanged"
+          />
+          <span v-else class="text-sm font-medium text-n-slate-12">
             {{ activeProfessionalName }}
           </span>
-          <Button
-            faded
-            slate
-            size="sm"
-            :label="t('CALENDARIO.SCHEDULES.COLLAPSE_BUTTON')"
-            @click="isExpanded = false"
-          />
+          <div class="flex items-center gap-2">
+            <!-- Boton de refresco manual -- pedido explicito del usuario:
+            "un botón al lado de Colapsad[o], como un círculo de carga".
+            Icono gira mientras isSoftRefreshing para dar feedback de que
+            si esta pasando algo (sin esto, un refresco sin cambios visibles
+            se ve igual que un click que no hizo nada). -->
+            <button
+              type="button"
+              class="i-lucide-refresh-cw size-4 text-n-slate-11 hover:text-n-slate-12"
+              :class="isSoftRefreshing ? 'animate-spin' : ''"
+              :disabled="isSoftRefreshing"
+              @click="softRefresh"
+            />
+            <Button
+              faded
+              slate
+              size="sm"
+              :label="t('CALENDARIO.SCHEDULES.COLLAPSE_BUTTON')"
+              @click="isExpanded = false"
+            />
+          </div>
         </div>
 
         <div
-          v-if="openDaysUiFlags.isFetching || appointmentsUiFlags.isFetching"
+          v-if="isInitialLoading"
           class="flex items-center justify-center py-8"
         >
           <Spinner />
@@ -921,15 +1010,6 @@ onMounted(async () => {
               <div ref="bottomSentinel" class="h-px" />
             </div>
 
-            <!-- Fuera de la tarjeta con scroll: el panel se despliega hacia arriba
-      sobre este boton y no tiene sentido que quede encerrado en el area que
-      se desplaza. -->
-            <OpenAgendaPanel
-              v-if="showOpenAgendaPanel && activeProfessionalId"
-              :professional-id="activeProfessionalId"
-              @close="closeOpenAgendaPanel"
-              @created="onOpenDayCreated"
-            />
             <div class="flex justify-center">
               <Button
                 faded
@@ -938,7 +1018,7 @@ onMounted(async () => {
                 icon="i-lucide-calendar-plus"
                 :label="t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.BUTTON')"
                 :disabled="!activeProfessionalId"
-                @click="showOpenAgendaPanel = !showOpenAgendaPanel"
+                @click="showOpenAgendaPanel = true"
               />
             </div>
           </div>
@@ -964,7 +1044,7 @@ onMounted(async () => {
         :preset-professional-id="presetProfessionalId"
         :preset-starts-at="presetStartsAt"
         @close="closeFormModal"
-        @created="refresh"
+        @created="refreshWaitlistOnly"
       />
     </woot-modal>
 
@@ -984,7 +1064,7 @@ onMounted(async () => {
         v-if="cancellingAppointment"
         :appointment="cancellingAppointment"
         @close="closeCancelModal"
-        @cancelled="refresh"
+        @cancelled="refreshWaitlistOnly"
       />
     </woot-modal>
 
@@ -995,7 +1075,7 @@ onMounted(async () => {
         @close="closeDetailModal"
         @reschedule="openRescheduleModal"
         @cancel="openCancelModal"
-        @changed="refresh"
+        @changed="refreshWaitlistOnly"
       />
     </woot-modal>
 
@@ -1006,5 +1086,23 @@ onMounted(async () => {
       @close="showWaitlistPanel = false"
       @book="onWaitlistBook"
     />
+
+    <!-- Pantalla completa a proposito -- pedido explicito del usuario: "que
+    sea un modal que me ocupe toda la pantalla, para que sea más fácil para
+    la persona entender que acaba de abrir un día de agenda", en vez del
+    panel pequeño inline de antes (aplica igual en modo expandido y no
+    expandido, ver boton de arriba). -->
+    <woot-modal
+      v-model:show="showOpenAgendaPanel"
+      :on-close="closeOpenAgendaPanel"
+      full-width
+    >
+      <OpenAgendaPanel
+        v-if="activeProfessionalId"
+        :professional-id="activeProfessionalId"
+        @close="closeOpenAgendaPanel"
+        @created="onOpenDayCreated"
+      />
+    </woot-modal>
   </div>
 </template>
