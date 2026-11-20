@@ -123,6 +123,21 @@ class Messages::MessageBuilder
     @params[:template_params].present? ? { additional_attributes: { template_params: JSON.parse(@params[:template_params].to_json) } } : {}
   end
 
+  # Antepone "**Nombre:** " en WhatsApp cuando un agente escribe en vivo (o
+  # via macro), para que el paciente sepa con quien habla. "**...**"
+  # (markdown strong) -- pedido explicito del usuario: el nombre en negrilla,
+  # el resto del texto normal. Messages::MarkdownRenderers::WhatsAppRenderer
+  # ya traduce "**x**" a "*x*" (la sintaxis real de negrilla de WhatsApp) al
+  # enviar, y el mismo markdown ya se ve en negrilla en la burbuja de
+  # Chatwoot (MessageFormatter.js) -- no hace falta logica de renderizado
+  # aparte en ningun lado. No aplica a otros canales, notas privadas,
+  # entrantes, campanas, ni AgentBot/automatizaciones.
+  def content_with_agent_name_prefix
+    should_prefix = message_type == 'outgoing' && !@private && sender.is_a?(User) &&
+                    @params[:content].present? && @params[:campaign_id].blank? && @conversation.inbox.twilio_whatsapp?
+    should_prefix ? "**#{sender.first_name}:** #{@params[:content]}" : @params[:content]
+  end
+
   def message_sender
     return if @params[:sender_type] != 'AgentBot'
 
@@ -134,7 +149,7 @@ class Messages::MessageBuilder
       account_id: @conversation.account_id,
       inbox_id: @conversation.inbox_id,
       message_type: message_type,
-      content: @params[:content],
+      content: content_with_agent_name_prefix,
       private: @private,
       sender: sender,
       content_type: @params[:content_type],

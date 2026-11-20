@@ -5,6 +5,15 @@ module UserAttributeHelpers
     self[:display_name].presence || name
   end
 
+  # A diferencia de UserDrop#first_name (usado en plantillas Liquid, que
+  # deliberadamente devuelve nil si el nombre tiene una sola palabra), este
+  # siempre devuelve algo usable -- lo usa
+  # Messages::MessageBuilder#content_with_agent_name_prefix para anteponer
+  # el nombre del agente a los mensajes de WhatsApp.
+  def first_name
+    available_name.to_s.split.first.to_s.capitalize
+  end
+
   def availability_status
     current_account_user&.availability_status
   end
