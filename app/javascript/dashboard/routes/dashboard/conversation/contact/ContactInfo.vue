@@ -280,7 +280,7 @@ export default {
           <ContactInfoRow
             v-if="contact.payer_name"
             :value="contact.payer_name"
-            icon="shield-check"
+            icon="lock-shield"
             emoji="🏥"
             :title="$t('CONTACT_PANEL.PAYER')"
           />
