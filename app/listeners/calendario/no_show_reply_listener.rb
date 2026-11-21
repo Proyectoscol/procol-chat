@@ -24,8 +24,7 @@ class Calendario::NoShowReplyListener < BaseListener
 
   def message_created(event)
     message, account = extract_message_and_account(event)
-    return unless message.incoming? && !message.private?
-    return if message.content.blank?
+    return if skip?(message)
 
     appointment = recent_no_show_appointment_for(message.conversation)
     return if appointment.blank?
@@ -39,6 +38,16 @@ class Calendario::NoShowReplyListener < BaseListener
   end
 
   private
+
+  # Mismo guard que Calendario::WelcomeBotListener -- un chat historico
+  # importado jamas debe poder cancelar/reagendar una cita real solo porque
+  # su texto contiene "cancelar"/"reprogramar" por coincidencia.
+  def skip?(message)
+    return true unless message.incoming? && !message.private?
+    return true if message.content_attributes['historical_import']
+
+    message.content.blank?
+  end
 
   # El status vuelve a :no_show solo via un nuevo disparo del trigger de
   # no_show (otra cita futura) -- una vez esta se mueve a :pending o

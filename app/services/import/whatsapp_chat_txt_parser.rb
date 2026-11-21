@@ -33,7 +33,16 @@ class Import::WhatsappChatTxtParser
   IOS_SYSTEM_LINE = %r{\A\[(?<date>\d{1,2}/\d{1,2}/\d{2,4}),\s*(?<time>\d{1,2}:\d{2}(?::\d{2})?(?:\s?[ap]\.?m\.?)?)\]\s(?<body>.*)\z}i
   ANDROID_SYSTEM_LINE = %r{\A(?<date>\d{1,2}/\d{1,2}/\d{2,4}),\s*(?<time>\d{1,2}:\d{2}(?::\d{2})?(?:\s?[ap]\.?m\.?)?)\s-\s(?<body>.*)\z}i
 
-  ATTACHMENT_TOKEN = /<(?:attached|adjunto):\s*(.+?)>/i
+  # Dos formatos reales vistos en exports: el viejo "<attached: foo.jpg>" /
+  # "<adjunto: foo.jpg>" (con el que se construyo y probo originalmente este
+  # parser), y el que realmente trae WhatsApp en los exports actuales --
+  # "foo.jpg (file attached)" / "foo.jpg (archivo adjunto)", el nombre
+  # ANTES de la frase, entre parentesis, sin los dos puntos. Sin el segundo
+  # patron, todo adjunto de un export reciente se pierde silenciosamente
+  # (quedaba como texto plano, nunca marcado :attachment) -- hallazgo real
+  # al importar los exports de 2026-11.
+  ATTACHMENT_TOKEN_OLD = /<(?:attached|adjunto):\s*(.+?)>/i
+  ATTACHMENT_TOKEN_NEW = /\A(.+?)\s*\((?:file attached|archivo adjunto)\)\z/i
 
   # Frases conocidas de mensajes de sistema (ingles/espanol) -- si el cuerpo
   # empieza con alguna de estas, se clasifica como :system en vez de :text.
@@ -120,14 +129,22 @@ class Import::WhatsappChatTxtParser
 
   def build_message(match, kind:)
     body = match[:body]
-    attachment_match = body.match(ATTACHMENT_TOKEN)
+    attachment_filename = extract_attachment_filename(body)
     {
       timestamp: parse_timestamp(match[:date], match[:time]),
       sender_name: match[:sender].strip,
-      kind: attachment_match ? :attachment : kind,
+      kind: attachment_filename ? :attachment : kind,
       body: body,
-      attachment_filename: attachment_match && attachment_match[1].strip
+      attachment_filename: attachment_filename
     }
+  end
+
+  def extract_attachment_filename(body)
+    old_match = body.match(ATTACHMENT_TOKEN_OLD)
+    return old_match[1].strip if old_match
+
+    new_match = body.match(ATTACHMENT_TOKEN_NEW)
+    new_match && new_match[1].strip
   end
 
   def build_system_message(match)

@@ -78,9 +78,21 @@ class Import::WhatsappChatImportService
     wa_id = normalized_wa_id
     ContactInboxWithContactBuilder.new(
       inbox: batch.inbox,
-      source_id: wa_id,
+      source_id: whatsapp_source_id(wa_id),
       contact_attributes: { name: customer_display_name, phone_number: "+#{wa_id}" }
     ).perform
+  end
+
+  # Channel::Whatsapp (Meta Cloud API) quiere el source_id en digitos
+  # sueltos; Channel::TwilioSms en medium whatsapp lo exige como
+  # "whatsapp:+E164" (ver ContactInboxBuilder#twilio_source_id, la misma
+  # regla que ya usa el resto del codebase) -- sin esto, ContactInbox
+  # rechaza el registro con "invalid source id for twilio whatsapp inbox".
+  def whatsapp_source_id(wa_id)
+    inbox = batch.inbox
+    return "whatsapp:+#{wa_id}" if inbox.channel_type == 'Channel::TwilioSms' && inbox.channel.medium == 'whatsapp'
+
+    wa_id
   end
 
   def normalized_wa_id
@@ -147,7 +159,13 @@ class Import::WhatsappChatImportService
       sender: outgoing ? nil : conversation.contact,
       source_id: fingerprint,
       created_at: parsed[:timestamp],
-      content_attributes: outgoing ? { external_echo: true } : {}
+      # historical_import es la marca que CUALQUIER listener de
+      # message_created debe revisar antes de reaccionar -- ver incidente
+      # documentado en data_imports/.../INCIDENTE_welcome_bot_import.md:
+      # sin esta marca, el bot de bienvenida confundio 166 conversaciones
+      # recien importadas con conversaciones nuevas de verdad y mando 674
+      # mensajes reales por Twilio a pacientes reales.
+      content_attributes: (outgoing ? { external_echo: true } : {}).merge(historical_import: true)
     }
   end
 

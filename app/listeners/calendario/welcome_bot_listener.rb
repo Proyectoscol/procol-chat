@@ -2,6 +2,12 @@ class Calendario::WelcomeBotListener < BaseListener
   def message_created(event)
     message, account = extract_message_and_account(event)
     return unless message.incoming? && !message.private?
+    # Nunca reaccionar a un mensaje historico importado (ej. bulk-import de
+    # exports de WhatsApp) -- ver incidente documentado en
+    # data_imports/.../INCIDENTE_welcome_bot_import.md: sin este guard, 166
+    # conversaciones importadas se confundieron con conversaciones nuevas de
+    # verdad y el bot mando 674 mensajes reales por Twilio a pacientes reales.
+    return if message.content_attributes['historical_import']
     return unless Calendario::WelcomeBotFlow.exists?(inbox_id: message.inbox_id, active: true)
     return if restarting_an_already_assigned_conversation?(message.conversation)
 
