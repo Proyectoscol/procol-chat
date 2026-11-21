@@ -209,3 +209,58 @@ benignos (mismo patrón que fase 1: teléfono principal duplicado entre dos
 pacientes distintos, el contacto se crea igual sin ese teléfono). 681
 filas quedaron sin importar por falta de profesional resuelto en el
 Excel original (`pendientes_sin_profesional.csv`).
+
+## Fase 3 -- resincronización con Excel actualizado (2026-11-21)
+
+El usuario señaló que los archivos directamente en `source/` (los mismos
+de Fase 2, sin tocar desde el 16/17 de noviembre) ya estaban desactualizados
+frente a la agenda real -- confirmado comparando byte a byte
+`agendas_normalizadas.csv` recién generado contra el de Fase 2: **0
+diferencias**. Los archivos vigentes de verdad estaban en
+`source/chats_batch_2/citas/` (un dump más reciente, sin los sufijos
+"actualizado"/"(1)"), con mtime del 2026-11-20 y contenido que sí llega
+hasta el 27 de noviembre (confirmado buscando "24 DE NOVIEMBRE" en la hoja
+`AGENDAS ` de ese archivo).
+
+Se copiaron esos 3 archivos a `source/` con el nombre exacto que
+`normalize.py` espera (sobrescribiendo los viejos, que quedaron respaldados
+fuera del repo antes de sobrescribir):
+- `chats_batch_2/citas/AGENDAS DR CORRALES 2026.xlsx` -> `source/AGENDAS DR CORRALES 2026 actualizado.xlsx`
+- `chats_batch_2/citas/URODINAMIAS 2026.xlsx` -> `source/URODINAMIAS 2026 (1).xlsx`
+- `chats_batch_2/citas/PARTICULARES 2026.xlsx` -> `source/PARTICULARES 2026.xlsx`
+
+**Auditoría del cambio real** (diff de `appointments.csv` por clave
+documento+fecha+profesional+servicio, antes/despues, sin exponer datos de
+pacientes): 49 citas nuevas (sobre todo Dr. Corrales 23-27 nov y
+María/Urodinamia 19-26 nov), 4 citas de Dr. Corrales del 20 de noviembre
+que ya no aparecen, 4 cambios de estado de asistencia en citas de María
+(18-20 nov, quedaron marcadas `revisar_color` -- el color de la fila
+cambió). **Hallazgo pendiente:** la agenda particular de la Dra. Cano
+("Lida", hoja `AGENDA DRA CANO` dentro de `PARTICULARES 2026.xlsx`) quedó
+**exactamente igual** (375 citas antes y después) -- la cancelación/
+reprogramación que el usuario mencionó (comunicada verbalmente, no
+confirmada en ningún Excel disponible) no está reflejada todavía en
+ningún archivo fuente. El archivo suelto `AGENDAS DRA CANO 2026.xlsx` no
+ayuda: mismas ~75 hojas basura (2014-2018) que `URODINAMIAS 2026.xlsx`,
+más dos hojas de ginecología (`CONSULTAS GINECOLOGIA`, `PROCEDIMIENTOS
+GINECOLOGIA`) sin estructura de agenda por día (parecen lista de
+pendientes, no agenda con asistencia). El usuario decidió seguir adelante
+sin resolver este punto ("deja así") -- queda pendiente para la próxima
+actualización de Excel que sí lo incluya.
+
+**Resultado de la carga real** (no dry-run, 2026-11-21): **2,182
+contactos, 2,845 citas, 141 en lista de espera pendiente + 149 cumplida**.
+0 errores de citas, 78 errores benignos de contacto/lista de espera
+(mismo patrón de siempre: teléfono principal duplicado entre dos
+pacientes distintos). 669 filas sin importar por falta de profesional
+resuelto (`pendientes_sin_profesional.csv`). Se corrió primero con
+`DRY_RUN=1` para confirmar que no hubiera sorpresas antes de la carga
+real -- mismo resultado en ambas corridas.
+
+**Nota operativa importante:** desde la carga de Fase 2 (17 de
+noviembre), el personal había marcado manualmente 12 citas reales en la
+app (confirmada/atendida/no-asistió) el 18 de noviembre. El usuario
+confirmó explícitamente que esos clics fueron solo de prueba y que **el
+Excel es la única fuente de verdad** -- por eso esta carga de Fase 3 hizo
+el mismo wipe-and-reload completo de siempre (nunca un merge selectivo),
+y esos 12 cambios manuales se perdieron a propósito, no por error.
