@@ -29,4 +29,4 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: true
-          tags: ghcr.io/proyectoscol/procol-chat:ips
+          tags: ghcr.io/proyectoscol/procol-chat-ips:latest
