@@ -294,6 +294,7 @@
       "REPLY_TO": "Reply to this message",
       "DELETE": "Delete",
       "CREATE_A_CANNED_RESPONSE": "Add to canned responses",
+      "EXTRACT_CONTACT": "Create contact from this message",
       "TRANSLATE": "Translate",
       "COPY_PERMALINK": "Copy link to the message",
       "LINK_COPIED": "Message URL copied to the clipboard",

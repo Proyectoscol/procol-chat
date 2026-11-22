@@ -278,6 +278,7 @@
       "REPLY_TO": "Responder a este mensaje",
       "DELETE": "Eliminar",
       "CREATE_A_CANNED_RESPONSE": "Añadir a respuestas predefinidas",
+      "EXTRACT_CONTACT": "Crear contacto desde este mensaje",
       "TRANSLATE": "Traducir",
       "COPY_PERMALINK": "Copiar el enlace al mensaje",
       "LINK_COPIED": "URL del mensaje copiado al portapapeles",

@@ -10,7 +10,67 @@
       "PAYERS": "Insurers",
       "STATS": "Stats",
       "TRIGGERS": "Notifications",
-      "WELCOME_BOT": "Welcome bot"
+      "WELCOME_BOT": "Welcome bot",
+      "TEMPLATE_LIBRARY": "Template library"
+    },
+    "CONTACT_FROM_MESSAGE": {
+      "TITLE": "Create contact from this message",
+      "ORIGINAL_MESSAGE_LABEL": "Original message",
+      "ORIGINAL_MESSAGE_HINT": "Select and copy anything missing or that the form didn't detect correctly.",
+      "COPY_BUTTON": "Copy all",
+      "MESSAGE_COPIED": "Message copied",
+      "AUTHORIZED_PHONE_LABEL": "Authorized WhatsApp (confirmation number)",
+      "BIRTH_DATE_LABEL": "Date of birth",
+      "PAYER_PLACEHOLDER": "Select a payer/EPS",
+      "REVIEW_HINT": "These fields were auto-detected from the message -- review them before creating the contact. Nothing is saved until you click Create.",
+      "CREATE_SUBMIT": "Create contact",
+      "CREATE_SUCCESS": "Contact created",
+      "CREATE_ERROR": "Could not create the contact",
+      "PRIVATE_NOTE": "Contact created from this chat: {name}."
+    },
+    "TEMPLATE_LIBRARY": {
+      "DESCRIPTION": "Each template has a key and several versions. Only one version can be active at a time -- notifications and the welcome bot that reference it always use the active version.",
+      "ADD_BUTTON": "New template",
+      "EMPTY": "There are no templates in the library yet.",
+      "FETCH_ERROR": "Could not load the templates.",
+      "KEY_LABEL": "Key",
+      "VIEW_VERSIONS": "View versions ({count})",
+      "HIDE_VERSIONS": "Hide versions",
+      "ADD_VERSION_BUTTON": "New version",
+      "STATUS": {
+        "ACTIVE": "Active",
+        "DRAFT": "Draft"
+      },
+      "VERSION_LABEL": "v{version}",
+      "NOTES_LABEL": "Notes",
+      "ACTIVATE_BUTTON": "Activate this version",
+      "ACTIVATE_SUCCESS": "Version activated",
+      "ACTIVATE_ERROR": "Could not activate the version",
+      "DELETE_BUTTON": "Delete draft",
+      "DELETE_SUCCESS": "Version deleted",
+      "DELETE_ERROR": "Could not delete the version",
+      "DELETE_CONFIRM": {
+        "TITLE": "Delete version",
+        "MESSAGE": "Delete this draft? This action cannot be undone.",
+        "CONFIRM": "Delete",
+        "CANCEL": "Cancel"
+      },
+      "FORM": {
+        "CREATE_TITLE": "New template",
+        "NEW_VERSION_TITLE": "New version — {label}",
+        "KEY_LABEL": "Key",
+        "KEY_PLACEHOLDER": "e.g. particular_confirmation",
+        "KEY_HINT": "Unique identifier -- this is what you type in the trigger or bot step to use this template.",
+        "LABEL_LABEL": "Display name",
+        "LABEL_PLACEHOLDER": "e.g. Confirmation — Private consultation",
+        "BODY_LABEL": "Text",
+        "QUICK_REPLIES_LABEL": "Quick reply buttons (one per line, optional)",
+        "NOTES_LABEL": "Notes (why this change, what pattern it addresses)",
+        "CANCEL": "Cancel",
+        "CREATE": "Save",
+        "CREATE_SUCCESS": "Template saved",
+        "ERROR": "Could not save the template"
+      }
     },
     "CONTACT_APPOINTMENTS": {
       "EMPTY": "No appointments for this contact yet.",
@@ -192,7 +252,6 @@
       }
     },
     "SCHEDULES": {
-      "DESCRIPTION": "Agenda by professional -- replaces the copy-pasted Excel blocks.",
       "EMPTY": "This professional has no open agenda yet.",
       "EMPTY_WITH_WAITLIST": "But there are {count} people on the waiting list for her.",
       "EMPTY_OPEN_DAY": "Agenda open, no appointments yet.",
@@ -203,7 +262,6 @@
       "EXPAND_BUTTON": "Expand",
       "COLLAPSE_BUTTON": "Collapse",
       "LOAD_MORE": "See earlier dates",
-      "SHOW_RATE_LABEL": "Attendance (30 days)",
       "FILTERS": {
         "SPECIALTY_LABEL": "Specialty",
         "SPECIALTY_ALL": "All specialties",
@@ -228,18 +286,6 @@
         "WINDOW_FULL_DAY": "Full day",
         "SUBMIT": "Apply",
         "SUMMARY": "{opened} date(s) opened, {skipped} already open"
-      },
-      "CSV": {
-        "BUTTON": "Export CSV",
-        "DATE": "Date",
-        "TIME": "Time",
-        "CONTACT": "Patient",
-        "DOCUMENT": "Document",
-        "PHONE": "Phone",
-        "SERVICE": "Service",
-        "PAYER": "Insurer",
-        "STATUS": "Status",
-        "NOTES": "Notes"
       }
     },
     "WAITLIST": {
@@ -575,6 +621,9 @@
         "TEST_MODE_LABEL": "Test mode: send as a private note",
         "TEST_MODE_HINT": "Instead of sending the real WhatsApp message to the patient, a private note is created on the conversation with the content that would have been sent. Use this to test appointment creation, confirmations and reminders before turning on real sends.",
         "TEST_MODE_FORCED_HINT": "This inbox has no approved WhatsApp templates, so it can only send private notes for now.",
+        "MESSAGE_TEMPLATE_KEY_LABEL": "Library template key (optional)",
+        "MESSAGE_TEMPLATE_KEY_PLACEHOLDER": "e.g. particular_confirmation",
+        "MESSAGE_TEMPLATE_KEY_HINT": "If filled with a key from the Template library tab, that version's active text replaces the free-text body above (used in test mode and in the preview note) -- activating a new version in the library changes the real message without editing this notification.",
         "CANCEL": "Cancel",
         "SAVE": "Save",
         "CREATE": "Create",
@@ -658,6 +707,9 @@
         "STEP_WAITLIST_KEYWORD_HINT": "This step must come right after a question with two options (waitlist / definitive cancellation). If the patient's reply contains this keyword, their waitlist entry is reactivated; otherwise the appointment is cancelled for good.",
         "STEP_ACK_MESSAGE_LABEL": "Confirmation message for the patient",
         "STEP_ACK_MESSAGE_PLACEHOLDER": "e.g. Got it, connecting you with reception.",
+        "STEP_TEMPLATE_KEY_LABEL": "Library template key (optional)",
+        "STEP_TEMPLATE_KEY_PLACEHOLDER": "e.g. bot_existing_appointment_ask",
+        "STEP_TEMPLATE_KEY_HINT": "If filled with a key from the Template library tab, its active version replaces the text above -- activating a new version in the library changes the real message without editing this step.",
         "STEP_CONDITION_LABEL": "Only ask this if a previous answer matches",
         "STEP_CONDITION_IF": "If",
         "STEP_CONDITION_EQUALS": "equals",

@@ -10,7 +10,67 @@
       "PAYERS": "EPS",
       "STATS": "Estadísticas",
       "TRIGGERS": "Notificaciones",
-      "WELCOME_BOT": "Bot de bienvenida"
+      "WELCOME_BOT": "Bot de bienvenida",
+      "TEMPLATE_LIBRARY": "Biblioteca de plantillas"
+    },
+    "CONTACT_FROM_MESSAGE": {
+      "TITLE": "Crear contacto desde este mensaje",
+      "ORIGINAL_MESSAGE_LABEL": "Mensaje original",
+      "ORIGINAL_MESSAGE_HINT": "Selecciona y copia cualquier dato que falte o que el formulario no haya detectado bien.",
+      "COPY_BUTTON": "Copiar todo",
+      "MESSAGE_COPIED": "Mensaje copiado",
+      "AUTHORIZED_PHONE_LABEL": "WhatsApp autorizado (número de confirmación)",
+      "BIRTH_DATE_LABEL": "Fecha de nacimiento",
+      "PAYER_PLACEHOLDER": "Selecciona una EPS/entidad",
+      "REVIEW_HINT": "Estos datos se detectaron automáticamente del mensaje -- revísalos antes de crear el contacto. Nada se guarda hasta que hagas clic en Crear.",
+      "CREATE_SUBMIT": "Crear contacto",
+      "CREATE_SUCCESS": "Contacto creado",
+      "CREATE_ERROR": "No se pudo crear el contacto",
+      "PRIVATE_NOTE": "Contacto creado desde este chat: {name}."
+    },
+    "TEMPLATE_LIBRARY": {
+      "DESCRIPTION": "Cada plantilla tiene una clave y varias versiones. Solo una version puede estar activa a la vez -- las notificaciones y el bot de bienvenida que la referencian usan siempre la version activa.",
+      "ADD_BUTTON": "Nueva plantilla",
+      "EMPTY": "Todavia no hay plantillas en la biblioteca.",
+      "FETCH_ERROR": "No se pudieron cargar las plantillas.",
+      "KEY_LABEL": "Clave",
+      "VIEW_VERSIONS": "Ver versiones ({count})",
+      "HIDE_VERSIONS": "Ocultar versiones",
+      "ADD_VERSION_BUTTON": "Nueva versión",
+      "STATUS": {
+        "ACTIVE": "Activa",
+        "DRAFT": "Borrador"
+      },
+      "VERSION_LABEL": "v{version}",
+      "NOTES_LABEL": "Notas",
+      "ACTIVATE_BUTTON": "Activar esta versión",
+      "ACTIVATE_SUCCESS": "Versión activada",
+      "ACTIVATE_ERROR": "No se pudo activar la versión",
+      "DELETE_BUTTON": "Eliminar borrador",
+      "DELETE_SUCCESS": "Versión eliminada",
+      "DELETE_ERROR": "No se pudo eliminar la versión",
+      "DELETE_CONFIRM": {
+        "TITLE": "Eliminar versión",
+        "MESSAGE": "¿Eliminar este borrador? Esta acción no se puede deshacer.",
+        "CONFIRM": "Eliminar",
+        "CANCEL": "Cancelar"
+      },
+      "FORM": {
+        "CREATE_TITLE": "Nueva plantilla",
+        "NEW_VERSION_TITLE": "Nueva versión — {label}",
+        "KEY_LABEL": "Clave",
+        "KEY_PLACEHOLDER": "ej. confirmacion_particular",
+        "KEY_HINT": "Identificador único -- es lo que escribes en el disparador o el paso del bot para usar esta plantilla.",
+        "LABEL_LABEL": "Nombre visible",
+        "LABEL_PLACEHOLDER": "ej. Confirmación — Consulta particular",
+        "BODY_LABEL": "Texto",
+        "QUICK_REPLIES_LABEL": "Botones de respuesta rápida (uno por línea, opcional)",
+        "NOTES_LABEL": "Notas (por qué este cambio, qué patrón responde)",
+        "CANCEL": "Cancelar",
+        "CREATE": "Guardar",
+        "CREATE_SUCCESS": "Plantilla guardada",
+        "ERROR": "No se pudo guardar la plantilla"
+      }
     },
     "CONTACT_APPOINTMENTS": {
       "EMPTY": "Este contacto todavía no tiene citas.",
@@ -192,7 +252,6 @@
       }
     },
     "SCHEDULES": {
-      "DESCRIPTION": "Agenda por profesional -- reemplaza el Excel de bloques copiados y pegados.",
       "EMPTY": "Esta profesional todavía no tiene agenda abierta.",
       "EMPTY_WITH_WAITLIST": "Pero hay {count} personas en lista de espera para ella.",
       "EMPTY_OPEN_DAY": "Agenda abierta, todavía sin citas.",
@@ -203,7 +262,6 @@
       "EXPAND_BUTTON": "Expandir",
       "COLLAPSE_BUTTON": "Colapsar",
       "LOAD_MORE": "Ver fechas anteriores",
-      "SHOW_RATE_LABEL": "Asistencia (30 días)",
       "FILTERS": {
         "SPECIALTY_LABEL": "Especialidad",
         "SPECIALTY_ALL": "Todas las especialidades",
@@ -228,18 +286,6 @@
         "WINDOW_FULL_DAY": "Todo el día",
         "SUBMIT": "Aplicar",
         "SUMMARY": "{opened} fecha(s) abiertas, {skipped} ya estaban abiertas"
-      },
-      "CSV": {
-        "BUTTON": "Exportar CSV",
-        "DATE": "Fecha",
-        "TIME": "Hora",
-        "CONTACT": "Paciente",
-        "DOCUMENT": "Documento",
-        "PHONE": "Teléfono",
-        "SERVICE": "Servicio",
-        "PAYER": "Entidad",
-        "STATUS": "Estado",
-        "NOTES": "Notas"
       }
     },
     "WAITLIST": {
@@ -575,6 +621,9 @@
         "TEST_MODE_LABEL": "Modo de prueba: enviar como nota privada",
         "TEST_MODE_HINT": "En vez de mandar el mensaje real de WhatsApp al paciente, se crea una nota privada en la conversación con el contenido que se habría enviado. Úsalo para probar la creación de citas, confirmaciones y recordatorios antes de activar envíos reales.",
         "TEST_MODE_FORCED_HINT": "Esta bandeja no tiene plantillas de WhatsApp aprobadas, así que por ahora solo puede mandar notas privadas.",
+        "MESSAGE_TEMPLATE_KEY_LABEL": "Clave de plantilla de biblioteca (opcional)",
+        "MESSAGE_TEMPLATE_KEY_PLACEHOLDER": "ej. confirmacion_particular",
+        "MESSAGE_TEMPLATE_KEY_HINT": "Si se llena con una clave de la pestaña Biblioteca de plantillas, el texto de esa versión activa reemplaza al cuerpo libre de arriba (usado en modo de prueba y en la nota de vista previa) -- activar una nueva versión en la biblioteca cambia el mensaje real sin editar esta notificación.",
         "CANCEL": "Cancelar",
         "SAVE": "Guardar",
         "CREATE": "Crear",
@@ -658,6 +707,9 @@
         "STEP_WAITLIST_KEYWORD_HINT": "Este paso debe venir justo después de una pregunta con dos opciones (lista de espera / cancelación definitiva). Si la respuesta del paciente contiene esta palabra, se reactiva su lista de espera; de lo contrario se cancela en definitiva.",
         "STEP_ACK_MESSAGE_LABEL": "Mensaje de confirmación para el paciente",
         "STEP_ACK_MESSAGE_PLACEHOLDER": "ej. Entendido, te comunico con recepción para ayudarte.",
+        "STEP_TEMPLATE_KEY_LABEL": "Clave de plantilla de biblioteca (opcional)",
+        "STEP_TEMPLATE_KEY_PLACEHOLDER": "ej. bot_cita_existente_ask",
+        "STEP_TEMPLATE_KEY_HINT": "Si se llena con una clave de la pestaña Biblioteca de plantillas, su versión activa reemplaza al texto de arriba -- activar una nueva versión en la biblioteca cambia el mensaje real sin editar este paso.",
         "STEP_CONDITION_LABEL": "Preguntar solo si una respuesta anterior coincide",
         "STEP_CONDITION_IF": "Si",
         "STEP_CONDITION_EQUALS": "es igual a",

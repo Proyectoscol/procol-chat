@@ -39,7 +39,8 @@ class Api::V1::Accounts::Calendario::WelcomeBotFlowsController < Api::V1::Accoun
     params.require(:welcome_bot_flow).permit(
       :inbox_id, :name, :match_type, :match_value, :priority, :active, :escalation_message,
       steps: [
-        :type, :ask, :ask_template, :empty_message, :waitlist_keyword, :ack_message, :content_sid,
+        :type, :ask, :ask_template, :ask_template_key, :empty_message, :empty_message_key,
+        :waitlist_keyword, :ack_message, :ack_message_key, :content_sid,
         { options: [], buttons: [], if: [:step, :equals] }
       ],
       reminder_schedule: [:after_minutes, :message]

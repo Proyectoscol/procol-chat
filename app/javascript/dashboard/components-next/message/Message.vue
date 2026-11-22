@@ -387,6 +387,11 @@ const contextMenuEnabledOptions = computed(() => {
       !props.private &&
       props.inboxSupportsReplyTo.outgoing &&
       !isFailedOrProcessing,
+    // Solo para mensajes entrantes (del contacto, no del agente) -- el
+    // objetivo es crear un contacto NUEVO a partir de un dato que un
+    // tercero (ej. gestor de EPS) escribio en SU mensaje, nunca editar al
+    // contacto de esta conversacion.
+    extractContact: hasText && !isOutgoing && !isMessageDeleted.value,
   };
 });
 

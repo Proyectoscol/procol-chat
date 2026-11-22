@@ -65,6 +65,7 @@ const serviceIds = ref([]);
 const payerKinds = ref([]);
 const inboxId = ref('');
 const templateId = ref('');
+const messageTemplateKey = ref('');
 const active = ref(true);
 const testMode = ref(false);
 const isSaving = ref(false);
@@ -144,6 +145,7 @@ const setFormValues = () => {
   inboxId.value = props.trigger?.inbox_id ?? '';
   active.value = props.trigger ? props.trigger.active : true;
   testMode.value = props.trigger ? !!props.trigger.test_mode : false;
+  messageTemplateKey.value = props.trigger?.message_template_key || '';
   // El mapeo de variables se restaura de una vez (no depende de que carguen
   // los templates); el watch de selectedTwilioTemplate más abajo respeta
   // estos valores ya puestos al reconstruir el objeto para la plantilla.
@@ -368,6 +370,7 @@ const submit = async () => {
     active: active.value,
     test_mode: testMode.value,
     template_params: templateParams,
+    message_template_key: messageTemplateKey.value.trim() || null,
   };
   try {
     if (isEditMode.value) {
@@ -619,6 +622,19 @@ const submit = async () => {
         <label for="trigger-active">
           {{ t('CALENDARIO.TRIGGERS.FORM.ACTIVE_LABEL') }}
         </label>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <Input
+          v-model="messageTemplateKey"
+          :label="t('CALENDARIO.TRIGGERS.FORM.MESSAGE_TEMPLATE_KEY_LABEL')"
+          :placeholder="
+            t('CALENDARIO.TRIGGERS.FORM.MESSAGE_TEMPLATE_KEY_PLACEHOLDER')
+          "
+        />
+        <p class="text-xs text-n-slate-10">
+          {{ t('CALENDARIO.TRIGGERS.FORM.MESSAGE_TEMPLATE_KEY_HINT') }}
+        </p>
       </div>
 
       <!-- Pedido explicito del usuario antes de pasar a produccion: poder

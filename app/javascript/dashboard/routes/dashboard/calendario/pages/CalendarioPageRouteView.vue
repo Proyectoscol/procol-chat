@@ -2,58 +2,24 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
-import { useMapGetter } from 'dashboard/composables/store';
 import { useAccount } from 'dashboard/composables/useAccount';
 
 const { t } = useI18n();
 const route = useRoute();
 const { accountScopedRoute } = useAccount();
 
-const currentRole = useMapGetter('getCurrentRole');
-const isAdministrator = computed(() => currentRole.value === 'administrator');
-
-// Orden armonizado con el sidebar: lo operativo primero (agenda del dia,
-// calendario, agendas por profesional), luego configuracion
-// (profesionales/servicios/EPS, solo administracion), y estadisticas de
-// ultimas -- no es una accion del dia a dia, es revision.
-const tabs = computed(() => {
-  const base = [
-    { name: 'calendario_agenda_index', label: t('CALENDARIO.TABS.AGENDA') },
-    { name: 'calendario_calendar_index', label: t('CALENDARIO.TABS.CALENDAR') },
-    {
-      name: 'calendario_schedules_index',
-      label: t('CALENDARIO.TABS.SCHEDULES'),
-    },
-  ];
-  if (!isAdministrator.value) {
-    return [
-      ...base,
-      { name: 'calendario_stats_index', label: t('CALENDARIO.TABS.STATS') },
-    ];
-  }
-  return [
-    ...base,
-    {
-      name: 'calendario_specialties_index',
-      label: t('CALENDARIO.TABS.SPECIALTIES'),
-    },
-    {
-      name: 'calendario_professionals_index',
-      label: t('CALENDARIO.TABS.PROFESSIONALS'),
-    },
-    { name: 'calendario_services_index', label: t('CALENDARIO.TABS.SERVICES') },
-    { name: 'calendario_payers_index', label: t('CALENDARIO.TABS.PAYERS') },
-    {
-      name: 'calendario_notifications_index',
-      label: t('CALENDARIO.TABS.TRIGGERS'),
-    },
-    {
-      name: 'calendario_welcome_bot_flows_index',
-      label: t('CALENDARIO.TABS.WELCOME_BOT'),
-    },
-    { name: 'calendario_stats_index', label: t('CALENDARIO.TABS.STATS') },
-  ];
-});
+// Solo lo operativo del dia a dia -- configuracion (especialidades,
+// profesionales, servicios, EPS) vive ahora bajo Settings > IPS, y
+// mensajeria (notificaciones, bot, plantillas) bajo Settings > Mensajeria.
+const tabs = computed(() => [
+  { name: 'calendario_agenda_index', label: t('CALENDARIO.TABS.AGENDA') },
+  { name: 'calendario_calendar_index', label: t('CALENDARIO.TABS.CALENDAR') },
+  {
+    name: 'calendario_schedules_index',
+    label: t('CALENDARIO.TABS.SCHEDULES'),
+  },
+  { name: 'calendario_stats_index', label: t('CALENDARIO.TABS.STATS') },
+]);
 
 const isActive = name => route.name === name;
 

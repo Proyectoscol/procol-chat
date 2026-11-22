@@ -14,6 +14,7 @@ import {
 import MenuItem from '../../../components/widgets/conversation/contextMenu/menuItem.vue';
 import { useTrack } from 'dashboard/composables';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import ContactFromMessageModal from 'dashboard/routes/dashboard/conversation/contact/ContactFromMessageModal.vue';
 
 export default {
   components: {
@@ -21,6 +22,7 @@ export default {
     MenuItem,
     ContextMenu,
     NextButton,
+    ContactFromMessageModal,
   },
   props: {
     message: {
@@ -55,6 +57,7 @@ export default {
   data() {
     return {
       isCannedResponseModalOpen: false,
+      isContactFromMessageModalOpen: false,
       showDeleteModal: false,
     };
   },
@@ -110,6 +113,13 @@ export default {
     hideCannedResponseModal() {
       this.isCannedResponseModalOpen = false;
       this.handleClose();
+    },
+    showContactFromMessageModal() {
+      this.isContactFromMessageModalOpen = true;
+      this.handleClose();
+    },
+    hideContactFromMessageModal() {
+      this.isContactFromMessageModalOpen = false;
     },
     handleOpen(e) {
       this.$emit('open', e);
@@ -167,6 +177,19 @@ export default {
       <AddCannedModal
         :response-content="plainTextContent"
         :on-close="hideCannedResponseModal"
+      />
+    </woot-modal>
+    <!-- Crear contacto a partir del texto de este mensaje -->
+    <woot-modal
+      v-if="isContactFromMessageModalOpen && enabledOptions['extractContact']"
+      v-model:show="isContactFromMessageModalOpen"
+      :on-close="hideContactFromMessageModal"
+      size="medium"
+    >
+      <ContactFromMessageModal
+        :message-content="messageContent"
+        :conversation-id="conversationId"
+        @close="hideContactFromMessageModal"
       />
     </woot-modal>
     <!-- Confirm Deletion -->
@@ -242,6 +265,15 @@ export default {
           }"
           variant="icon"
           @click.stop="showCannedResponseModal"
+        />
+        <MenuItem
+          v-if="enabledOptions['extractContact']"
+          :option="{
+            icon: 'person-add',
+            label: $t('CONVERSATION.CONTEXT_MENU.EXTRACT_CONTACT'),
+          }"
+          variant="icon"
+          @click.stop="showContactFromMessageModal"
         />
         <hr v-if="enabledOptions['delete']" />
         <MenuItem

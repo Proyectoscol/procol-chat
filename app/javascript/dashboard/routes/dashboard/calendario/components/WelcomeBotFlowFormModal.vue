@@ -76,9 +76,12 @@ const makeStep = () => ({
   ask: '',
   optionsText: '',
   askTemplate: '',
+  askTemplateKey: '',
   emptyMessage: '',
+  emptyMessageKey: '',
   waitlistKeyword: '',
   ackMessage: '',
+  ackMessageKey: '',
   contentSid: '',
   condition: { enabled: false, stepIndex: 0, equals: '' },
 });
@@ -110,9 +113,12 @@ const setFormValues = () => {
     ask: step.ask || '',
     optionsText: (step.options || step.buttons || []).join('\n'),
     askTemplate: step.ask_template || '',
+    askTemplateKey: step.ask_template_key || '',
     emptyMessage: step.empty_message || '',
+    emptyMessageKey: step.empty_message_key || '',
     waitlistKeyword: step.waitlist_keyword || '',
     ackMessage: step.ack_message || '',
+    ackMessageKey: step.ack_message_key || '',
     contentSid: step.content_sid || '',
     condition: step.if
       ? { enabled: true, stepIndex: step.if.step, equals: step.if.equals }
@@ -291,17 +297,20 @@ const stepsForSubmit = () =>
     if (step.type === 'lookup_appointment') {
       if (step.askTemplate.trim())
         payload.ask_template = step.askTemplate.trim();
+      if (step.askTemplateKey.trim())
+        payload.ask_template_key = step.askTemplateKey.trim();
       if (step.emptyMessage.trim())
         payload.empty_message = step.emptyMessage.trim();
+      if (step.emptyMessageKey.trim())
+        payload.empty_message_key = step.emptyMessageKey.trim();
     }
     if (step.type === 'perform_cancellation' && step.waitlistKeyword.trim()) {
       payload.waitlist_keyword = step.waitlistKeyword.trim();
     }
-    if (
-      ['request_reschedule', 'handoff'].includes(step.type) &&
-      step.ackMessage.trim()
-    ) {
-      payload.ack_message = step.ackMessage.trim();
+    if (['request_reschedule', 'handoff'].includes(step.type)) {
+      if (step.ackMessage.trim()) payload.ack_message = step.ackMessage.trim();
+      if (step.ackMessageKey.trim())
+        payload.ack_message_key = step.ackMessageKey.trim();
     }
     if (step.condition.enabled) {
       payload.if = {
@@ -458,6 +467,16 @@ const submit = async () => {
             <p class="text-xs text-n-slate-10 -mt-1">
               {{ t('CALENDARIO.WELCOME_BOT.FORM.STEP_ASK_TEMPLATE_HINT') }}
             </p>
+            <Input
+              v-model="step.askTemplateKey"
+              :label="t('CALENDARIO.WELCOME_BOT.FORM.STEP_TEMPLATE_KEY_LABEL')"
+              :placeholder="
+                t('CALENDARIO.WELCOME_BOT.FORM.STEP_TEMPLATE_KEY_PLACEHOLDER')
+              "
+            />
+            <p class="text-xs text-n-slate-10 -mt-1">
+              {{ t('CALENDARIO.WELCOME_BOT.FORM.STEP_TEMPLATE_KEY_HINT') }}
+            </p>
             <p class="text-xs text-n-slate-10">
               {{ t('CALENDARIO.WELCOME_BOT.FORM.STEP_LOOKUP_OPTIONS_HINT') }}
             </p>
@@ -466,6 +485,13 @@ const submit = async () => {
               :label="t('CALENDARIO.WELCOME_BOT.FORM.STEP_EMPTY_MESSAGE_LABEL')"
               :placeholder="
                 t('CALENDARIO.WELCOME_BOT.FORM.STEP_EMPTY_MESSAGE_PLACEHOLDER')
+              "
+            />
+            <Input
+              v-model="step.emptyMessageKey"
+              :label="t('CALENDARIO.WELCOME_BOT.FORM.STEP_TEMPLATE_KEY_LABEL')"
+              :placeholder="
+                t('CALENDARIO.WELCOME_BOT.FORM.STEP_TEMPLATE_KEY_PLACEHOLDER')
               "
             />
           </template>
@@ -525,14 +551,24 @@ const submit = async () => {
             </p>
           </template>
 
-          <TextArea
+          <template
             v-if="['request_reschedule', 'handoff'].includes(step.type)"
-            v-model="step.ackMessage"
-            :label="t('CALENDARIO.WELCOME_BOT.FORM.STEP_ACK_MESSAGE_LABEL')"
-            :placeholder="
-              t('CALENDARIO.WELCOME_BOT.FORM.STEP_ACK_MESSAGE_PLACEHOLDER')
-            "
-          />
+          >
+            <TextArea
+              v-model="step.ackMessage"
+              :label="t('CALENDARIO.WELCOME_BOT.FORM.STEP_ACK_MESSAGE_LABEL')"
+              :placeholder="
+                t('CALENDARIO.WELCOME_BOT.FORM.STEP_ACK_MESSAGE_PLACEHOLDER')
+              "
+            />
+            <Input
+              v-model="step.ackMessageKey"
+              :label="t('CALENDARIO.WELCOME_BOT.FORM.STEP_TEMPLATE_KEY_LABEL')"
+              :placeholder="
+                t('CALENDARIO.WELCOME_BOT.FORM.STEP_TEMPLATE_KEY_PLACEHOLDER')
+              "
+            />
+          </template>
 
           <div
             v-if="index > 0"

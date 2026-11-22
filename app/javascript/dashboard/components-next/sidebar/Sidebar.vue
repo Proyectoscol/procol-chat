@@ -610,24 +610,58 @@ const rawMenuItems = computed(() => {
           to: accountScopedRoute('calendario_schedules_index'),
         },
         {
-          name: 'Professionals',
-          label: t('SIDEBAR.CALENDARIO.PROFESSIONALS'),
-          to: accountScopedRoute('calendario_professionals_index'),
-        },
-        {
-          name: 'Services',
-          label: t('SIDEBAR.CALENDARIO.SERVICES'),
-          to: accountScopedRoute('calendario_services_index'),
-        },
-        {
-          name: 'Payers',
-          label: t('SIDEBAR.CALENDARIO.PAYERS'),
-          to: accountScopedRoute('calendario_payers_index'),
-        },
-        {
           name: 'Stats',
           label: t('SIDEBAR.CALENDARIO.STATS'),
           to: accountScopedRoute('calendario_stats_index'),
+        },
+      ],
+    },
+    {
+      name: 'Ips',
+      label: t('SIDEBAR.IPS.TITLE'),
+      icon: 'i-lucide-building-2',
+      children: [
+        {
+          name: 'Ips Specialties',
+          label: t('SIDEBAR.IPS.SPECIALTIES'),
+          to: accountScopedRoute('ips_specialties_index'),
+        },
+        {
+          name: 'Ips Professionals',
+          label: t('SIDEBAR.IPS.PROFESSIONALS'),
+          to: accountScopedRoute('ips_professionals_index'),
+        },
+        {
+          name: 'Ips Services',
+          label: t('SIDEBAR.IPS.SERVICES'),
+          to: accountScopedRoute('ips_services_index'),
+        },
+        {
+          name: 'Ips Payers',
+          label: t('SIDEBAR.IPS.PAYERS'),
+          to: accountScopedRoute('ips_payers_index'),
+        },
+      ],
+    },
+    {
+      name: 'Mensajeria',
+      label: t('SIDEBAR.MENSAJERIA.TITLE'),
+      icon: 'i-lucide-send',
+      children: [
+        {
+          name: 'Mensajeria Notifications',
+          label: t('SIDEBAR.MENSAJERIA.NOTIFICATIONS'),
+          to: accountScopedRoute('mensajeria_notifications_index'),
+        },
+        {
+          name: 'Mensajeria Welcome Bot',
+          label: t('SIDEBAR.MENSAJERIA.WELCOME_BOT'),
+          to: accountScopedRoute('mensajeria_welcome_bot_flows_index'),
+        },
+        {
+          name: 'Mensajeria Templates',
+          label: t('SIDEBAR.MENSAJERIA.TEMPLATES'),
+          to: accountScopedRoute('mensajeria_message_templates_index'),
         },
       ],
     },

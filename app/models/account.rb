@@ -76,6 +76,7 @@ class Account < ApplicationRecord
   has_many :calendario_specialties, dependent: :destroy_async, class_name: 'Calendario::Specialty'
   has_many :calendario_waitlist_entries, dependent: :destroy_async, class_name: 'Calendario::WaitlistEntry'
   has_many :calendario_welcome_bot_flows, dependent: :destroy_async, class_name: 'Calendario::WelcomeBotFlow'
+  has_many :calendario_message_templates, dependent: :destroy_async, class_name: 'Calendario::MessageTemplate'
   has_many :campaigns, dependent: :destroy_async
   has_many :canned_responses, dependent: :destroy_async
   has_many :categories, dependent: :destroy_async, class_name: '::Category'

@@ -5,14 +5,11 @@ import { useRouter } from 'vue-router';
 import { useAlert } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
-import { downloadCsvFile } from 'dashboard/helper/downloadHelper';
 import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import MultiSelect from 'dashboard/components-next/filter/inputs/MultiSelect.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
-import CalendarioStatsAPI from 'dashboard/api/calendarioStats';
-import CalendarioAppointmentsAPI from 'dashboard/api/calendarioAppointments';
 import AppointmentFormModal from '../components/AppointmentFormModal.vue';
 import RescheduleAppointmentModal from '../components/RescheduleAppointmentModal.vue';
 import CancelAppointmentModal from '../components/CancelAppointmentModal.vue';
@@ -24,7 +21,6 @@ import WaitlistQuickBookPopover from '../components/WaitlistQuickBookPopover.vue
 import {
   dateKeyInColombia,
   formatDateOnlyEs,
-  formatInstantTimeEs,
   hourInColombia,
 } from '../helpers/calendarioDateTime';
 
@@ -116,7 +112,6 @@ const matchesFilters = appointment => {
 
 const activeProfessionalId = ref(null);
 const visibleCount = ref(PAGE_SIZE);
-const showRate = ref(null);
 
 const showFormModal = ref(false);
 const presetContact = ref(null);
@@ -353,9 +348,6 @@ const formatOpenDayDate = dateString =>
 const windowLabel = timeWindow =>
   t(`CALENDARIO.SCHEDULES.TIME_WINDOW.${timeWindow.toUpperCase()}`);
 
-const statusLabel = status =>
-  t(`CALENDARIO.APPOINTMENTS.STATUS.${status.toUpperCase()}`);
-
 const openConversation = appointment => {
   if (!appointment.conversation_id) return;
   router.push(
@@ -445,9 +437,6 @@ const fetchForActiveProfessional = async () => {
   since.setDate(since.getDate() - 1);
   appointmentsFetchedSince.value = since;
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
   await Promise.all([
     store.dispatch('calendarioAppointments/getRange', {
       since: since.toISOString(),
@@ -461,17 +450,6 @@ const fetchForActiveProfessional = async () => {
     // antes el mensaje no lo dejaba ver.
     store.dispatch('calendarioWaitlistEntries/get', { professionalId }),
   ]);
-
-  try {
-    const response = await CalendarioStatsAPI.get({
-      since: thirtyDaysAgo.toISOString(),
-      until: new Date().toISOString(),
-      professionalId,
-    });
-    showRate.value = response.data.summary;
-  } catch (error) {
-    showRate.value = null;
-  }
 
   // Al entrar (o cambiar de profesional) el scroll arranca mostrando lo mas
   // reciente -- igual que la chica lo ve siempre en el Excel -- pero el
@@ -613,64 +591,6 @@ const onQuickBooked = async () => {
   await inlineWaitlistRef.value?.fetchEntries();
 };
 
-// El CSV es una exportacion completa deliberada (no algo que pase en cada
-// carga de pantalla) -- pide su propio rango historico amplio directo a la
-// API en vez de usar `appointments` (que desde el fix de carga de abajo ya
-// NO trae todo el historico, solo lo visible, ver fetchForActiveProfessional).
-const isExportingCsv = ref(false);
-const exportCsv = async () => {
-  isExportingCsv.value = true;
-  try {
-    const since = new Date();
-    since.setFullYear(since.getFullYear() - 3);
-    const until = new Date();
-    until.setFullYear(until.getFullYear() + 1);
-    const response = await CalendarioAppointmentsAPI.getRange({
-      since: since.toISOString(),
-      until: until.toISOString(),
-      professionalId: activeProfessionalId.value,
-    });
-
-    const professionalName =
-      professionals.value.find(p => p.id === activeProfessionalId.value)
-        ?.name || '';
-    const headers = [
-      t('CALENDARIO.SCHEDULES.CSV.DATE'),
-      t('CALENDARIO.SCHEDULES.CSV.TIME'),
-      t('CALENDARIO.SCHEDULES.CSV.CONTACT'),
-      t('CALENDARIO.SCHEDULES.CSV.DOCUMENT'),
-      t('CALENDARIO.SCHEDULES.CSV.PHONE'),
-      t('CALENDARIO.SCHEDULES.CSV.SERVICE'),
-      t('CALENDARIO.SCHEDULES.CSV.PAYER'),
-      t('CALENDARIO.SCHEDULES.CSV.STATUS'),
-      t('CALENDARIO.SCHEDULES.CSV.NOTES'),
-    ];
-    const sorted = [...response.data].sort(
-      (a, b) => new Date(a.starts_at) - new Date(b.starts_at)
-    );
-    const escapeCsv = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
-    const rows = sorted.map(appointment =>
-      [
-        dateKeyInColombia(appointment.starts_at),
-        formatInstantTimeEs(appointment.starts_at),
-        appointment.contact_name,
-        appointment.contact_identifier,
-        appointment.contact_phone_number,
-        appointment.service_name,
-        appointment.payer_name,
-        statusLabel(appointment.status),
-        appointment.notes,
-      ]
-        .map(escapeCsv)
-        .join(',')
-    );
-    const content = [headers.map(escapeCsv).join(','), ...rows].join('\n');
-    downloadCsvFile(`${professionalName}-agenda.csv`, content);
-  } finally {
-    isExportingCsv.value = false;
-  }
-};
-
 onMounted(async () => {
   try {
     await Promise.all([
@@ -691,10 +611,7 @@ onMounted(async () => {
 <template>
   <div class="h-full flex flex-col gap-4 min-h-0">
     <template v-if="!isExpanded">
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <p class="text-sm text-n-slate-11">
-          {{ t('CALENDARIO.SCHEDULES.DESCRIPTION') }}
-        </p>
+      <div class="flex items-center justify-end flex-wrap gap-2">
         <div class="flex items-center gap-2">
           <!-- Burbuja con el total de esta profesional -- pedido explicito
           del usuario: poder ver de un vistazo cuantos hay esperando sin
@@ -755,34 +672,6 @@ onMounted(async () => {
           }}</label>
           <MultiSelect v-model="selectedPayers" :options="payerFilterOptions" />
         </div>
-      </div>
-
-      <div v-if="showRate" class="flex flex-wrap items-center gap-3">
-        <div class="flex flex-col gap-1 rounded-xl border border-n-weak p-3">
-          <span class="text-xs text-n-slate-11">{{
-            t('CALENDARIO.SCHEDULES.SHOW_RATE_LABEL')
-          }}</span>
-          <span class="text-xl font-semibold text-n-slate-12"
-            >{{ showRate.attended_pct }}%</span
-          >
-        </div>
-        <div class="flex flex-col gap-1 rounded-xl border border-n-weak p-3">
-          <span class="text-xs text-n-slate-11">{{
-            t('CALENDARIO.STATS.NO_SHOW_PCT')
-          }}</span>
-          <span class="text-xl font-semibold text-n-slate-12"
-            >{{ showRate.no_show_pct }}%</span
-          >
-        </div>
-        <Button
-          faded
-          slate
-          size="sm"
-          icon="i-lucide-download"
-          :label="t('CALENDARIO.SCHEDULES.CSV.BUTTON')"
-          :is-loading="isExportingCsv"
-          @click="exportCsv"
-        />
       </div>
     </template>
 

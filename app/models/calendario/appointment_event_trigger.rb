@@ -6,19 +6,20 @@
 #
 # Table name: calendario_appointment_event_triggers
 #
-#  id              :bigint           not null, primary key
-#  active          :boolean          default(TRUE), not null
-#  offset_minutes  :integer
-#  payer_kinds     :string           default([]), not null, is an Array
-#  service_ids     :bigint           default([]), not null, is an Array
-#  target_status   :string
-#  template_params :jsonb            not null
-#  test_mode       :boolean          default(FALSE), not null
-#  trigger_kind    :string           not null
-#  created_at      :datetime         not null
-#  updated_at      :datetime         not null
-#  account_id      :bigint           not null
-#  inbox_id        :bigint           not null
+#  id                   :bigint           not null, primary key
+#  active               :boolean          default(TRUE), not null
+#  message_template_key :string
+#  offset_minutes       :integer
+#  payer_kinds          :string           default([]), not null, is an Array
+#  service_ids          :bigint           default([]), not null, is an Array
+#  target_status        :string
+#  template_params      :jsonb            not null
+#  test_mode            :boolean          default(FALSE), not null
+#  trigger_kind         :string           not null
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  account_id           :bigint           not null
+#  inbox_id             :bigint           not null
 #
 # Indexes
 #
@@ -92,6 +93,23 @@ class Calendario::AppointmentEventTrigger < ApplicationRecord
 
   def services
     Calendario::Service.where(id: service_ids)
+  end
+
+  # Si el disparador referencia una key de Calendario::MessageTemplate,
+  # sustituye el body libre de template_params por el de la version activa
+  # de esa key (ver Calendario::MessageTemplate.active_body) -- asi activar
+  # una nueva version en la biblioteca cambia el mensaje real sin tocar este
+  # registro. Solo aplica al body de texto libre (processed_params.body,
+  # usado en test_mode y en la nota de preview); las plantillas reales
+  # aprobadas por Meta/Twilio siguen viniendo del catalogo de esos
+  # proveedores, no de aqui.
+  def effective_template_params
+    return template_params if message_template_key.blank?
+
+    library_body = Calendario::MessageTemplate.active_body(account, message_template_key)
+    return template_params if library_body.blank?
+
+    template_params.deep_merge('processed_params' => { 'body' => library_body })
   end
 
   private

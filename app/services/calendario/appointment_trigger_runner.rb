@@ -52,9 +52,19 @@ class Calendario::AppointmentTriggerRunner
     true
   end
 
-  def processed_template_params
+  # IMPORTANTE: el send real (Meta) usa trigger.template_params crudo, nunca
+  # effective_template_params -- la key de biblioteca solo sustituye el body
+  # libre (string) de la nota de prueba/preview; si se mezclara con el send
+  # real, pisaria los componentes estructurados (header/body con parametros
+  # posicionales) que Whatsapp::TemplateProcessorService espera como Hash,
+  # rompiendo cualquier plantilla aprobada con variables.
+  def processed_template_params(params = trigger.template_params)
     Calendario::AppointmentLiquidTemplateProcessorService.new(appointment: appointment, inbox: inbox)
-                                                         .process_template_params(trigger.template_params)
+                                                         .process_template_params(params)
+  end
+
+  def preview_template_params
+    processed_template_params(trigger.effective_template_params)
   end
 
   def send_template_message
@@ -147,7 +157,7 @@ class Calendario::AppointmentTriggerRunner
   # de la forma de "componentes" que espera la API de Meta (eso solo le
   # sirve al provider real, no a una persona leyendo la nota).
   def preview_text
-    params = processed_template_params&.dig('processed_params')
+    params = preview_template_params&.dig('processed_params')
     return if params.blank?
 
     sections = %w[header body footer].filter_map do |section|

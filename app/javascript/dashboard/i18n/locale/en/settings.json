@@ -355,10 +355,20 @@
       "AGENDA": "Today's Agenda",
       "CALENDAR": "Calendar view",
       "SCHEDULES": "Schedules",
+      "STATS": "Stats"
+    },
+    "IPS": {
+      "TITLE": "IPS",
+      "SPECIALTIES": "Specialties",
       "PROFESSIONALS": "Professionals",
       "SERVICES": "Services",
-      "PAYERS": "Insurers",
-      "STATS": "Stats"
+      "PAYERS": "Insurers"
+    },
+    "MENSAJERIA": {
+      "TITLE": "Messaging",
+      "NOTIFICATIONS": "Notifications",
+      "WELCOME_BOT": "Welcome bot",
+      "TEMPLATES": "Template library"
     },
     "ONGOING": "Ongoing",
     "ONE_OFF": "One off",

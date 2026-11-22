@@ -1,7 +1,7 @@
 class Api::V1::Accounts::Calendario::AppointmentEventTriggersController < Api::V1::Accounts::BaseController
   wrap_parameters :appointment_event_trigger,
                   include: %i[service_ids payer_kinds inbox_id trigger_kind target_status offset_minutes active
-                              test_mode template_params]
+                              test_mode template_params message_template_key]
 
   before_action :check_authorization
   before_action :fetch_trigger, only: [:update, :destroy]
@@ -38,7 +38,7 @@ class Api::V1::Accounts::Calendario::AppointmentEventTriggersController < Api::V
 
   def trigger_params
     params.require(:appointment_event_trigger).permit(
-      :inbox_id, :trigger_kind, :target_status, :offset_minutes, :active, :test_mode,
+      :inbox_id, :trigger_kind, :target_status, :offset_minutes, :active, :test_mode, :message_template_key,
       service_ids: [], payer_kinds: [], template_params: {}
     )
   end
@@ -51,7 +51,8 @@ class Api::V1::Accounts::Calendario::AppointmentEventTriggersController < Api::V
       services: trigger.services.map { |service| { id: service.id, name: service.name } },
       payer_kinds: trigger.payer_kinds,
       inbox_id: trigger.inbox_id, inbox_name: trigger.inbox.name,
-      template_params: trigger.template_params
+      template_params: trigger.template_params,
+      message_template_key: trigger.message_template_key
     }
   end
 

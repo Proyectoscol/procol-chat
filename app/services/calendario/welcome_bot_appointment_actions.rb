@@ -73,7 +73,7 @@ class Calendario::WelcomeBotAppointmentActions
     appointment.update!(status: :pending)
     assign_available_agent if conversation.assignee_id.blank?
     create_private_note("Cita ##{appointment.id}: el paciente solicitó reagendar vía bot de bienvenida. Reagendar manualmente.")
-    send_text_question('ask' => step['ack_message'].presence || DEFAULT_RESCHEDULE_ACK_MESSAGE)
+    send_text_question('ask' => resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_RESCHEDULE_ACK_MESSAGE))
 
     end_session!(session)
   end
@@ -81,7 +81,7 @@ class Calendario::WelcomeBotAppointmentActions
   def perform_handoff_step(session, step, note: 'El paciente solicitó hablar con recepción vía bot de bienvenida.')
     assign_available_agent if conversation.assignee_id.blank?
     create_private_note(note)
-    send_text_question('ask' => step['ack_message'].presence || DEFAULT_HANDOFF_ACK_MESSAGE)
+    send_text_question('ask' => resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_HANDOFF_ACK_MESSAGE))
 
     end_session!(session)
   end
@@ -89,7 +89,8 @@ class Calendario::WelcomeBotAppointmentActions
   private
 
   def handle_no_upcoming_appointment(session, step)
-    empty_step = step.merge('ack_message' => step['empty_message'].presence || DEFAULT_EMPTY_APPOINTMENT_MESSAGE)
+    empty_message = resolved_text(step, 'empty_message_key', 'empty_message', DEFAULT_EMPTY_APPOINTMENT_MESSAGE)
+    empty_step = step.merge('ack_message' => empty_message, 'ack_message_key' => nil)
     perform_handoff_step(session, empty_step, note: 'No se encontraron citas futuras para este contacto.')
   end
 
@@ -98,10 +99,20 @@ class Calendario::WelcomeBotAppointmentActions
   end
 
   def lookup_confirmation_step(step, appointment)
-    confirmation_text = render_appointment_liquid(
-      step['ask_template'].presence || DEFAULT_APPOINTMENT_CONFIRMATION_TEMPLATE, appointment
-    )
+    ask_template = resolved_text(step, 'ask_template_key', 'ask_template', DEFAULT_APPOINTMENT_CONFIRMATION_TEMPLATE)
+    confirmation_text = render_appointment_liquid(ask_template, appointment)
     step.merge('ask' => confirmation_text, 'options' => Array(step['options']).presence || DEFAULT_LOOKUP_OPTIONS)
+  end
+
+  # Si el paso referencia una key de Calendario::MessageTemplate, su version
+  # activa tiene prioridad sobre el texto literal guardado en el paso mismo
+  # -- misma logica que Calendario::AppointmentEventTrigger#effective_template_params,
+  # para que la biblioteca sea la fuente de verdad en los dos lugares donde
+  # hay texto editable hacia el paciente.
+  def resolved_text(step, key_field, literal_field, default)
+    key = step[key_field]
+    library_text = key.present? ? Calendario::MessageTemplate.active_body(account, key) : nil
+    library_text.presence || step[literal_field].presence || default
   end
 
   # Re-resuelve la cita SIEMPRE a traves de conversation.contact (nunca por

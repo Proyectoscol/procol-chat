@@ -355,10 +355,20 @@
       "AGENDA": "Agenda de hoy",
       "CALENDAR": "Vista calendario",
       "SCHEDULES": "Agendas",
+      "STATS": "Estadísticas"
+    },
+    "IPS": {
+      "TITLE": "IPS",
+      "SPECIALTIES": "Especialidades",
       "PROFESSIONALS": "Profesionales",
       "SERVICES": "Servicios",
-      "PAYERS": "EPS",
-      "STATS": "Estadísticas"
+      "PAYERS": "EPS"
+    },
+    "MENSAJERIA": {
+      "TITLE": "Mensajería",
+      "NOTIFICATIONS": "Notificaciones",
+      "WELCOME_BOT": "Bot de bienvenida",
+      "TEMPLATES": "Biblioteca de plantillas"
     },
     "ONGOING": "En Curso",
     "ONE_OFF": "One Off",

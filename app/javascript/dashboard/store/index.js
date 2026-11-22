@@ -21,6 +21,7 @@ import calendarioServices from './modules/calendarioServices';
 import calendarioSpecialties from './modules/calendarioSpecialties';
 import calendarioWaitlistEntries from './modules/calendarioWaitlistEntries';
 import calendarioWelcomeBotFlows from './modules/calendarioWelcomeBotFlows';
+import calendarioMessageTemplates from './modules/calendarioMessageTemplates';
 import campaigns from './modules/campaigns';
 import cannedResponse from './modules/cannedResponse';
 import categories from './modules/helpCenterCategories';
@@ -96,6 +97,7 @@ export default createStore({
     calendarioSpecialties,
     calendarioWaitlistEntries,
     calendarioWelcomeBotFlows,
+    calendarioMessageTemplates,
     campaigns,
     cannedResponse,
     categories,

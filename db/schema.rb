@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_20_081633) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_20_150001) do
   # These extensions should be enabled to support this database
   enable_extension "btree_gist"
   enable_extension "pg_stat_statements"
@@ -447,6 +447,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_20_081633) do
     t.boolean "test_mode", default: false, null: false
     t.bigint "service_ids", default: [], null: false, array: true
     t.string "payer_kinds", default: [], null: false, array: true
+    t.string "message_template_key"
     t.index ["account_id", "trigger_kind"], name: "index_calendario_triggers_on_account_and_kind"
     t.index ["account_id"], name: "index_calendario_appointment_event_triggers_on_account_id"
     t.index ["inbox_id"], name: "index_calendario_appointment_event_triggers_on_inbox_id"
@@ -517,6 +518,22 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_20_081633) do
     t.index ["contact_id", "consumed_at"], name: "index_calendario_session_credits_on_contact_and_consumed"
     t.index ["contact_id"], name: "index_calendario_contact_session_credits_on_contact_id"
     t.index ["granted_by_appointment_id"], name: "idx_on_granted_by_appointment_id_78ca1bf0dc"
+  end
+
+  create_table "calendario_message_templates", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "key", null: false
+    t.string "label", null: false
+    t.integer "version", default: 1, null: false
+    t.text "body", null: false
+    t.jsonb "quick_replies", default: [], null: false
+    t.string "status", default: "draft", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "key", "version"], name: "index_calendario_message_templates_on_account_key_version", unique: true
+    t.index ["account_id", "key"], name: "index_one_active_message_template_per_key", unique: true, where: "((status)::text = 'active'::text)"
+    t.index ["account_id"], name: "index_calendario_message_templates_on_account_id"
   end
 
   create_table "calendario_open_days", force: :cascade do |t|
@@ -2351,6 +2368,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_20_081633) do
   add_foreign_key "calendario_contact_session_credits", "calendario_appointments", column: "consumed_by_appointment_id", on_delete: :nullify
   add_foreign_key "calendario_contact_session_credits", "calendario_appointments", column: "granted_by_appointment_id", on_delete: :cascade
   add_foreign_key "calendario_contact_session_credits", "contacts", on_delete: :cascade
+  add_foreign_key "calendario_message_templates", "accounts", on_delete: :cascade
   add_foreign_key "calendario_open_days", "accounts", on_delete: :cascade
   add_foreign_key "calendario_open_days", "calendario_professionals", column: "professional_id", on_delete: :cascade
   add_foreign_key "calendario_open_days", "users", column: "opened_by_id", on_delete: :nullify
