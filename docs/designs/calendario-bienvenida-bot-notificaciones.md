@@ -285,3 +285,25 @@ dos únicos métodos que de verdad salen por Twilio (`send_whatsapp_buttons`/
 invocarse — ninguno se llamó. Probado también en la UI real (Ajustes →
 Mensajería → Paciente que regresa, guardado confirmado contra la bandeja
 "Prueba" en `test_mode: true`).
+
+## Fase 4 — registro garantizado en el chat al cancelar (idea #4, 2026-11-23)
+
+Pedido: que cancelar una cita *nunca* pierda el rastro en el chat, sin
+importar desde dónde se cancele (botón manual en Agendas, flujo del bot,
+`NoShowReplyListener`, `ReturningAppointmentPromptListener`, etc.) — algunos
+de esos caminos ya dejaban su propia nota con contexto adicional, pero una
+cancelación manual desde la UI de Agendas no dejaba ningún registro en el
+chat, solo en `Calendario::AppointmentAuditLog` (tabla interna, no visible
+en la conversación).
+
+**Fix:** un solo callback en el modelo
+(`Calendario::Appointment#log_cancellation_to_chat`, `after_update` cuando
+el status pasa a `cancelled`) en vez de repetirlo en cada caller — nota
+privada con el texto "Cita de {servicio} con {profesional} del {fecha} fue
+cancelada." Si la cita no tiene `conversation_id` (creada directo desde
+Agendas, nunca desde un chat), no hay dónde dejar el registro y no hace
+nada — no falla, no inventa una conversación. Verificado en una transacción
+con rollback: con conversación asociada crea la nota (coexiste sin
+problema con la nota que ya dejaba el trigger de `cancelled` en test_mode,
+cada una dice algo distinto); sin conversación asociada, cancela la cita
+igual sin excepción y sin crear nada.

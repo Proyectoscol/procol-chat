@@ -95,6 +95,7 @@ class Calendario::Appointment < ApplicationRecord
   after_update :log_status_change, if: :saved_change_to_status?
   after_update :run_on_status_change_triggers, if: :saved_change_to_status?
   after_update :grant_included_session_credits, if: :saved_change_to_status?
+  after_update :log_cancellation_to_chat, if: -> { saved_change_to_status? && cancelled? }
 
   # La EPS/asegurador es un dato del contacto, no de la cita -- la tarifa se
   # calcula contra el pagador actual del paciente.
@@ -141,6 +142,28 @@ class Calendario::Appointment < ApplicationRecord
     audit_logs.create!(
       account_id: account_id, user: Current.user, event_type: :status_changed,
       from_status: self.class.statuses[from_value], to_status: self.class.statuses[to_value]
+    )
+  end
+
+  # Pedido explicito del usuario (ideas.txt #4): que cancelar una cita NUNCA
+  # pierda el rastro en el chat, sin importar desde donde se cancele (boton
+  # manual en Agendas, flujo del bot, NoShowReplyListener, etc.) -- por eso
+  # vive aqui, en el modelo, y no repetido en cada caller. Algunos de esos
+  # callers ya dejan su propia nota con contexto adicional (ej. "via bot de
+  # bienvenida", si reactivo lista de espera); esta es el respaldo
+  # garantizado, no un reemplazo de esas.
+  #
+  # Solo aplica si la cita tiene una conversacion asociada -- una cita
+  # creada directo desde Agendas (sin abrir desde un chat) puede no tener
+  # ninguna, y no hay en que chat dejar el registro.
+  def log_cancellation_to_chat
+    return if conversation.blank?
+
+    zone = account.reporting_timezone.presence || 'UTC'
+    fecha = Calendario::SpanishDateFormatter.long_date_time(starts_at.in_time_zone(zone))
+    conversation.messages.create!(
+      account: conversation.account, inbox: conversation.inbox, private: true, message_type: :outgoing,
+      content: "Cita de #{service.name} con #{professional.name} del #{fecha} fue cancelada."
     )
   end
 
