@@ -11,7 +11,8 @@
       "STATS": "Estadísticas",
       "TRIGGERS": "Notificaciones",
       "WELCOME_BOT": "Bot de bienvenida",
-      "TEMPLATE_LIBRARY": "Biblioteca de plantillas"
+      "TEMPLATE_LIBRARY": "Biblioteca de plantillas",
+      "RETURNING_PROMPT": "Paciente que regresa"
     },
     "CONTACT_FROM_MESSAGE": {
       "TITLE": "Crear contacto desde este mensaje",
@@ -71,6 +72,25 @@
         "CREATE_SUCCESS": "Plantilla guardada",
         "ERROR": "No se pudo guardar la plantilla"
       }
+    },
+    "RETURNING_PROMPT": {
+      "DESCRIPTION": "Si un paciente con cita próxima (pendiente o confirmada) escribe de nuevo en otro día y ya tiene un agente asignado, el bot de bienvenida no le llega -- esto manda un mensaje aparte preguntando si quiere reagendar, cancelar o hablar con recepción, una sola vez por cita.",
+      "NO_INBOXES": "No hay bandejas de WhatsApp configuradas todavía.",
+      "FETCH_ERROR": "No se pudo cargar la configuración.",
+      "ACTIVE_LABEL": "Activo",
+      "TEST_MODE_ON": "Modo de prueba (no se envía nada real)",
+      "TEST_MODE_OFF": "En vivo -- se envía un mensaje real al paciente",
+      "TEST_MODE_HINT": "Mientras esté en modo de prueba, se guarda una nota privada en vez de mandar el mensaje por WhatsApp.",
+      "TEMPLATE_KEY_LABEL": "Clave de la biblioteca de plantillas (opcional)",
+      "TEMPLATE_KEY_PLACEHOLDER": "ej. paciente_regresa",
+      "ASK_TEMPLATE_LABEL": "Texto (si no hay clave de biblioteca)",
+      "TWILIO_TEMPLATE_LABEL": "Plantilla de botones de Twilio (opcional)",
+      "TEMPLATE_PLACEHOLDER": "Sin botones reales -- solo texto",
+      "TWILIO_TEMPLATE_HINT": "Si no eliges una, el mensaje se manda como texto plano con las opciones listadas abajo.",
+      "OPTIONS_LABEL": "Opciones (para el texto plano)",
+      "SAVE_BUTTON": "Guardar",
+      "SAVE_SUCCESS": "Configuración guardada",
+      "SAVE_ERROR": "No se pudo guardar la configuración"
     },
     "CONTACT_APPOINTMENTS": {
       "EMPTY": "Este contacto todavía no tiene citas.",

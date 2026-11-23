@@ -152,6 +152,7 @@ Rails.application.routes.draw do
             resources :message_templates, only: [:index, :create, :update, :destroy] do
               post :activate, on: :member
             end
+            resources :returning_appointment_prompt_configs, only: [:index, :create, :update]
           end
           namespace :import do
             resources :whatsapp_chat_batches, only: [:index, :create]

@@ -19,8 +19,7 @@
 # (RescheduleAppointmentModal) -- "a medida que vayamos avanzando, vamos
 # perfeccionando el sistema", pedido explicito del usuario.
 class Calendario::NoShowReplyListener < BaseListener
-  RESCHEDULE_KEYWORDS = %w[reprogramar reagendar].freeze
-  CANCEL_KEYWORDS = %w[cancelar].freeze
+  include Calendario::AppointmentReplyKeywordClassifier
 
   def message_created(event)
     message, account = extract_message_and_account(event)
@@ -29,7 +28,7 @@ class Calendario::NoShowReplyListener < BaseListener
     appointment = recent_no_show_appointment_for(message.conversation)
     return if appointment.blank?
 
-    case classify(message.content)
+    case classify_appointment_reply(message.content)
     when :reschedule then handle_reschedule(appointment, message.conversation)
     when :cancel then appointment.cancel!
     end
@@ -66,14 +65,6 @@ class Calendario::NoShowReplyListener < BaseListener
       .where(account_id: conversation.account_id, contact_id: contact_id, status: :no_show, id: fired_appointment_ids)
       .order(starts_at: :desc)
       .first
-  end
-
-  def classify(content)
-    normalized = content.to_s.downcase.unicode_normalize(:nfkd).gsub(/[^\x00-\x7F]/, '')
-    return :reschedule if RESCHEDULE_KEYWORDS.any? { |word| normalized.include?(word) }
-    return :cancel if CANCEL_KEYWORDS.any? { |word| normalized.include?(word) }
-
-    nil
   end
 
   # Calendario::SpanishDateFormatter (no I18n.l) a proposito -- este listener

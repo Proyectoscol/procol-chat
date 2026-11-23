@@ -2,20 +2,21 @@
 #
 # Table name: calendario_appointments
 #
-#  id                :bigint           not null, primary key
-#  ends_at           :datetime         not null
-#  notes             :text
-#  reschedules_count :integer          default(0), not null
-#  starts_at         :datetime         not null
-#  status            :integer          default("pending"), not null
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  account_id        :bigint           not null
-#  contact_id        :bigint           not null
-#  conversation_id   :bigint
-#  created_by_id     :bigint
-#  professional_id   :bigint           not null
-#  service_id        :bigint           not null
+#  id                               :bigint           not null, primary key
+#  ends_at                          :datetime         not null
+#  notes                            :text
+#  reschedules_count                :integer          default(0), not null
+#  returning_patient_prompt_sent_at :datetime
+#  starts_at                        :datetime         not null
+#  status                           :integer          default("pending"), not null
+#  created_at                       :datetime         not null
+#  updated_at                       :datetime         not null
+#  account_id                       :bigint           not null
+#  contact_id                       :bigint           not null
+#  conversation_id                  :bigint
+#  created_by_id                    :bigint
+#  professional_id                  :bigint           not null
+#  service_id                       :bigint           not null
 #
 # Indexes
 #

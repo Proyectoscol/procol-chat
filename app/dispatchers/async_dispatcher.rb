@@ -13,6 +13,7 @@ class AsyncDispatcher < BaseDispatcher
       AutomationRuleListener.instance,
       CampaignListener.instance,
       Calendario::NoShowReplyListener.instance,
+      Calendario::ReturningAppointmentPromptListener.instance,
       Calendario::WelcomeBotListener.instance,
       CsatSurveyListener.instance,
       HookListener.instance,

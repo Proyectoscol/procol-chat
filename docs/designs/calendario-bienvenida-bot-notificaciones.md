@@ -241,3 +241,47 @@ Paciente toca un botón ──► texto llega por Body
   360dialog) — mencionado como posibilidad futura si se necesitan mensajes
   interactivos nativos (`input_select`) en vez de plantillas quick_reply, pero no
   es parte de este plan.
+
+## Fase 3 — "paciente que regresa" con agente ya asignado (2026-11-23)
+
+Idea del usuario (`data_imports/calendario_agendas_dr_corrales_2026/ideas.txt`,
+punto 5): `Calendario::WelcomeBotListener` solo corre para conversaciones sin
+agente asignado. Un paciente con cita próxima (pending/confirmed) que ya tuvo
+el triage completo y escribe de nuevo en otro día, con un agente ya asignado,
+no recibía nada automático — ni el bot (que se salta a propósito) ni ningún
+otro mensaje, aunque muy probablemente esté escribiendo por su cita.
+
+**Construido:** `Calendario::ReturningAppointmentPromptListener` (nuevo
+listener, independiente de `Calendario::BotSession` — no toca el motor del
+bot de bienvenida en nada). Condiciones de disparo: conversación con agente
+asignado + contacto con cita futura pending/confirmed + esa cita todavía sin
+el prompt (columna `returning_patient_prompt_sent_at` en
+`calendario_appointments`) + el mensaje entrante llega en un día de
+calendario distinto al del mensaje entrante anterior (evita repetir si la
+persona sigue escribiendo el mismo día). Respuesta del paciente (reprogramar/
+cancelar) clasificada con las mismas palabras clave que
+`Calendario::NoShowReplyListener`, extraídas a un módulo compartido
+(`Calendario::AppointmentReplyKeywordClassifier`) para no duplicar la lógica
+una tercera vez.
+
+**Configurable desde la UI** (Mensajería → "Paciente que regresa",
+`Calendario::ReturningAppointmentPromptConfig`, una fila por bandeja):
+- `active` (default `false`) — apagado hasta que el usuario lo prenda.
+- `test_mode` (default `true`) — mientras esté activo, en vez de mandar el
+  mensaje real se guarda una nota privada de vista previa (mismo patrón de
+  seguridad que `Calendario::AppointmentEventTrigger#test_mode`). Pensado
+  para que el usuario pueda probarlo en producción sin riesgo antes de
+  apagarlo.
+- Texto editable (clave de la biblioteca de plantillas o texto literal,
+  mismo patrón que `Calendario::WelcomeBotAppointmentActions#resolved_text`)
+  y plantilla de botones de Twilio opcional (reusa el catálogo ya
+  sincronizado, igual que el picker de `AppointmentEventTriggerFormModal`).
+
+**Verificado sin ningún envío real:** corrida completa (día 1 sin disparo →
+día 2 dispara nota privada de prueba → mismo día no repite → "cancelar"
+clasifica y cancela la cita) dentro de una transacción con rollback, con los
+dos únicos métodos que de verdad salen por Twilio (`send_whatsapp_buttons`/
+`send_text_question`) sobreescritos para lanzar una excepción si llegaran a
+invocarse — ninguno se llamó. Probado también en la UI real (Ajustes →
+Mensajería → Paciente que regresa, guardado confirmado contra la bandeja
+"Prueba" en `test_mode: true`).

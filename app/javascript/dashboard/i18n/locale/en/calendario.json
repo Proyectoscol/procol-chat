@@ -11,7 +11,8 @@
       "STATS": "Stats",
       "TRIGGERS": "Notifications",
       "WELCOME_BOT": "Welcome bot",
-      "TEMPLATE_LIBRARY": "Template library"
+      "TEMPLATE_LIBRARY": "Template library",
+      "RETURNING_PROMPT": "Returning patient"
     },
     "CONTACT_FROM_MESSAGE": {
       "TITLE": "Create contact from this message",
@@ -71,6 +72,25 @@
         "CREATE_SUCCESS": "Template saved",
         "ERROR": "Could not save the template"
       }
+    },
+    "RETURNING_PROMPT": {
+      "DESCRIPTION": "If a patient with an upcoming appointment (pending or confirmed) writes again on a different day and already has an agent assigned, the welcome bot never reaches them -- this sends a separate message asking if they want to reschedule, cancel, or talk to the front desk, once per appointment.",
+      "NO_INBOXES": "No WhatsApp inboxes configured yet.",
+      "FETCH_ERROR": "Could not load the configuration.",
+      "ACTIVE_LABEL": "Active",
+      "TEST_MODE_ON": "Test mode (nothing real is sent)",
+      "TEST_MODE_OFF": "Live -- a real message is sent to the patient",
+      "TEST_MODE_HINT": "While in test mode, a private note is saved instead of sending the message over WhatsApp.",
+      "TEMPLATE_KEY_LABEL": "Template library key (optional)",
+      "TEMPLATE_KEY_PLACEHOLDER": "e.g. returning_patient",
+      "ASK_TEMPLATE_LABEL": "Text (if no library key)",
+      "TWILIO_TEMPLATE_LABEL": "Twilio button template (optional)",
+      "TEMPLATE_PLACEHOLDER": "No real buttons -- plain text only",
+      "TWILIO_TEMPLATE_HINT": "If you don't pick one, the message is sent as plain text with the options listed below.",
+      "OPTIONS_LABEL": "Options (for the plain-text fallback)",
+      "SAVE_BUTTON": "Save",
+      "SAVE_SUCCESS": "Configuration saved",
+      "SAVE_ERROR": "Could not save the configuration"
     },
     "CONTACT_APPOINTMENTS": {
       "EMPTY": "No appointments for this contact yet.",
