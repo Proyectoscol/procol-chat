@@ -2,14 +2,18 @@
 # adjunto, lo descomprime, parsea el _chat.txt (Import::WhatsappChatTxtParser)
 # y crea el contacto/conversacion/mensajes/adjuntos reales en Chatwoot.
 #
-# Seguridad contra envios reales: todo mensaje creado aqui (entrante o
-# saliente) lleva `source_id` seteado (la huella de deduplicacion). Para
-# salientes ademas se usa `status: :delivered` + `content_attributes:
-# {external_echo: true}` -- el mismo patron que usa
+# Seguridad contra envios reales (3 capas independientes, ninguna depende
+# de las otras): todo mensaje creado aqui (entrante o saliente) lleva
+# `source_id` seteado (la huella de deduplicacion) Y `private: true`.
+# Base::SendOnChannelService#invalid_message? se niega a disparar un envio
+# real tanto si `source_id` esta presente como si el mensaje es privado --
+# cualquiera de las dos sola ya alcanza. Ademas, `content_attributes:
+# {historical_import: true}` es lo que evita que listeners de dominio
+# (bot de bienvenida, etc.) reaccionen a estos mensajes como si fueran
+# nuevos. Para salientes ademas se usa `status: :delivered` +
+# `content_attributes: {external_echo: true}` -- el mismo patron que usa
 # Whatsapp::IncomingMessageBaseService para mensajes que llegaron por el
-# celular y no deben reenviarse. Base::SendOnChannelService nunca dispara
-# un envio si `source_id` esta presente, asi que es imposible que esto
-# mande algo real a WhatsApp.
+# celular y no deben reenviarse.
 #
 # Idempotencia: un mensaje ya importado (mismo source_id en la conversacion)
 # se salta en vez de duplicarse, asi que recargar el mismo zip actualizado
@@ -27,7 +31,7 @@ class Import::WhatsappChatImportService
       conversation = resolve_conversation(contact_inbox)
       stats = import_messages(conversation, dir)
 
-      batch.update!(status: :completed, contact: contact_inbox.contact, stats: stats)
+      batch.update!(status: :completed, contact: contact_inbox.contact, stats: stats, error_message: nil)
     end
   rescue Import::WhatsappChatNeedsReviewError => e
     batch.update!(status: :needs_review, error_message: e.message)
@@ -75,12 +79,56 @@ class Import::WhatsappChatImportService
   end
 
   def resolve_contact_inbox
+    return username_contact_inbox if username_export?
+
     wa_id = normalized_wa_id
     ContactInboxWithContactBuilder.new(
       inbox: batch.inbox,
       source_id: whatsapp_source_id(wa_id),
       contact_attributes: { name: customer_display_name, phone_number: "+#{wa_id}" }
     ).perform
+  end
+
+  # El export de un contacto con "nombre de usuario" de WhatsApp (sin
+  # numero) trae el campo telefono del batch con el username crudo, ej.
+  # "@yoli.areiza" (lo escribio quien subio el zip, ver ImportWhatsappChatPage.vue).
+  def username_export?
+    batch.phone_number.to_s.strip.start_with?('@')
+  end
+
+  # Mismo lugar donde Whatsapp::IdentifierSyncService#additional_attributes_with_username
+  # guarda el username para contactos reales via webhook -- se replica aqui
+  # para que el resto de la UI (que ya lee additional_attributes.social_profiles.whatsapp)
+  # lo muestre igual, sin importar si el contacto llego por import o por un
+  # mensaje real.
+  def username_contact_inbox
+    username = normalized_username
+    ContactInboxWithContactBuilder.new(
+      inbox: batch.inbox,
+      source_id: username_source_id(username),
+      contact_attributes: {
+        name: "@#{username}",
+        additional_attributes: {
+          'social_profiles' => { 'whatsapp' => username },
+          'social_whatsapp_user_name' => username
+        }
+      }
+    ).perform
+  end
+
+  # "@Marce93S 2.zip" vs "@Marce93S.zip" -- el sufijo " N" es el finder de
+  # macOS evitando colisionar nombres de archivo en la misma carpeta al
+  # exportar el mismo chat dos veces, no es parte del username real. Sin
+  # esto se crearian 2 contactos distintos para la misma persona.
+  def normalized_username
+    batch.phone_number.to_s.strip.delete_prefix('@').sub(/\s+\d+\z/, '')
+  end
+
+  def username_source_id(username)
+    inbox = batch.inbox
+    return "whatsapp:@#{username}" if inbox.channel_type == 'Channel::TwilioSms' && inbox.channel.medium == 'whatsapp'
+
+    "@#{username}"
   end
 
   # Channel::Whatsapp (Meta Cloud API) quiere el source_id en digitos
@@ -95,8 +143,14 @@ class Import::WhatsappChatImportService
     wa_id
   end
 
+  # 'CO' como region por defecto SOLO aplica a numeros sin "+" (ej. un
+  # celular colombiano tecleado como "321 5893052") -- pasarsela tambien a
+  # un numero que YA trae codigo de pais (+506, +1, etc.) hace que la
+  # libreria lo valide como si fuera colombiano e ignore el codigo real,
+  # rechazando numeros internacionales legitimos (Costa Rica, EEUU).
   def normalized_wa_id
-    parsed = TelephoneNumber.parse(batch.phone_number, 'CO')
+    region = batch.phone_number.to_s.strip.start_with?('+') ? nil : 'CO'
+    parsed = TelephoneNumber.parse(batch.phone_number, region)
     raise Import::WhatsappChatNeedsReviewError, "Numero de telefono invalido: #{batch.phone_number}" unless parsed.valid?
 
     parsed.e164_number.delete_prefix('+')
@@ -159,6 +213,14 @@ class Import::WhatsappChatImportService
       sender: outgoing ? nil : conversation.contact,
       source_id: fingerprint,
       created_at: parsed[:timestamp],
+      # private: true es una segunda capa de seguridad ademas de source_id
+      # y historical_import -- Base::SendOnChannelService#invalid_message?
+      # ya se niega a disparar un envio real para cualquier mensaje privado,
+      # sin importar el canal. Pedido explicito del usuario tras el
+      # incidente: ni source_id ni el guard de historical_import en los
+      # listeners deben ser la UNICA barrera antes de pasar a produccion
+      # con el numero real.
+      private: true,
       # historical_import es la marca que CUALQUIER listener de
       # message_created debe revisar antes de reaccionar -- ver incidente
       # documentado en data_imports/.../INCIDENTE_welcome_bot_import.md:

@@ -851,6 +851,12 @@ const rawMenuItems = computed(() => {
           to: accountScopedRoute('conversation_workflow_index'),
         },
         {
+          name: 'Settings Import WhatsApp',
+          label: t('SIDEBAR.IMPORT_WHATSAPP'),
+          icon: 'i-lucide-upload',
+          to: accountScopedRoute('import_whatsapp_chat_index'),
+        },
+        {
           name: 'Settings Security',
           label: t('SIDEBAR.SECURITY'),
           icon: 'i-lucide-shield',

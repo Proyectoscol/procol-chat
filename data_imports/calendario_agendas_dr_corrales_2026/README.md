@@ -264,3 +264,84 @@ confirmó explícitamente que esos clics fueron solo de prueba y que **el
 Excel es la única fuente de verdad** -- por eso esta carga de Fase 3 hizo
 el mismo wipe-and-reload completo de siempre (nunca un merge selectivo),
 y esos 12 cambios manuales se perdieron a propósito, no por error.
+
+## Fase 4 -- reintento del import de chats de WhatsApp + contactos de Google (2026-11-22/23)
+
+Continuación directa del incidente documentado en
+`docs/incidents/2026-11-21-whatsapp-import-sent-real-messages.md`. Con el
+guard `historical_import` ya en su lugar, se resolvieron los 76 batches
+de `Import::WhatsappChatBatch` que habían quedado en `needs_review` tras
+la primera corrida, y se reforzó la seguridad del import antes de volver
+a correrlo.
+
+**Capa de seguridad adicional:** todo mensaje que crea
+`Import::WhatsappChatImportService` ahora lleva también `private: true`
+(antes solo tenía `source_id` + `historical_import`).
+`Base::SendOnChannelService#invalid_message?` se niega a enviar un
+mensaje privado sin importar el canal -- es una barrera independiente de
+`historical_import`, pedida explícitamente para que ningún guard sea la
+única defensa antes de pasar al número real en producción. Se corrió un
+script retroactivo sobre los 3171 mensajes ya importados (de la corrida
+del incidente, que nunca habían recibido `historical_import` ni
+`private` porque se crearon antes de ese fix) para marcarlos igual.
+
+**Bug real encontrado y corregido:** `normalized_wa_id` le pasaba `'CO'`
+como región por defecto a `TelephoneNumber.parse` incluso cuando el
+número ya traía su propio código de país (`+506`, `+1`) -- la librería
+lo validaba como si fuera colombiano e ignoraba el código real,
+rechazando números internacionales legítimos (Costa Rica, EEUU). Ahora
+solo se usa `'CO'` como respaldo cuando el número no trae `+`.
+
+**Soporte para contactos sin teléfono (usuario de WhatsApp):** desde que
+WhatsApp permite identificar contactos por un nombre de usuario en vez
+del número, algunos exports de chat no traen ningún teléfono (ej.
+"Chat de WhatsApp con @yoli.areiza.zip"). Se investigó cómo lo resuelve
+Chatwoot mismo para la API de Meta
+(`Whatsapp::IdentifierSyncService`/`Whatsapp::IncomingMessageIdentifierHelper`,
+que usan un "LID" de Meta en vez de teléfono) y se replicó el mismo
+patrón para el import histórico:
+- El contacto se crea sin `phone_number`, con el usuario guardado en
+  `additional_attributes.social_profiles.whatsapp` /
+  `social_whatsapp_user_name` -- el mismo lugar que ya lee el resto de
+  la UI.
+- `ContactInbox.source_id` usa un identificador sintético
+  (`whatsapp:@usuario`, ver `WHATSAPP_IMPORT_USERNAME_PATTERN` en
+  `lib/regex_helper.rb`) que un webhook real de Twilio o Meta nunca
+  puede producir, así que no hay forma de que choque con un contacto
+  real ni de que dispare un envío.
+- Estas conversaciones quedan como historial de solo lectura hasta que
+  se conozca el teléfono real de la persona -- hoy ni Twilio ni la API
+  de Meta permiten enrutar mensajes nuevos solo por este username.
+
+**Resolución de los needs_review por nombre:** varios exports solo traen
+el nombre guardado en el celular que exportó, sin número. Se cruzaron
+contra `chatsexport/contactsfromgoogletochatwootdb/contacts.csv` (export
+de Google Contacts, 841 filas) y, para los que no aparecían ahí, contra
+la tabla `contacts` ya poblada por la Fase 3 (base real de pacientes).
+**Importante:** un cruce automático inicial le asignó a "Paula Andrea
+Ramos Ramos" un número sin darse cuenta de que el CSV tiene 2 contactos
+distintos con ese nombre exacto y números distintos -- se detectó,
+se revirtió lo ya creado (conversación + contacto) y se dejó el batch en
+`needs_review` con una nota explicando la ambigüedad. Ningún otro nombre
+cruzado tenía este problema (se verificó uno por uno).
+
+**Resultado final:** 59 batches adicionales completados (6 por el fix de
+teléfono internacional, 11 por cruce de nombre, 51 por el soporte de
+usuario sin teléfono -- incluyendo "@Marce93S" y "@Marce93S 2", que
+resultaron ser el mismo chat exportado dos veces y se fusionaron en el
+mismo contacto), **783 mensajes nuevos**, todos verificados con las 3
+marcas de seguridad. Quedan 7 en `needs_review`: 3 por un problema
+distinto y anterior ("el remitente 'nosotros' nunca aparece en ese
+chat"), 2 nombres sin ningún match posible (Heliomathi, Hector
+Velásquez Duque), y la ambigüedad de Paula Andrea Ramos Ramos pendiente
+de que el usuario confirme el número correcto.
+
+También se subieron los 841 contactos del CSV de Google como `Contact`
+nuevos (sin `ContactInbox` ni conversación -- cero riesgo de disparar el
+bot, que solo reacciona a `message_created`): 644 creados, 147 ya
+existían (mismo teléfono), 50 con teléfono inválido en el CSV mismo.
+
+La página de carga (antes construida pero nunca conectada a ningún
+menú) ahora vive en Ajustes → Importar WhatsApp
+(`accounts/:accountId/settings/import-whatsapp`), con selector de
+bandeja destino incluido.

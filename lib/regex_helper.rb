@@ -16,6 +16,17 @@ module RegexHelper
   TWILIO_CHANNEL_SMS_REGEX = Regexp.new('\A\+\d{1,15}\z')
   WHATSAPP_BSUID_PATTERN = '[A-Z]{2}\.(?:ENT\.)?[A-Za-z0-9]{1,128}'.freeze
   WHATSAPP_BSUID_REGEX = Regexp.new("\\A#{WHATSAPP_BSUID_PATTERN}\\z")
-  TWILIO_CHANNEL_WHATSAPP_REGEX = Regexp.new("\\A(?:whatsapp:\\+\\d{1,15}|whatsapp:#{WHATSAPP_BSUID_PATTERN})\\z")
-  WHATSAPP_CHANNEL_REGEX = Regexp.new("\\A(?:\\d{1,15}|#{WHATSAPP_BSUID_PATTERN})\\z")
+  # Identificador sintetico SOLO para Import::WhatsappChatImportService --
+  # un export de WhatsApp de un contacto que usa el "nombre de usuario"
+  # nuevo de WhatsApp (sin numero visible) no trae ningun identificador real
+  # de Meta/Twilio (ni telefono ni BSUID), asi que no hay forma de construir
+  # un source_id que coincida con un webhook real. Nunca lo generara un
+  # webhook de Twilio/Meta, asi que no puede chocar con un identificador
+  # real -- estas conversaciones quedan como historial de solo lectura hasta
+  # que se conozca el telefono real del contacto.
+  WHATSAPP_IMPORT_USERNAME_PATTERN = '@[A-Za-z0-9_.]{1,128}'.freeze
+  TWILIO_CHANNEL_WHATSAPP_REGEX = Regexp.new(
+    "\\A(?:whatsapp:\\+\\d{1,15}|whatsapp:#{WHATSAPP_BSUID_PATTERN}|whatsapp:#{WHATSAPP_IMPORT_USERNAME_PATTERN})\\z"
+  )
+  WHATSAPP_CHANNEL_REGEX = Regexp.new("\\A(?:\\d{1,15}|#{WHATSAPP_BSUID_PATTERN}|#{WHATSAPP_IMPORT_USERNAME_PATTERN})\\z")
 end

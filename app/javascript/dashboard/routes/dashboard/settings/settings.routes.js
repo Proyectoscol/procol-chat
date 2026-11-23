@@ -28,6 +28,7 @@ import conversationWorkflow from './conversationWorkflow/conversationWorkflow.ro
 import captain from './captain/captain.routes';
 import ips from './ips/ips.routes';
 import mensajeria from './mensajeria/mensajeria.routes';
+import importWhatsapp from '../importWhatsapp/importWhatsapp.routes';
 
 export default {
   routes: [
@@ -71,5 +72,6 @@ export default {
     ...captain.routes,
     ...ips.routes,
     ...mensajeria.routes,
+    ...importWhatsapp.routes,
   ],
 };
