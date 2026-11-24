@@ -103,7 +103,7 @@ class Calendario::AccountDataImportService
       return existing.id
     end
 
-    attrs = row.except('id', 'account_id', 'created_at', 'updated_at')
+    attrs = filter_columns(klass, row.except('id', 'account_id', 'created_at', 'updated_at'))
     record = klass.create!(attrs.merge(account_id: account.id))
     stats[:created] += 1
     record.id
@@ -116,7 +116,7 @@ class Calendario::AccountDataImportService
       return existing.id
     end
 
-    attrs = row.except('id', 'account_id', 'user_id', 'created_at', 'updated_at', 'specialty_id')
+    attrs = filter_columns(Calendario::Professional, row.except('id', 'account_id', 'user_id', 'created_at', 'updated_at', 'specialty_id'))
     attrs['specialty_id'] = remap('specialties', row['specialty_id'])
     record = Calendario::Professional.create!(attrs.merge(account_id: account.id))
     stats[:created] += 1
@@ -125,7 +125,7 @@ class Calendario::AccountDataImportService
 
   def import_detail_row(key, row, stats)
     klass = Calendario::AccountDataTransferSpec.model_class_for(key)
-    attrs = row.except('id', 'created_at', 'updated_at')
+    attrs = filter_columns(klass, row.except('id', 'created_at', 'updated_at'))
     apply_fk_remaps!(key, attrs)
     klass.create!(attrs)
     stats[:created] += 1
@@ -147,7 +147,7 @@ class Calendario::AccountDataImportService
       end
     end
 
-    attrs = row.except('id', 'account_id', 'created_at', 'updated_at', 'payer_id')
+    attrs = filter_columns(Contact, row.except('id', 'account_id', 'created_at', 'updated_at', 'payer_id'))
     attrs['payer_id'] = remap('payers', row['payer_id']) if row['payer_id']
     record = Contact.create!(attrs.merge(account_id: account.id))
     stats[:created] += 1
@@ -212,7 +212,7 @@ class Calendario::AccountDataImportService
       return existing.id
     end
 
-    attrs = row.except('id', 'account_id', 'inbox_id', 'contact_id', 'contact_inbox_id', 'created_at', 'updated_at')
+    attrs = filter_columns(Conversation, row.except('id', 'account_id', 'inbox_id', 'contact_id', 'contact_inbox_id', 'created_at', 'updated_at'))
     record = Conversation.create!(
       attrs.merge(account_id: account.id, inbox_id: target_inbox.id, contact_id: contact_id, contact_inbox_id: contact_inbox_id)
     )
@@ -242,8 +242,8 @@ class Calendario::AccountDataImportService
 
     content_attributes = (row['content_attributes'] || {}).merge('historical_import' => true)
 
-    attrs = row.except('id', 'account_id', 'inbox_id', 'conversation_id', 'sender_id', 'sender_type',
-                       'content_attributes', 'private', 'created_at', 'updated_at')
+    attrs = filter_columns(Message, row.except('id', 'account_id', 'inbox_id', 'conversation_id', 'sender_id', 'sender_type',
+                                               'content_attributes', 'private', 'created_at', 'updated_at'))
     record = Message.create!(
       attrs.merge(
         account_id: account.id, inbox_id: target_inbox.id, conversation_id: conversation_id,
@@ -268,7 +268,7 @@ class Calendario::AccountDataImportService
       return nil
     end
 
-    attrs = row.except('id', 'message_id', 'created_at', 'updated_at')
+    attrs = filter_columns(Attachment, row.except('id', 'message_id', 'created_at', 'updated_at'))
     record = Attachment.new(attrs.merge(message_id: message_id, account_id: Message.find(message_id).account_id))
     record.file.attach(
       io: File.open(file_path), filename: File.basename(file_path).sub(/\A\d+-/, ''),
@@ -291,7 +291,7 @@ class Calendario::AccountDataImportService
       return nil
     end
 
-    attrs = row.except('id', 'account_id', 'professional_id', 'opened_by_id', 'created_at', 'updated_at')
+    attrs = filter_columns(Calendario::OpenDay, row.except('id', 'account_id', 'professional_id', 'opened_by_id', 'created_at', 'updated_at'))
     record = Calendario::OpenDay.create!(attrs.merge(account_id: account.id, professional_id: professional_id))
     stats[:created] += 1
     record.id
@@ -302,8 +302,8 @@ class Calendario::AccountDataImportService
   # previo de un control -- es exactamente la carga de citas que ya paso,
   # no una cita nueva de verdad.
   def import_appointment(row, account, stats)
-    attrs = row.except('id', 'account_id', 'professional_id', 'service_id', 'contact_id', 'conversation_id',
-                       'created_by_id', 'created_at', 'updated_at')
+    attrs = filter_columns(Calendario::Appointment, row.except('id', 'account_id', 'professional_id', 'service_id', 'contact_id',
+                                                               'conversation_id', 'created_by_id', 'created_at', 'updated_at'))
     professional_id = remap('professionals', row['professional_id'])
     service_id = remap('services', row['service_id'])
     contact_id = remap('contacts', row['contact_id'])
@@ -326,7 +326,7 @@ class Calendario::AccountDataImportService
 
   def import_simple(key, row, account, stats)
     klass = Calendario::AccountDataTransferSpec.model_class_for(key)
-    attrs = row.except('id', 'account_id', 'created_at', 'updated_at')
+    attrs = filter_columns(klass, row.except('id', 'account_id', 'created_at', 'updated_at'))
     apply_fk_remaps!(key, attrs)
     record = klass.create!(attrs.merge(account_id: account.id))
     stats[:created] += 1
@@ -340,6 +340,14 @@ class Calendario::AccountDataImportService
 
       attrs[column] = remap(target_key, attrs[column])
     end
+  end
+
+  # Protege contra desfase de esquema entre el origen del export y el
+  # destino del import (ej. una columna nueva que el destino todavia no
+  # migro) -- nunca falla toda la fila por un atributo desconocido que de
+  # todos modos no se iba a usar.
+  def filter_columns(klass, attrs)
+    attrs.slice(*klass.column_names)
   end
 
   def remap(key, old_id)
