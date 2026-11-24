@@ -24,7 +24,9 @@ class Calendario::WelcomeBotAppointmentActions
   DEFAULT_WAITLIST_KEYWORD = 'lista de espera'.freeze
   DEFAULT_RESCHEDULE_ACK_MESSAGE =
     'Hemos recibido tu solicitud de reagendamiento. Un asesor te contactará en breve para coordinar la nueva fecha.'.freeze
-  DEFAULT_HANDOFF_ACK_MESSAGE = 'Entendido, te comunico con recepción para ayudarte.'.freeze
+  DEFAULT_HANDOFF_ACK_MESSAGE =
+    '¡Gracias por adelantarnos tus datos! Ya se le notificó a recepción para que continúe con tu atención. ' \
+    'Si necesitas algo más, escríbenos por este mismo medio.'.freeze
 
   # Busca la cita futura del contacto -- SIEMPRE via conversation.contact,
   # nunca por telefono "a mano", para que sea imposible mostrarle a un
@@ -62,6 +64,7 @@ class Calendario::WelcomeBotAppointmentActions
       "Cita ##{appointment.id} cancelada vía bot de bienvenida " \
       "(#{wants_waitlist ? 'reactivo lista de espera' : 'cancelacion definitiva'})."
     )
+    send_text_question('ask' => resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_HANDOFF_ACK_MESSAGE))
 
     end_session!(session)
   end
