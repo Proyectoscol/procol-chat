@@ -67,6 +67,10 @@ class Import::WhatsappChatImportService
   def validate_senders!
     senders = @parsed_messages.filter_map { |m| m[:sender_name] }.uniq
     raise Import::WhatsappChatNeedsReviewError, "Se encontraron mas de 2 remitentes distintos: #{senders.join(', ')}" if senders.size > 2
+    # Un solo remitente (y no es "nosotros") no es ambiguo -- es un chat
+    # donde el paciente escribio y todavia nadie del staff le ha contestado.
+    # No hay con que confundirlo, asi que se importa igual: todo entrante.
+    return if senders.size <= 1
     return if senders.any? { |name| sender_is_us?(name) }
 
     raise Import::WhatsappChatNeedsReviewError,
