@@ -857,6 +857,12 @@ const rawMenuItems = computed(() => {
           to: accountScopedRoute('import_whatsapp_chat_index'),
         },
         {
+          name: 'Settings Account Data Transfer',
+          label: t('SIDEBAR.ACCOUNT_DATA_TRANSFER'),
+          icon: 'i-lucide-database',
+          to: accountScopedRoute('account_data_transfer_index'),
+        },
+        {
           name: 'Settings Security',
           label: t('SIDEBAR.SECURITY'),
           icon: 'i-lucide-shield',

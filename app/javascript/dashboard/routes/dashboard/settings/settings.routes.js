@@ -29,6 +29,7 @@ import captain from './captain/captain.routes';
 import ips from './ips/ips.routes';
 import mensajeria from './mensajeria/mensajeria.routes';
 import importWhatsapp from '../importWhatsapp/importWhatsapp.routes';
+import accountDataTransfer from '../accountDataTransfer/accountDataTransfer.routes';
 
 export default {
   routes: [
@@ -73,5 +74,6 @@ export default {
     ...ips.routes,
     ...mensajeria.routes,
     ...importWhatsapp.routes,
+    ...accountDataTransfer.routes,
   ],
 };

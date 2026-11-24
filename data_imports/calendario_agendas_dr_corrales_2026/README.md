@@ -345,3 +345,62 @@ La página de carga (antes construida pero nunca conectada a ningún
 menú) ahora vive en Ajustes → Importar WhatsApp
 (`accounts/:accountId/settings/import-whatsapp`), con selector de
 bandeja destino incluido.
+
+## Fase 5 -- chats_batch_5 (51 exports) + hallazgo: `import_to_local.rb` choca con los chats de WhatsApp (2026-11-23)
+
+Mismo proceso que Fase 4 sobre `chatsexport/chats_batch_5/`: 50/51
+completados (789 mensajes nuevos verificados), 1 (Valentina Arana) sin
+teléfono encontrable. Fix adicional en el importador: un chat donde el
+paciente escribió pero el staff *todavía no ha contestado* tiene un solo
+remitente -- eso no es ambiguo (nunca se podría confundir con "nosotros"),
+así que `validate_senders!` ya no lo manda a `needs_review`, lo importa
+igual con todo como entrante.
+
+**Hallazgo importante, encontrado de la forma difícil:** al correr
+`import_to_local.rb` para traer una actualización de las agendas (Excel),
+el paso de wipe (`account.contacts.find_each(&:destroy!)`, pensado para
+borrar SOLO datos de Calendario antes de que existiera el importador de
+WhatsApp) borra **TODOS** los contactos de la cuenta -- y
+`Contact#conversations`/`#contact_inboxes`/`#messages` usan
+`dependent: :destroy_async`, así que el borrado en cascada de
+conversaciones/mensajes de WhatsApp corre en segundo plano vía Sidekiq,
+no al instante, lo cual lo hizo fácil de pasar por alto en el momento (el
+conteo de mensajes parecía normal justo después de correr el script, y
+solo bajó a casi cero un par de minutos después, cuando los jobs en cola
+terminaron). Se perdieron las ~285 conversaciones/mensajes de WhatsApp
+completados hasta ese momento.
+
+**Recuperado sin pérdida real:** los 293 registros de
+`Import::WhatsappChatBatch` (con sus `.zip` adjuntos) no se tocan en este
+wipe -- se reiniciaron a `pending` y se reimportaron los 285 que estaban
+`completed`, 0 errores, mismas 3 marcas de seguridad verificadas en los
+~3900 mensajes resultantes. También se volvió a correr el import de
+contactos del CSV de Google.
+
+**Para la próxima vez que se actualicen las agendas de Excel:** antes de
+correr `import_to_local.rb`, respaldar/anotar cuántas conversaciones de
+WhatsApp existen, y después de correrlo, esperar a que los jobs
+`DestroyAssociationAsyncJob` de Sidekiq terminen (o revisar la cola) antes
+de asumir que el conteo de mensajes es el final -- y si bajó a casi cero,
+reimportar los batches `completed` de `Import::WhatsappChatBatch` de
+inmediato. Una solución más permanente (pendiente, no implementada):
+separar el wipe de "contactos de Calendario" (los que vienen del Excel)
+de "contactos con WhatsApp real" para que este script deje de tocarlos.
+
+## Fase 6 -- chats_batch_6 (2 exports) + los últimos needs_review resueltos a mano (2026-11-23)
+
+El usuario dio directamente el teléfono correcto para los 5 casos que
+ningún cruce automático pudo resolver (Valentina Arana, Paula Andrea
+Ramos Ramos -- resolviendo la ambigüedad del CSV de Google a favor de
+320 2977480 --, Heliomathi, Hector Velásquez Duque, Azucena De María
+Alzate Ospina). De paso se reintentaron los 3 "el remitente 'nosotros'
+nunca aparece en este chat" que quedaban pendientes del fix de chat
+unilateral (Fase 5) -- los 3 eran justamente eso, el paciente escribió y
+el staff nunca contestó; los 3 se importaron limpio.
+
+`chats_batch_6/` (2 exports, ambos de "nombre de usuario" sin teléfono)
+se procesó igual que las rondas anteriores.
+
+**Resultado: 0 batches en `needs_review`** -- primera vez que la cola
+queda completamente limpia. 65 mensajes nuevos, 100% verificados con las
+3 marcas de seguridad.

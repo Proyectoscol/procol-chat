@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_23_131500) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_24_150100) do
   # These extensions should be enabled to support this database
   enable_extension "btree_gist"
   enable_extension "pg_stat_statements"
@@ -416,6 +416,32 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_23_131500) do
     t.boolean "active", default: true, null: false
     t.integer "execution_delay"
     t.index ["account_id"], name: "index_automation_rules_on_account_id"
+  end
+
+  create_table "calendario_account_data_exports", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "created_by_id"
+    t.integer "status", default: 0, null: false
+    t.text "error_message"
+    t.jsonb "manifest", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_calendario_account_data_exports_on_account_id"
+    t.index ["created_by_id"], name: "index_calendario_account_data_exports_on_created_by_id"
+  end
+
+  create_table "calendario_account_data_imports", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "created_by_id"
+    t.bigint "inbox_id"
+    t.integer "status", default: 0, null: false
+    t.text "error_message"
+    t.jsonb "stats", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_calendario_account_data_imports_on_account_id"
+    t.index ["created_by_id"], name: "index_calendario_account_data_imports_on_created_by_id"
+    t.index ["inbox_id"], name: "index_calendario_account_data_imports_on_inbox_id"
   end
 
   create_table "calendario_appointment_audit_logs", force: :cascade do |t|
@@ -2365,6 +2391,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_23_131500) do
   add_foreign_key "auditoria_category_mentions", "messages", on_delete: :cascade
   add_foreign_key "auditoria_conversation_analyses", "accounts", on_delete: :cascade
   add_foreign_key "auditoria_conversation_analyses", "conversations", on_delete: :cascade
+  add_foreign_key "calendario_account_data_exports", "accounts", on_delete: :cascade
+  add_foreign_key "calendario_account_data_exports", "users", column: "created_by_id", on_delete: :nullify
+  add_foreign_key "calendario_account_data_imports", "accounts", on_delete: :cascade
+  add_foreign_key "calendario_account_data_imports", "inboxes", on_delete: :nullify
+  add_foreign_key "calendario_account_data_imports", "users", column: "created_by_id", on_delete: :nullify
   add_foreign_key "calendario_appointment_audit_logs", "accounts", on_delete: :cascade
   add_foreign_key "calendario_appointment_audit_logs", "calendario_appointments", column: "appointment_id", on_delete: :cascade
   add_foreign_key "calendario_appointment_audit_logs", "users", on_delete: :nullify

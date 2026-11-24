@@ -401,6 +401,7 @@
     },
     "DOCS": "Read docs",
     "IMPORT_WHATSAPP": "Import WhatsApp",
+    "ACCOUNT_DATA_TRANSFER": "Export / Import data",
     "SECURITY": "Security",
     "CAPTAIN_AI": "Captain",
     "CONVERSATION_WORKFLOW": "Conversation Workflow"

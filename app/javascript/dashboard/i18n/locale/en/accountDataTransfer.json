@@ -1,0 +1,43 @@
+{
+  "ACCOUNT_DATA_TRANSFER": {
+    "TITLE": "Export / Import data",
+    "DESCRIPTION": "Move professionals, services, payers, contacts, conversations with their attachments, appointments and waitlist entries between instances. Does not include automations (triggers, welcome bot, templates); those get configured fresh on each instance.",
+    "FETCH_ERROR": "Could not load the export/import information.",
+    "STATUS": {
+      "PENDING": "Queued",
+      "PROCESSING": "Processing",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed"
+    },
+    "EXPORT": {
+      "TITLE": "Export this account",
+      "DESCRIPTION": "Generates a downloadable .zip with all of this account's data.",
+      "BUTTON": "Export data",
+      "STARTED": "Export started. It runs in the background.",
+      "ERROR": "Could not start the export.",
+      "TABLE": {
+        "DATE": "Date",
+        "STATUS": "Status",
+        "COUNTS": "Counts",
+        "DOWNLOAD": "Download",
+        "DOWNLOAD_LINK": "Download .zip"
+      }
+    },
+    "IMPORT": {
+      "TITLE": "Import into this account",
+      "DESCRIPTION": "Upload a .zip exported from another instance. Always additive: never deletes or replaces existing data.",
+      "INBOX_LABEL": "Target inbox for conversations/messages",
+      "INBOX_PLACEHOLDER": "Select an inbox",
+      "FILE_LABEL": "Exported .zip file",
+      "BUTTON": "Import data",
+      "STARTED": "Import started. It runs in the background.",
+      "ERROR": "Could not start the import.",
+      "TABLE": {
+        "DATE": "Date",
+        "INBOX": "Inbox",
+        "STATUS": "Status",
+        "RESULT": "Result"
+      }
+    }
+  }
+}

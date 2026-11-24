@@ -1,0 +1,43 @@
+{
+  "ACCOUNT_DATA_TRANSFER": {
+    "TITLE": "Exportar / Importar datos",
+    "DESCRIPTION": "Mueve profesionales, servicios, EPS, contactos, conversaciones con sus adjuntos, citas y lista de espera entre instancias. No incluye automatizaciones (disparadores, bot de bienvenida, plantillas); esas se configuran de nuevo en cada instancia.",
+    "FETCH_ERROR": "No se pudo cargar la informacion de export/import.",
+    "STATUS": {
+      "PENDING": "En cola",
+      "PROCESSING": "Procesando",
+      "COMPLETED": "Completado",
+      "FAILED": "Fallo"
+    },
+    "EXPORT": {
+      "TITLE": "Exportar esta cuenta",
+      "DESCRIPTION": "Genera un .zip descargable con todos los datos de esta cuenta.",
+      "BUTTON": "Exportar datos",
+      "STARTED": "Exportacion iniciada. Se procesa en segundo plano.",
+      "ERROR": "No se pudo iniciar la exportacion.",
+      "TABLE": {
+        "DATE": "Fecha",
+        "STATUS": "Estado",
+        "COUNTS": "Conteos",
+        "DOWNLOAD": "Descarga",
+        "DOWNLOAD_LINK": "Descargar .zip"
+      }
+    },
+    "IMPORT": {
+      "TITLE": "Importar a esta cuenta",
+      "DESCRIPTION": "Sube un .zip exportado desde otra instancia. Siempre es aditivo: nunca borra ni reemplaza datos existentes.",
+      "INBOX_LABEL": "Bandeja destino para conversaciones/mensajes",
+      "INBOX_PLACEHOLDER": "Seleccione una bandeja",
+      "FILE_LABEL": "Archivo .zip exportado",
+      "BUTTON": "Importar datos",
+      "STARTED": "Importacion iniciada. Se procesa en segundo plano.",
+      "ERROR": "No se pudo iniciar la importacion.",
+      "TABLE": {
+        "DATE": "Fecha",
+        "INBOX": "Bandeja",
+        "STATUS": "Estado",
+        "RESULT": "Resultado"
+      }
+    }
+  }
+}

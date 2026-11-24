@@ -18,11 +18,18 @@ Metrics/ClassLength:
   Exclude:
     - 'app/models/message.rb'
     - 'app/models/conversation.rb'
+    - 'app/services/calendario/account_data_import_service.rb'
 
 Metrics/MethodLength:
   Max: 19
   Exclude:
     - 'enterprise/lib/captain/agent.rb'
+    - 'app/services/calendario/account_data_export_service.rb'
+    - 'app/services/calendario/account_data_import_service.rb'
+
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - 'app/services/calendario/account_data_import_service.rb'
 
 RSpec/ExampleLength:
   Max: 50
@@ -91,6 +98,7 @@ Metrics/ModuleLength:
   Exclude:
     - lib/seeders/message_seeder.rb
     - spec/support/slack_stubs.rb
+    - app/services/calendario/account_data_transfer_spec.rb
 
 Rails/HelperInstanceVariable:
   Exclude:
@@ -181,6 +189,9 @@ Metrics/AbcSize:
     - 'app/models/integrations/hook.rb'
     - 'app/models/canned_response.rb'
     - 'app/models/telegram_bot.rb'
+    - 'app/services/calendario/account_data_export_service.rb'
+    - 'app/services/calendario/account_data_import_service.rb'
+    - 'app/controllers/api/v1/accounts/calendario/account_data_imports_controller.rb'
 
 Rails/RenderInline:
   Exclude:

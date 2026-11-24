@@ -79,6 +79,8 @@ class Account < ApplicationRecord
   has_many :calendario_message_templates, dependent: :destroy_async, class_name: 'Calendario::MessageTemplate'
   has_many :calendario_returning_appointment_prompt_configs, dependent: :destroy_async,
                                                              class_name: 'Calendario::ReturningAppointmentPromptConfig'
+  has_many :calendario_account_data_exports, dependent: :destroy_async, class_name: 'Calendario::AccountDataExport'
+  has_many :calendario_account_data_imports, dependent: :destroy_async, class_name: 'Calendario::AccountDataImport'
   has_many :campaigns, dependent: :destroy_async
   has_many :canned_responses, dependent: :destroy_async
   has_many :categories, dependent: :destroy_async, class_name: '::Category'

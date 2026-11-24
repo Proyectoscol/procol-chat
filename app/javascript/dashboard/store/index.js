@@ -49,6 +49,8 @@ import inboxAssignableAgents from './modules/inboxAssignableAgents';
 import inboxes from './modules/inboxes';
 import inboxMembers from './modules/inboxMembers';
 import importWhatsappChatBatches from './modules/importWhatsappChatBatches';
+import calendarioAccountDataExports from './modules/calendarioAccountDataExports';
+import calendarioAccountDataImports from './modules/calendarioAccountDataImports';
 import integrations from './modules/integrations';
 import labels from './modules/labels';
 import macros from './modules/macros';
@@ -126,6 +128,8 @@ export default createStore({
     inboxes,
     inboxMembers,
     importWhatsappChatBatches,
+    calendarioAccountDataExports,
+    calendarioAccountDataImports,
     integrations,
     labels,
     macros,
