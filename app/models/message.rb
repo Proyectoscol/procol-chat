@@ -404,6 +404,7 @@ class Message < ApplicationRecord
   def reopen_conversation
     return if conversation.muted?
     return unless incoming?
+    return if historical_import?
 
     conversation.open! if conversation.snoozed?
 
@@ -447,9 +448,18 @@ class Message < ApplicationRecord
   end
 
   def set_conversation_activity
+    # Nunca retrocede la fecha -- un mensaje historico importado (created_at
+    # viejo, insertado hoy) no debe hacer que la conversacion parezca
+    # inactiva desde esa fecha vieja, perdiendo su actividad real reciente.
+    return if historical_import? && conversation.last_activity_at > created_at
+
     # rubocop:disable Rails/SkipsModelValidations
     conversation.update_columns(last_activity_at: created_at, updated_at: Time.current)
     # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  def historical_import?
+    content_attributes['historical_import'].present?
   end
 
   def reindex_for_search
