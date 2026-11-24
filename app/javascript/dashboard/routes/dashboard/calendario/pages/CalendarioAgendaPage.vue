@@ -11,6 +11,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import RescheduleAppointmentModal from '../components/RescheduleAppointmentModal.vue';
 import CancelAppointmentModal from '../components/CancelAppointmentModal.vue';
 import AppointmentDetailModal from '../components/AppointmentDetailModal.vue';
+import AppointmentFormModal from '../components/AppointmentFormModal.vue';
 import AppointmentRow from '../components/AppointmentRow.vue';
 import {
   dateKeyInColombia,
@@ -28,6 +29,9 @@ const cancellingAppointment = ref(null);
 const showDetailModal = ref(false);
 const selectedAppointmentId = ref(null);
 const updatingAppointmentId = ref(null);
+const showFormModal = ref(false);
+const presetProfessionalId = ref(null);
+const presetStartsAt = ref(null);
 
 const appointments = useMapGetter(
   'calendarioAppointments/getAgendaAppointments'
@@ -171,6 +175,20 @@ const openConversation = appointment => {
       })
     )
   );
+};
+
+// Mismo patron que CalendarioSchedulesPage (ideas.txt #8): la hora de la
+// cita nueva no hay que escogerla, empieza justo cuando termina la
+// anterior con el mismo profesional.
+const openQuickBookAfter = appointment => {
+  presetProfessionalId.value = appointment.professional_id;
+  presetStartsAt.value = new Date(appointment.ends_at);
+  showFormModal.value = true;
+};
+const closeFormModal = () => {
+  showFormModal.value = false;
+  presetProfessionalId.value = null;
+  presetStartsAt.value = null;
 };
 
 const openRescheduleModal = appointment => {
@@ -363,6 +381,7 @@ onMounted(async () => {
               @open-conversation="openConversation"
               @set-status="setStatus"
               @reschedule="openRescheduleModal"
+              @quick-book-after="openQuickBookAfter"
             />
           </template>
           <div
@@ -378,6 +397,15 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <woot-modal v-model:show="showFormModal" :on-close="closeFormModal">
+      <AppointmentFormModal
+        :preset-professional-id="presetProfessionalId"
+        :preset-starts-at="presetStartsAt"
+        @close="closeFormModal"
+        @created="refresh"
+      />
+    </woot-modal>
 
     <woot-modal
       v-model:show="showRescheduleModal"

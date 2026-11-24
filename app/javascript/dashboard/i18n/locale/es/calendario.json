@@ -158,6 +158,7 @@
       "EMPTY": "No hay próximas citas.",
       "FETCH_ERROR": "No se pudieron cargar las citas.",
       "UPDATE_ERROR": "No se pudo actualizar la cita.",
+      "QUICK_BOOK_AFTER_TOOLTIP": "Agendar cita después de esta (mismo profesional)",
       "TABLE": {
         "WHEN": "Cuándo",
         "CONTACT": "Contacto",

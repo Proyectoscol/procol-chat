@@ -24,6 +24,7 @@ const emit = defineEmits([
   'open-conversation',
   'set-status',
   'reschedule',
+  'quick-book-after',
 ]);
 
 const { t } = useI18n();
@@ -56,7 +57,7 @@ const canReschedule = computed(() => props.appointment.status !== 'attended');
 
 <template>
   <div
-    class="grid grid-cols-[2.75rem_minmax(0,1.4fr)_5.5rem_5rem_minmax(0,1fr)_minmax(0,0.8fr)_1.25rem_auto_auto] items-center gap-x-2 py-1 px-1 cursor-pointer rounded-lg ring-1 ring-inset ring-transparent hover:ring-n-slate-6"
+    class="grid grid-cols-[2.75rem_minmax(0,1.4fr)_5.5rem_5rem_minmax(0,1fr)_minmax(0,0.8fr)_1.25rem_auto_auto_auto] items-center gap-x-2 py-1 px-1 cursor-pointer rounded-lg ring-1 ring-inset ring-transparent hover:ring-n-slate-6"
     :class="statusRowBackgroundClass(appointment.status)"
     @click="emit('open-detail', appointment)"
   >
@@ -123,5 +124,14 @@ const canReschedule = computed(() => props.appointment.status !== 'attended');
       @click.stop="emit('reschedule', appointment)"
     />
     <span v-else />
+
+    <Button
+      v-tooltip.top="t('CALENDARIO.APPOINTMENTS.QUICK_BOOK_AFTER_TOOLTIP')"
+      size="sm"
+      faded
+      slate
+      icon="i-lucide-calendar-plus"
+      @click.stop="emit('quick-book-after', appointment)"
+    />
   </div>
 </template>

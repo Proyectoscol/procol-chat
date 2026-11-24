@@ -158,6 +158,7 @@
       "EMPTY": "No upcoming appointments.",
       "FETCH_ERROR": "Could not load appointments.",
       "UPDATE_ERROR": "Could not update the appointment.",
+      "QUICK_BOOK_AFTER_TOOLTIP": "Book an appointment right after this one (same professional)",
       "TABLE": {
         "WHEN": "When",
         "CONTACT": "Contact",

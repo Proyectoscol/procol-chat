@@ -383,6 +383,18 @@ const closeFormModal = () => {
   showFormModal.value = false;
 };
 
+// Idea del usuario (ideas.txt #8): la hora de la cita nueva no hay que
+// escogerla -- lo mas util es que empiece justo cuando termina la anterior,
+// mismo profesional. La duracion de la nueva la pone el servicio que se
+// elija en el formulario (set_ends_at_from_service), por eso solo se
+// precarga el inicio, nunca el fin.
+const openQuickBookAfter = appointment => {
+  resetPresets();
+  presetProfessionalId.value = appointment.professional_id;
+  presetStartsAt.value = new Date(appointment.ends_at);
+  showFormModal.value = true;
+};
+
 const openRescheduleModal = appointment => {
   reschedulingAppointment.value = appointment;
   showRescheduleModal.value = true;
@@ -880,6 +892,7 @@ onMounted(async () => {
                       @open-conversation="openConversation"
                       @set-status="setStatus"
                       @reschedule="openRescheduleModal"
+                      @quick-book-after="openQuickBookAfter"
                     />
                   </div>
                   <p v-else class="text-xs text-n-slate-10 italic">
