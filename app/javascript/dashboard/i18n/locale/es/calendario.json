@@ -14,6 +14,15 @@
       "TEMPLATE_LIBRARY": "Biblioteca de plantillas",
       "RETURNING_PROMPT": "Paciente que regresa"
     },
+    "WELCOME_BOT_TRIGGER": {
+      "DESCRIPTION": "Arranca manualmente un flujo de bot para este contacto -- mismo comportamiento que si hubiera escrito ahora: envía el primer paso de verdad, con recordatorios si no responde.",
+      "SELECT_PLACEHOLDER": "Elegir flujo...",
+      "SEND_BUTTON": "Enviar bot de bienvenida",
+      "SEND_CONFIRM": "¿Confirmar envío?",
+      "SUCCESS": "Bot de bienvenida enviado.",
+      "ERROR": "No se pudo enviar el bot de bienvenida.",
+      "NO_TEMPLATE_WARNING": "El primer paso de este flujo no usa una plantilla aprobada de WhatsApp -- si el paciente no ha escrito en las últimas 24h, el envío puede no llegar."
+    },
     "CONTACT_FROM_MESSAGE": {
       "TITLE": "Crear contacto desde este mensaje",
       "ORIGINAL_MESSAGE_LABEL": "Mensaje original",

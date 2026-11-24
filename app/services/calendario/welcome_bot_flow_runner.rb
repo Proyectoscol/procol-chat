@@ -20,7 +20,13 @@
 class Calendario::WelcomeBotFlowRunner
   include Calendario::WelcomeBotMessaging
 
-  pattr_initialize [:message!]
+  # `message` solo hace falta para el camino normal (reaccionar a un mensaje
+  # entrante real -- matchea flujo por palabra clave y, si ya hay sesion,
+  # guarda la respuesta). Un disparo manual desde Ajustes/conversacion
+  # (Api::V1::Accounts::Conversations::WelcomeBotTriggersController) pasa
+  # `flow` directo, sin message, para arrancar una sesion nueva sin esperar
+  # ningun mensaje del paciente.
+  pattr_initialize [:conversation!, { message: nil }, { flow: nil }]
 
   def perform
     active_session.present? ? advance! : start!
@@ -28,7 +34,6 @@ class Calendario::WelcomeBotFlowRunner
 
   private
 
-  delegate :conversation, to: :message
   delegate :account, :inbox, to: :conversation
 
   def active_session
@@ -40,8 +45,8 @@ class Calendario::WelcomeBotFlowRunner
   end
 
   def start!
-    flow = Calendario::WelcomeBotFlow.match_for(inbox, message.content)
-    return if flow.blank? || flow.steps.blank?
+    selected_flow = flow || Calendario::WelcomeBotFlow.match_for(inbox, message&.content)
+    return if selected_flow.blank? || selected_flow.steps.blank?
 
     inbox.update!(enable_auto_assignment: false)
     # La auto-asignacion corre en el after_save de ConversationBuilder al
@@ -52,7 +57,7 @@ class Calendario::WelcomeBotFlowRunner
     # es la correccion, no solo prevencion hacia adelante.
     conversation.update!(assignee_id: nil) if conversation.assignee_id.present?
     session = Calendario::BotSession.create!(
-      account: account, conversation: conversation, welcome_bot_flow: flow, current_step: 0
+      account: account, conversation: conversation, welcome_bot_flow: selected_flow, current_step: 0
     )
     ask_current_step(session)
   end

@@ -22,6 +22,7 @@ import Draggable from 'vuedraggable';
 import MacrosList from './Macros/List.vue';
 import ShopifyOrdersList from 'dashboard/components/widgets/conversation/ShopifyOrdersList.vue';
 import ContactCalendar from 'dashboard/routes/dashboard/conversation/contact/ContactCalendar.vue';
+import CalendarioWelcomeBotTrigger from 'dashboard/routes/dashboard/conversation/contact/CalendarioWelcomeBotTrigger.vue';
 import SidebarActionsHeader from 'dashboard/components-next/SidebarActionsHeader.vue';
 import LinearIssuesList from 'dashboard/components/widgets/conversation/linear/IssuesList.vue';
 import LinearSetupCTA from 'dashboard/components/widgets/conversation/linear/LinearSetupCTA.vue';
@@ -316,6 +317,26 @@ onMounted(() => {
               <ContactCalendar
                 :contact="contact"
                 :conversation-id="conversationId"
+              />
+            </AccordionItem>
+          </div>
+          <div v-else-if="element.name === 'calendario_welcome_bot_trigger'">
+            <AccordionItem
+              :title="
+                $t('CONVERSATION_SIDEBAR.ACCORDION.CALENDARIO_WELCOME_BOT')
+              "
+              :is-open="
+                isContactSidebarItemOpen('is_calendario_welcome_bot_open')
+              "
+              compact
+              @toggle="
+                value =>
+                  toggleSidebarUIState('is_calendario_welcome_bot_open', value)
+              "
+            >
+              <CalendarioWelcomeBotTrigger
+                :conversation-id="conversationId"
+                :inbox-id="inboxId"
               />
             </AccordionItem>
           </div>

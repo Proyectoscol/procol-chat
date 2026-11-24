@@ -11,7 +11,7 @@ class Calendario::WelcomeBotListener < BaseListener
     return unless Calendario::WelcomeBotFlow.exists?(inbox_id: message.inbox_id, active: true)
     return if restarting_an_already_assigned_conversation?(message.conversation)
 
-    Calendario::WelcomeBotFlowRunner.new(message: message).perform
+    Calendario::WelcomeBotFlowRunner.new(conversation: message.conversation, message: message).perform
   rescue StandardError => e
     ChatwootExceptionTracker.new(e, account: account).capture_exception
   end

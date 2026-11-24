@@ -14,6 +14,15 @@
       "TEMPLATE_LIBRARY": "Template library",
       "RETURNING_PROMPT": "Returning patient"
     },
+    "WELCOME_BOT_TRIGGER": {
+      "DESCRIPTION": "Manually start a bot flow for this contact -- same behavior as a live trigger: sends the real first step, with reminders if there's no reply.",
+      "SELECT_PLACEHOLDER": "Choose a flow...",
+      "SEND_BUTTON": "Send welcome bot",
+      "SEND_CONFIRM": "Confirm send?",
+      "SUCCESS": "Welcome bot sent.",
+      "ERROR": "Could not send the welcome bot.",
+      "NO_TEMPLATE_WARNING": "This flow's first step doesn't use an approved WhatsApp template -- if the patient hasn't messaged in the last 24h, the send may not go through."
+    },
     "CONTACT_FROM_MESSAGE": {
       "TITLE": "Create contact from this message",
       "ORIGINAL_MESSAGE_LABEL": "Original message",

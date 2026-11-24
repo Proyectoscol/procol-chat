@@ -369,7 +369,8 @@
       "LINEAR_ISSUES": "Problemas lineales vinculados",
       "SHOPIFY_ORDERS": "Shopify Orders",
       "SHARED_FILES": "Attachments",
-      "CALENDARIO": "Agenda del paciente"
+      "CALENDARIO": "Agenda del paciente",
+      "CALENDARIO_WELCOME_BOT": "Bot de bienvenida"
     },
     "SHARED_FILES": {
       "EMPTY": "No attachments yet",
