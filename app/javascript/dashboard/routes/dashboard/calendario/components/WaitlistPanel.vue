@@ -6,7 +6,9 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import Input from 'dashboard/components-next/input/Input.vue';
 import calendarioWaitlistEntriesAPI from 'dashboard/api/calendarioWaitlistEntries';
+import { classifyContactQuery } from '../helpers/classifyContactQuery';
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -163,6 +165,56 @@ const isCreatingEntry = ref(false);
 const isDuplicate = ref(false);
 let searchTimeout = null;
 
+// --- Crear contacto nuevo sobre la marcha ---------------------------------
+// Mismo patron que AppointmentFormContent.vue (flujo de "Agregar cita"):
+// si la busqueda no encuentra al contacto, se puede crear uno nuevo sin
+// salir del modal. Pedido explicito del usuario: paridad entre ambos flujos.
+const showCreateContactForm = ref(false);
+const newContact = ref({
+  name: '',
+  phoneNumber: '',
+  identifier: '',
+  documentType: 'cc',
+});
+const isCreatingContact = ref(false);
+
+const documentTypeOptions = computed(() => [
+  { value: 'cc', label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.CC') },
+  { value: 'ti', label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.TI') },
+  { value: 'ce', label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.CE') },
+  { value: 'pa', label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.PA') },
+  { value: 'rc', label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.RC') },
+  {
+    value: 'pep',
+    label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.PEP'),
+  },
+  {
+    value: 'ppt',
+    label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.PPT'),
+  },
+]);
+
+const openCreateContactForm = () => {
+  const classified = classifyContactQuery(contactQuery.value);
+  newContact.value = {
+    name: classified.name || '',
+    phoneNumber: classified.phoneNumber || '',
+    identifier: classified.identifier || '',
+    documentType: 'cc',
+  };
+  showCreateContactForm.value = true;
+};
+
+// El documento no es obligatorio si ya se tiene el telefono -- hay casos
+// donde solo se conoce el numero y se solicita el resto despues por
+// WhatsApp (mismo criterio que el backend en ContactsController#create).
+const isNewContactInvalid = computed(
+  () =>
+    !newContact.value.name.trim() ||
+    (!newContact.value.identifier.trim() &&
+      !newContact.value.phoneNumber.trim())
+);
+
 const serviceOptions = computed(() => [
   { value: '', label: t('CALENDARIO.WAITLIST.ADD_FORM.SERVICE_PLACEHOLDER') },
   ...services.value.map(service => ({
@@ -194,6 +246,7 @@ const resetAddForm = () => {
   newEntryProfessionalId.value = '';
   newEntryNotes.value = '';
   isDuplicate.value = false;
+  showCreateContactForm.value = false;
 };
 
 const toggleAddForm = () => {
@@ -218,6 +271,7 @@ const openEditForm = entry => {
 
 const onContactQueryInput = () => {
   selectedContactId.value = '';
+  showCreateContactForm.value = false;
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     if (contactQuery.value.trim().length < 2) return;
@@ -229,6 +283,23 @@ const selectContact = contact => {
   selectedContactId.value = contact.id;
   selectedContactName.value = contact.name;
   contactQuery.value = contact.name;
+};
+
+const createContactInline = async () => {
+  isCreatingContact.value = true;
+  try {
+    const contact = await store.dispatch('contacts/create', newContact.value);
+    selectContact(contact);
+    showCreateContactForm.value = false;
+  } catch (error) {
+    // Alertar en vez de crear un duplicado -- si ya existe por documento o
+    // telefono, el backend devuelve 422 con el contacto existente.
+    useAlert(
+      error?.message || t('CALENDARIO.APPOINTMENTS.FORM.CREATE_CONTACT_ERROR')
+    );
+  } finally {
+    isCreatingContact.value = false;
+  }
 };
 
 const isAddFormInvalid = computed(
@@ -510,6 +581,81 @@ defineExpose({ fetchEntries });
             </button>
           </li>
         </ul>
+
+        <!-- "No encuentro a X, crear contacto nuevo" -- mismo patron que el
+        flujo de "Agregar cita" (AppointmentFormContent.vue). Solo aparece si
+        la busqueda NO encontro nada -- si ya hay resultados, es porque si
+        existe, y este boton no deberia verse (pedido explicito). -->
+        <button
+          v-if="
+            !editingEntryId &&
+            !selectedContactId &&
+            contactQuery.trim().length >= 2 &&
+            !contactResults.length &&
+            !showCreateContactForm
+          "
+          type="button"
+          class="flex items-center gap-2 w-full text-left text-sm font-medium text-n-blue-text bg-n-blue-2 hover:bg-n-blue-3 border border-n-blue-6 rounded-lg px-3 py-2 transition-colors"
+          @click="openCreateContactForm"
+        >
+          <span class="i-lucide-user-plus size-4 flex-shrink-0" />
+          {{
+            t('CALENDARIO.APPOINTMENTS.FORM.CREATE_CONTACT_LINK', {
+              query: contactQuery,
+            })
+          }}
+        </button>
+
+        <div
+          v-if="showCreateContactForm"
+          class="flex flex-col gap-3 rounded-lg border border-n-weak p-3"
+        >
+          <p class="text-xs text-n-slate-11">
+            {{ t('CALENDARIO.APPOINTMENTS.FORM.CREATE_CONTACT_TITLE') }}
+          </p>
+          <Input
+            v-model="newContact.name"
+            :label="t('CALENDARIO.APPOINTMENTS.FORM.NEW_CONTACT_NAME')"
+          />
+          <div class="flex gap-2">
+            <div class="flex flex-col gap-1 w-1/3">
+              <label class="text-xs text-n-slate-11">{{
+                t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPE_LABEL')
+              }}</label>
+              <Select
+                v-model="newContact.documentType"
+                :options="documentTypeOptions"
+              />
+            </div>
+            <Input
+              v-model="newContact.identifier"
+              class="flex-1"
+              :label="t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_NUMBER_LABEL')"
+            />
+          </div>
+          <Input
+            v-model="newContact.phoneNumber"
+            :label="t('CALENDARIO.APPOINTMENTS.FORM.NEW_CONTACT_PHONE')"
+          />
+          <div class="flex items-center justify-end gap-2">
+            <Button
+              faded
+              slate
+              size="sm"
+              type="button"
+              :label="t('CALENDARIO.APPOINTMENTS.FORM.CANCEL')"
+              @click="showCreateContactForm = false"
+            />
+            <Button
+              size="sm"
+              type="button"
+              :label="t('CALENDARIO.APPOINTMENTS.FORM.CREATE_CONTACT_SUBMIT')"
+              :is-loading="isCreatingContact"
+              :disabled="isNewContactInvalid"
+              @click="createContactInline"
+            />
+          </div>
+        </div>
 
         <label class="text-xs text-n-slate-11">{{
           t('CALENDARIO.WAITLIST.ADD_FORM.SERVICE_LABEL')

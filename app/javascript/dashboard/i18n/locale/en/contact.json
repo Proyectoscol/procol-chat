@@ -442,6 +442,12 @@
           "LAST_NAME": {
             "PLACEHOLDER": "Enter the last name"
           },
+          "DOCUMENT_TYPE": {
+            "PLACEHOLDER": "Select document type"
+          },
+          "IDENTIFIER": {
+            "PLACEHOLDER": "Enter the document number"
+          },
           "EMAIL_ADDRESS": {
             "PLACEHOLDER": "Enter the email address",
             "DUPLICATE": "This email address is in use for another contact."

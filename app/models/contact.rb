@@ -245,12 +245,19 @@ class Contact < ApplicationRecord
 
   def prepare_contact_attributes
     prepare_email_attribute
+    prepare_identifier_attribute
     prepare_jsonb_attributes
   end
 
   def prepare_email_attribute
     # So that the db unique constraint won't throw error when email is ''
     self.email = email.present? ? email.downcase : nil
+  end
+
+  def prepare_identifier_attribute
+    # So that the db unique constraint won't throw error when identifier is ''
+    # (ex: creating a contact manually with only a phone number).
+    self.identifier = nil if identifier.blank?
   end
 
   def prepare_jsonb_attributes

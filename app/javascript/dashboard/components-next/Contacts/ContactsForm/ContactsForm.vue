@@ -1,7 +1,7 @@
 <script setup>
 import { computed, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { required, email } from '@vuelidate/validators';
+import { required, requiredIf, email } from '@vuelidate/validators';
 import { useVuelidate } from '@vuelidate/core';
 import { splitName } from '@chatwoot/utils';
 import countries from 'shared/constants/countries.js';
@@ -32,6 +32,8 @@ const { t } = useI18n();
 const FORM_CONFIG = {
   FIRST_NAME: { field: 'firstName' },
   LAST_NAME: { field: 'lastName' },
+  DOCUMENT_TYPE: { field: 'documentType', newContactOnly: true },
+  IDENTIFIER: { field: 'identifier', newContactOnly: true },
   EMAIL_ADDRESS: { field: 'email' },
   PHONE_NUMBER: { field: 'phoneNumber' },
   CITY: { field: 'additionalAttributes.city' },
@@ -39,6 +41,8 @@ const FORM_CONFIG = {
   BIO: { field: 'additionalAttributes.description' },
   COMPANY_NAME: { field: 'additionalAttributes.companyName' },
 };
+
+const DOCUMENT_TYPE_OPTIONS = ['cc', 'ti', 'ce', 'pa', 'rc', 'pep', 'ppt'];
 
 const SOCIAL_CONFIG = {
   LINKEDIN: 'i-ri-linkedin-box-fill',
@@ -56,6 +60,8 @@ const defaultState = {
   email: '',
   firstName: '',
   lastName: '',
+  documentType: '',
+  identifier: '',
   phoneNumber: '',
   additionalAttributes: {
     description: '',
@@ -77,9 +83,17 @@ const defaultState = {
 
 const state = reactive({ ...defaultState });
 
+// El documento no es obligatorio si ya se tiene el telefono -- hay casos
+// donde solo se conoce el numero y se solicita el resto despues por
+// WhatsApp (mismo criterio que el backend en ContactsController#create).
+const isDocumentRequired = () =>
+  props.isNewContact && !state.phoneNumber?.trim();
+
 const validationRules = {
   firstName: { required },
   email: { email },
+  documentType: { required: requiredIf(isDocumentRequired) },
+  identifier: { required: requiredIf(isDocumentRequired) },
 };
 
 const v$ = useVuelidate(validationRules, state);
@@ -137,13 +151,24 @@ const countryOptions = computed(() =>
   countries.map(({ name, id }) => ({ label: name, value: id }))
 );
 
-const editDetailsForm = computed(() =>
-  Object.keys(FORM_CONFIG).map(key => ({
-    key,
-    placeholder: t(
-      `CONTACTS_LAYOUT.CARD.EDIT_DETAILS_FORM.FORM.${key}.PLACEHOLDER`
+const documentTypeOptions = computed(() =>
+  DOCUMENT_TYPE_OPTIONS.map(value => ({
+    value,
+    label: t(
+      `CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.${value.toUpperCase()}`
     ),
   }))
+);
+
+const editDetailsForm = computed(() =>
+  Object.keys(FORM_CONFIG)
+    .filter(key => props.isNewContact || !FORM_CONFIG[key].newContactOnly)
+    .map(key => ({
+      key,
+      placeholder: t(
+        `CONTACTS_LAYOUT.CARD.EDIT_DETAILS_FORM.FORM.${key}.PLACEHOLDER`
+      ),
+    }))
 );
 
 const socialProfilesForm = computed(() =>
@@ -156,7 +181,7 @@ const socialProfilesForm = computed(() =>
 
 const isValidationField = key => {
   const field = FORM_CONFIG[key]?.field;
-  return ['firstName', 'email'].includes(field);
+  return ['firstName', 'email', 'documentType', 'identifier'].includes(field);
 };
 
 const getValidationKey = key => {
@@ -266,6 +291,18 @@ defineExpose({
               '[&>div>button]:!bg-n-alpha-black2': isDetailsView,
             }"
             @update:model-value="handleCountrySelection"
+          />
+          <ComboBox
+            v-else-if="item.key === 'DOCUMENT_TYPE'"
+            v-model="getFormBinding(item.key).value"
+            :options="documentTypeOptions"
+            :placeholder="item.placeholder"
+            class="[&>div>button]:h-8"
+            :class="{
+              '[&>div>button]:bg-n-alpha-black2 [&>div>button:not(.focused)]:!outline-transparent':
+                !isDetailsView,
+              '[&>div>button]:!bg-n-alpha-black2': isDetailsView,
+            }"
           />
           <PhoneNumberInput
             v-else-if="item.key === 'PHONE_NUMBER'"

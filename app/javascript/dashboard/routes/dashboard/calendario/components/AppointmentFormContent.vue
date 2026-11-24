@@ -8,6 +8,7 @@ import DatePicker from 'vue-datepicker-next';
 import { dateKeyInColombia } from '../helpers/calendarioDateTime';
 import { appointmentWarningMessage } from '../helpers/appointmentWarningMessage';
 import { ES_DATEPICKER_LANG } from '../helpers/datepickerLang';
+import { classifyContactQuery } from '../helpers/classifyContactQuery';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
@@ -274,10 +275,11 @@ const onContactKeydown = event => {
 
 const openCreateForm = () => {
   const particular = payers.value.find(payer => payer.kind === 'particular');
+  const classified = classifyContactQuery(contactQuery.value);
   newContact.value = {
-    name: contactQuery.value,
-    phoneNumber: '',
-    identifier: '',
+    name: classified.name || '',
+    phoneNumber: classified.phoneNumber || '',
+    identifier: classified.identifier || '',
     documentType: 'cc',
     secondaryPhoneNumber: '',
     payerId: particular?.id || '',
@@ -286,8 +288,14 @@ const openCreateForm = () => {
   closeResults();
 };
 
+// El documento no es obligatorio si ya se tiene el telefono -- hay casos
+// donde solo se conoce el numero y se solicita el resto despues por
+// WhatsApp (mismo criterio que el backend en ContactsController#create).
 const isNewContactInvalid = computed(
-  () => !newContact.value.name.trim() || !newContact.value.identifier.trim()
+  () =>
+    !newContact.value.name.trim() ||
+    (!newContact.value.identifier.trim() &&
+      !newContact.value.phoneNumber.trim())
 );
 
 const createContactInline = async () => {
@@ -410,12 +418,15 @@ const submit = async () => {
       </ul>
       <!-- Mas llamativo a proposito -- pedido explicito del usuario: antes
       era un enlace de texto chiquito, facil de no ver cuando el contacto
-      (cedula/nombre) no existe todavia y es justo lo que hay que hacer. -->
+      (cedula/nombre) no existe todavia y es justo lo que hay que hacer.
+      Solo aparece si la busqueda NO encontro nada -- si ya hay resultados,
+      es porque si existe, y este boton no deberia verse (pedido explicito). -->
       <button
         v-if="
           !presetContact &&
           !selectedContactId &&
           contactQuery.trim().length >= 2 &&
+          !contactSearchResults.length &&
           !showCreateForm
         "
         type="button"

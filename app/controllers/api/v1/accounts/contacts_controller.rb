@@ -87,10 +87,14 @@ class Api::V1::Accounts::ContactsController < Api::V1::Accounts::BaseController
   # nunca para los builders de creacion automatica por canal (WhatsApp,
   # Facebook, widget, etc.), que no tienen documento disponible al momento de
   # crear el contacto. Ver design doc de Calendario, Premisa 7.
+  #
+  # Excepcion: si ya se tiene el telefono, el documento no es obligatorio --
+  # hay casos reales donde solo se conoce el numero (ej. referido por otro
+  # paciente) y se solicita el resto de datos despues por WhatsApp.
   def create
     ActiveRecord::Base.transaction do
       @contact = Current.account.contacts.new(permitted_params.except(:avatar_url))
-      if @contact.identifier.blank? || @contact.document_type.blank?
+      if @contact.phone_number.blank? && (@contact.identifier.blank? || @contact.document_type.blank?)
         @contact.errors.add(:identifier, I18n.t('errors.contacts.identifier.required', default: 'document is required'))
         raise ActiveRecord::RecordInvalid, @contact
       end
