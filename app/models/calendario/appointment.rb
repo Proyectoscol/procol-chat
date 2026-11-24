@@ -3,6 +3,7 @@
 # Table name: calendario_appointments
 #
 #  id                               :bigint           not null, primary key
+#  amount_to_collect                :integer
 #  ends_at                          :datetime         not null
 #  notes                            :text
 #  reschedules_count                :integer          default(0), not null

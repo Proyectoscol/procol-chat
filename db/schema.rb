@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_24_150100) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_24_190000) do
   # These extensions should be enabled to support this database
   enable_extension "btree_gist"
   enable_extension "pg_stat_statements"
@@ -506,6 +506,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_24_150100) do
     t.datetime "updated_at", null: false
     t.integer "reschedules_count", default: 0, null: false
     t.datetime "returning_patient_prompt_sent_at"
+    t.integer "amount_to_collect"
     t.index ["account_id", "starts_at"], name: "index_calendario_appointments_on_account_id_and_starts_at"
     t.index ["account_id"], name: "index_calendario_appointments_on_account_id"
     t.index ["contact_id"], name: "index_calendario_appointments_on_contact_id"

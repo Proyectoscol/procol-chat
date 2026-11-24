@@ -43,6 +43,7 @@ const serviceId = ref(props.presetServiceId || '');
 const professionalId = ref(props.presetProfessionalId || '');
 const startsAt = ref(props.presetStartsAt || null);
 const notes = ref('');
+const amountToCollect = ref('');
 const isSaving = ref(false);
 const appointmentWarnings = ref([]);
 let searchTimeout = null;
@@ -336,6 +337,7 @@ const submit = async () => {
     professional_id: professionalId.value,
     starts_at: startsAt.value.toISOString(),
     notes: notes.value,
+    amount_to_collect: amountToCollect.value || null,
     conversation_id: props.presetConversationId,
     // Si ya se mostraron las advertencias para este mismo horario, este
     // intento es la confirmacion del usuario -- crear igual.
@@ -595,6 +597,20 @@ const submit = async () => {
       :label="t('CALENDARIO.APPOINTMENTS.FORM.NOTES_LABEL')"
       :max-length="500"
     />
+
+    <div class="flex flex-col gap-1">
+      <Input
+        v-model="amountToCollect"
+        type="number"
+        :label="t('CALENDARIO.APPOINTMENTS.FORM.AMOUNT_TO_COLLECT_LABEL')"
+        :placeholder="
+          t('CALENDARIO.APPOINTMENTS.FORM.AMOUNT_TO_COLLECT_PLACEHOLDER')
+        "
+      />
+      <p class="text-xs text-n-slate-10">
+        {{ t('CALENDARIO.APPOINTMENTS.FORM.AMOUNT_TO_COLLECT_HINT') }}
+      </p>
+    </div>
 
     <div
       v-if="appointmentWarnings.length"

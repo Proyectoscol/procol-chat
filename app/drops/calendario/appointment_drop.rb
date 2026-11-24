@@ -39,6 +39,17 @@ class Calendario::AppointmentDrop < BaseDrop
     @obj.status
   end
 
+  # Prioriza el descuento/ajuste puntual del doctor sobre el precio de
+  # catalogo (Calendario::ServicePrice, ver Appointment#price) -- en blanco
+  # ('') si ninguno de los dos aplica, para que un "{% if %}" en la
+  # plantilla lo pueda omitir sin reventar.
+  def amount_to_collect
+    value = @obj.amount_to_collect || @obj.price
+    return '' if value.blank?
+
+    value.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\1.').reverse
+  end
+
   private
 
   def zone

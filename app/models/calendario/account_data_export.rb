@@ -5,6 +5,29 @@
 # (disparadores, bot de bienvenida, biblioteca de plantillas, "paciente que
 # regresa") -- decisión explícita del usuario, esas se configuran de nuevo en
 # cada instancia.
+# == Schema Information
+#
+# Table name: calendario_account_data_exports
+#
+#  id            :bigint           not null, primary key
+#  error_message :text
+#  manifest      :jsonb            not null
+#  status        :integer          default("pending"), not null
+#  created_at    :datetime         not null
+#  updated_at    :datetime         not null
+#  account_id    :bigint           not null
+#  created_by_id :bigint
+#
+# Indexes
+#
+#  index_calendario_account_data_exports_on_account_id     (account_id)
+#  index_calendario_account_data_exports_on_created_by_id  (created_by_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (account_id => accounts.id) ON DELETE => cascade
+#  fk_rails_...  (created_by_id => users.id) ON DELETE => nullify
+#
 class Calendario::AccountDataExport < ApplicationRecord
   self.table_name = 'calendario_account_data_exports'
 

@@ -1,5 +1,6 @@
 class Api::V1::Accounts::Calendario::AppointmentsController < Api::V1::Accounts::BaseController
-  wrap_parameters :appointment, include: %i[professional_id service_id contact_id conversation_id starts_at ends_at status notes force]
+  wrap_parameters :appointment,
+                  include: %i[professional_id service_id contact_id conversation_id starts_at ends_at status notes force amount_to_collect]
 
   before_action :check_authorization
   before_action :fetch_appointment, only: [:show, :update]
@@ -131,11 +132,11 @@ class Api::V1::Accounts::Calendario::AppointmentsController < Api::V1::Accounts:
 
   def appointment_params
     params.require(:appointment).permit(:professional_id, :service_id, :contact_id, :conversation_id,
-                                        :starts_at, :ends_at, :notes)
+                                        :starts_at, :ends_at, :notes, :amount_to_collect)
   end
 
   def appointment_update_params
-    params.require(:appointment).permit(:starts_at, :ends_at, :status, :notes, :cancellation_type)
+    params.require(:appointment).permit(:starts_at, :ends_at, :status, :notes, :cancellation_type, :amount_to_collect)
   end
 
   # "temporal": el paciente podria necesitar la cita despues (ej. esta
@@ -164,7 +165,8 @@ class Api::V1::Accounts::Calendario::AppointmentsController < Api::V1::Accounts:
       conversation_id: appointment.conversation_id,
       reschedules_count: appointment.reschedules_count,
       created_by_name: appointment.created_by&.name,
-      payer_id: appointment.contact.payer_id, payer_name: appointment.contact.payer&.name, price: appointment.price
+      payer_id: appointment.contact.payer_id, payer_name: appointment.contact.payer&.name, price: appointment.price,
+      amount_to_collect: appointment.amount_to_collect
     }
   end
 

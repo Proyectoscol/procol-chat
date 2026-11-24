@@ -4,6 +4,32 @@
 # asocian a esa bandeja (pensado para apuntar a la bandeja real de WhatsApp
 # de producción antes de que empiece a recibir tráfico real -- ver plan de
 # migración).
+# == Schema Information
+#
+# Table name: calendario_account_data_imports
+#
+#  id            :bigint           not null, primary key
+#  error_message :text
+#  stats         :jsonb            not null
+#  status        :integer          default("pending"), not null
+#  created_at    :datetime         not null
+#  updated_at    :datetime         not null
+#  account_id    :bigint           not null
+#  created_by_id :bigint
+#  inbox_id      :bigint
+#
+# Indexes
+#
+#  index_calendario_account_data_imports_on_account_id     (account_id)
+#  index_calendario_account_data_imports_on_created_by_id  (created_by_id)
+#  index_calendario_account_data_imports_on_inbox_id       (inbox_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (account_id => accounts.id) ON DELETE => cascade
+#  fk_rails_...  (created_by_id => users.id) ON DELETE => nullify
+#  fk_rails_...  (inbox_id => inboxes.id) ON DELETE => nullify
+#
 class Calendario::AccountDataImport < ApplicationRecord
   self.table_name = 'calendario_account_data_imports'
 
