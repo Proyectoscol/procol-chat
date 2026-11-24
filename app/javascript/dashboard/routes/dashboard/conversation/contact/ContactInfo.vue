@@ -102,6 +102,15 @@ export default {
         telegram,
       };
     },
+    // Contactos importados sin telefono real pueden tener solo el username
+    // de WhatsApp guardado (social_whatsapp_user_name) -- se usa para
+    // identificar la conversacion, pero NO sirve para enviar mensajes
+    // salientes por Twilio (exige un numero E.164 real). Mostrar un @ en
+    // vez de "No Disponible" deja claro que es un username, no un telefono,
+    // y que hay que pedirle el numero real al paciente.
+    whatsappUsername() {
+      return this.additionalAttributes.social_whatsapp_user_name || '';
+    },
   },
   watch: {
     'contact.id': {
@@ -261,6 +270,17 @@ export default {
             @update="value => onFieldUpdate('email', value)"
           />
           <ContactInfoRow
+            v-if="!contact.phone_number && whatsappUsername"
+            :value="`@${whatsappUsername}`"
+            icon="mention"
+            emoji="🔖"
+            :title="$t('CONTACT_PANEL.PHONE_NUMBER')"
+            show-copy
+            editable
+            @update="value => onFieldUpdate('phone_number', value)"
+          />
+          <ContactInfoRow
+            v-else
             :href="contact.phone_number ? `tel:${contact.phone_number}` : ''"
             :value="contact.phone_number"
             icon="call"
