@@ -56,7 +56,14 @@ class Calendario::AccountDataImportService
     stats = { created: 0, reused: 0, skipped: 0, errors: 0 }
     rows.each do |row|
       old_id = row['id']
-      new_id = import_row(key, row, account, target_inbox, stats)
+      # Savepoint por fila -- sin esto, un solo error real de Postgres
+      # (ej. una violacion de unicidad) deja TODA la transaccion abortada,
+      # y cada fila siguiente falla en cascada con "current transaction is
+      # aborted" aunque sus datos sean validos (hallazgo real: 1 telefono
+      # duplicado tumbo las 3080 filas de contactos en produccion).
+      new_id = ActiveRecord::Base.transaction(requires_new: true) do
+        import_row(key, row, account, target_inbox, stats)
+      end
       @id_maps[key][old_id] = new_id if new_id
     rescue StandardError => e
       stats[:errors] += 1
@@ -123,15 +130,17 @@ class Calendario::AccountDataImportService
     record.id
   end
 
+  # Nunca rescata aqui adentro (ver import_rows): un duplicado real
+  # (service_professional/price/availability ya existente) queda contado
+  # como error, no "skipped" -- preferible al riesgo de dejar el savepoint
+  # de la fila en un estado invalido rescatando una excepcion de SQL sin
+  # dejar que la transaccion anidada haga su propio rollback.
   def import_detail_row(key, row, stats)
     klass = Calendario::AccountDataTransferSpec.model_class_for(key)
     attrs = filter_columns(klass, row.except('id', 'created_at', 'updated_at'))
     apply_fk_remaps!(key, attrs)
     klass.create!(attrs)
     stats[:created] += 1
-    nil
-  rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid
-    stats[:skipped] += 1
     nil
   end
 
