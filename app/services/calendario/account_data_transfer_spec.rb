@@ -87,9 +87,11 @@ module Calendario::AccountDataTransferSpec
     {
       key: 'messages',
       scope: ->(account) { account.messages },
-      # inbox_id igual que conversations; sender_id se maneja aparte (puede
-      # ser un Contact, que si se remapea, o un User, que no existe en destino).
-      exclude: %w[inbox_id sender_id],
+      # inbox_id igual que conversations. sender_id SI se exporta (necesario
+      # para saber quien mando cada mensaje) -- el import lo remapea solo si
+      # sender_type es 'Contact'; si es 'User' (agente de origen, no existe
+      # en destino) lo descarta ahi mismo.
+      exclude: %w[inbox_id],
       fk_remaps: { 'conversation_id' => 'conversations' }
     },
     {
