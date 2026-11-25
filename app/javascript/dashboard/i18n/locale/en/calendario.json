@@ -582,6 +582,8 @@
         "ACTIONS": "Actions"
       },
       "ALL_SERVICES": "All services",
+      "ALL_SERVICES_FILTER": "All services",
+      "SERVICE_FILTER_LABEL": "Filter by service",
       "ALL_PAYER_KINDS": "All payer types",
       "KIND_VALUES": {
         "ON_CREATE": "When the appointment is created",

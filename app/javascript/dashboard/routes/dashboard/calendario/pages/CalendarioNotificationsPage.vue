@@ -6,6 +6,7 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { isWhatsAppCapableInbox } from 'dashboard/helper/inbox';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import Select from 'dashboard/components-next/select/Select.vue';
 import {
   BaseTable,
   BaseTableRow,
@@ -27,12 +28,34 @@ const allInboxes = useMapGetter('inboxes/getInboxes');
 const whatsappInboxes = computed(() =>
   allInboxes.value.filter(isWhatsAppCapableInbox)
 );
+const allServices = useMapGetter('calendarioServices/getServices');
 
 const hasNoWhatsappInbox = computed(() => whatsappInboxes.value.length === 0);
 
-const sortedTriggers = computed(() =>
-  [...triggers.value].sort((a, b) => a.id - b.id)
-);
+// Filtro por servicio en vez de carpetas -- pedido explicito del usuario
+// 2026-11-25: una notificacion puede aplicar a "todos los servicios"
+// (ej. el recordatorio de 1h), asi que agruparlas en carpetas por servicio
+// dejaria sin hogar claro a esas. Filtrar en cambio: "todos" siempre
+// aparece sin importar que servicio este seleccionado.
+const serviceFilter = ref('');
+const serviceFilterOptions = computed(() => [
+  { value: '', label: t('CALENDARIO.TRIGGERS.ALL_SERVICES_FILTER') },
+  ...allServices.value.map(service => ({
+    value: service.id,
+    label: service.name,
+  })),
+]);
+
+const sortedTriggers = computed(() => {
+  const filtered = serviceFilter.value
+    ? triggers.value.filter(
+        trigger =>
+          !trigger.services?.length ||
+          trigger.services.some(service => service.id === serviceFilter.value)
+      )
+    : triggers.value;
+  return [...filtered].sort((a, b) => a.id - b.id);
+});
 
 const kindLabel = trigger => {
   if (trigger.trigger_kind === 'on_status_change') {
@@ -119,6 +142,7 @@ const tableHeaders = computed(() => [
 
 onMounted(async () => {
   store.dispatch('inboxes/get');
+  store.dispatch('calendarioServices/get');
   try {
     await store.dispatch('calendarioAppointmentEventTriggers/get');
   } catch (error) {
@@ -147,6 +171,13 @@ onMounted(async () => {
     <p v-if="hasNoWhatsappInbox" class="text-sm text-n-amber-11">
       {{ t('CALENDARIO.TRIGGERS.NO_WHATSAPP_INBOX_WARNING') }}
     </p>
+
+    <div class="flex items-center gap-2 max-w-xs">
+      <label class="text-sm text-n-slate-11 whitespace-nowrap">
+        {{ t('CALENDARIO.TRIGGERS.SERVICE_FILTER_LABEL') }}
+      </label>
+      <Select v-model="serviceFilter" :options="serviceFilterOptions" />
+    </div>
 
     <BaseTable
       :headers="tableHeaders"

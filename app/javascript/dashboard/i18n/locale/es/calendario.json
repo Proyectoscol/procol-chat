@@ -582,6 +582,8 @@
         "ACTIONS": "Acciones"
       },
       "ALL_SERVICES": "Todos los servicios",
+      "ALL_SERVICES_FILTER": "Todos los servicios",
+      "SERVICE_FILTER_LABEL": "Filtrar por servicio",
       "ALL_PAYER_KINDS": "Todos los tipos de pagador",
       "KIND_VALUES": {
         "ON_CREATE": "Al crear la cita",
