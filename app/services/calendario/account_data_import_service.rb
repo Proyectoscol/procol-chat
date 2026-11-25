@@ -167,7 +167,7 @@ class Calendario::AccountDataImportService
   # (excluido del export) era especifico de la bandeja vieja. Mismo patron
   # que Import::WhatsappChatImportService: telefono real -> "whatsapp:+E164"
   # (Twilio) o digitos sueltos (Meta); username guardado en additional_attributes
-  # (ver Calendario::ReturningAppointmentPromptListener/Whatsapp::IdentifierSyncService)
+  # (ver Whatsapp::IdentifierSyncService)
   # -> "whatsapp:@username".
   def import_contact_inbox(row, target_inbox, stats)
     contact_id = remap('contacts', row['contact_id'])

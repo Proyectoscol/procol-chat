@@ -66,11 +66,59 @@ class Calendario::WelcomeBotFlowRunner
     session = active_session
     step = session.current_step_config
     return finish!(session) if step.blank?
+    return handle_unmatched_answer(session, step) if unmatched_answer?(step, message.content)
 
     answers = session.answers.merge(session.current_step.to_s => message.content)
     session.update!(answers: answers)
 
     move_to_next_step!(session)
+  end
+
+  # Un paso con "options"/"buttons" espera UNA de esas respuestas exactas
+  # (normalizada) -- cualquier otra cosa (texto libre, una pregunta del
+  # paciente, un "????") es una respuesta "no reconocida". Un paso SIN
+  # opciones (ej. "Con que entidad estas afiliado?") siempre acepta lo que
+  # sea, nunca es "no reconocida".
+  def unmatched_answer?(step, answer)
+    options = step_options(step)
+    options.present? && options.none? { |option| normalize(option) == normalize(answer) }
+  end
+
+  def step_options(step)
+    Array(step['options'] || step['buttons'])
+  end
+
+  # Pedido explicito del usuario (rediseño 2026-11-25): que pasa cuando el
+  # cliente escribe algo que no esta parametrizado debe ser una decision
+  # EXPLICITA y editable por paso ("on_unmatched"), no un accidente del
+  # motor -- antes de esto, cualquier respuesta libre simplemente no
+  # matcheaba ningun "if" de los pasos siguientes y terminaba en finish!
+  # por casualidad, sin que nadie lo hubiera decidido asi.
+  ON_UNMATCHED_HANDLERS = {
+    'repeat' => :repeat_current_step,
+    'continue' => :continue_with_free_text,
+    'handoff' => :handoff_for_unmatched_answer
+  }.freeze
+
+  def handle_unmatched_answer(session, step)
+    handler = ON_UNMATCHED_HANDLERS[step['on_unmatched']] || :handoff_for_unmatched_answer
+    send(handler, session, step)
+  end
+
+  def repeat_current_step(session, _step)
+    step = session.current_step_config.merge('ask' => "No entendí tu respuesta. #{session.current_step_config['ask']}")
+    step['content_sid'].present? ? send_whatsapp_buttons(step) : send_text_question(step)
+    session.update!(last_prompted_at: Time.current)
+  end
+
+  def continue_with_free_text(session, _step)
+    answers = session.answers.merge(session.current_step.to_s => message.content)
+    session.update!(answers: answers)
+    move_to_next_step!(session)
+  end
+
+  def handoff_for_unmatched_answer(session, _step)
+    finish!(session, note: "El paciente respondió algo no reconocido en este paso (\"#{message.content}\"), se transfiere a un agente.")
   end
 
   # Usado tanto por advance! (el paciente acaba de responder el paso actual)
@@ -133,14 +181,14 @@ class Calendario::WelcomeBotFlowRunner
     move_to_next_step!(session)
   end
 
-  def finish!(session)
+  def finish!(session, note: nil)
     session.update!(status: 'handed_off')
     # Solo reactiva la auto-asignacion si NINGUNA otra conversacion de esta
     # misma bandeja sigue en triage -- es un flag de la bandeja completa,
     # no de una sola conversacion; reactivarlo con otra sesion todavia
     # activa le devolveria la carrera a la auto-asignacion contra ESA otra.
     inbox.update!(enable_auto_assignment: true) unless other_active_sessions_for_inbox?
-    hand_off_to_human(session)
+    hand_off_to_human(session, note: note)
   end
 
   def other_active_sessions_for_inbox?
@@ -160,10 +208,10 @@ class Calendario::WelcomeBotFlowRunner
   DEFAULT_HANDOFF_MESSAGE = 'Gracias por indicarnos esos datos. {{ agent_intro }}' \
                             '¿Hay algo más que debamos saber, o prefieres esperar nuestra respuesta?'.freeze
 
-  def hand_off_to_human(session)
+  def hand_off_to_human(session, note: nil)
     create_private_note(
-      "Triage completado (#{session.welcome_bot_flow.name}). Respuestas: " \
-      "#{session.answers.values.join(' / ')}"
+      note.presence || "Triage completado (#{session.welcome_bot_flow.name}). Respuestas: " \
+                       "#{session.answers.values.join(' / ')}"
     )
     # Asignar PRIMERO: el nombre del agente real solo se conoce despues de
     # que assign_available_agent corre (round-robin), asi el mensaje nunca

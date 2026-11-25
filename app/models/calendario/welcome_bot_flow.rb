@@ -11,6 +11,16 @@
 # el, el paso siempre aplica; con el, solo si la respuesta de un paso
 # anterior fue exactamente ese valor (ver
 # Calendario::WelcomeBotFlowRunner#applicable_step?).
+# "on_unmatched" (solo aplica a pasos con "options"/"buttons"): que hacer
+# si el paciente responde algo que no es ninguna de las opciones --
+# "handoff" (default): transfiere a un agente con una nota explicando por
+#   que (antes de esto, pasaba lo mismo pero por accidente: ningun "if"
+#   siguiente matcheaba y terminaba en finish! sin que nadie lo decidiera).
+# "repeat": repite la misma pregunta con un aviso de que no se entendio,
+#   sin avanzar ni gastar un intento de los recordatorios.
+# "continue": acepta la respuesta libre igual y sigue al proximo paso
+#   aplicable (para pasos con opciones sugeridas que tambien toleran texto
+#   libre).
 #
 # Tipos de paso adicionales (todos resueltos en WelcomeBotFlowRunner), para
 # el flujo de "cita existente" -- ninguno espera mas que el "if" para saber
@@ -69,7 +79,17 @@
 class Calendario::WelcomeBotFlow < ApplicationRecord
   self.table_name = 'calendario_welcome_bot_flows'
 
-  MATCH_TYPES = %w[default keyword].freeze
+  # "tag": match_value guarda el NOMBRE de una etiqueta de Chatwoot (ver
+  # Labelable/acts_as_taggable_on, ya usado por Conversation/Contact -- no
+  # se inventa un sistema de tags nuevo). Rediseño 2026-11-25, pedido
+  # explicito del usuario: poder excluir del bot (o enrutar a OTRO flow)
+  # conversaciones de numeros que escriben en nombre de otros (ej. un
+  # hospital que agenda para sus pacientes) o "chats internos", etiquetando
+  # el contacto o la conversacion -- sin tocar codigo cada vez que aparece
+  # un caso nuevo, solo creando una fila de flow con ese match_value.
+  # Un flow "tag" con steps: [] es la forma de EXCLUIR por completo (ver
+  # WelcomeBotFlowRunner#start!, ya corta si steps esta vacio).
+  MATCH_TYPES = %w[default keyword tag].freeze
 
   belongs_to :account
   belongs_to :inbox
@@ -77,8 +97,8 @@ class Calendario::WelcomeBotFlow < ApplicationRecord
 
   validates :name, presence: true
   validates :match_type, inclusion: { in: MATCH_TYPES }
-  validates :match_value, presence: true, if: :keyword?
-  validates :match_value, absence: true, unless: :keyword?
+  validates :match_value, presence: true, if: :matches_by_value?
+  validates :match_value, absence: true, unless: :matches_by_value?
   validate :inbox_belongs_to_account
 
   scope :active, -> { where(active: true) }
@@ -87,8 +107,16 @@ class Calendario::WelcomeBotFlow < ApplicationRecord
     match_type == 'keyword'
   end
 
+  def tag?
+    match_type == 'tag'
+  end
+
   def default?
     match_type == 'default'
+  end
+
+  def matches_by_value?
+    keyword? || tag?
   end
 
   # Normaliza igual que Calendario::NoShowReplyListener -- minusculas, sin
@@ -103,11 +131,24 @@ class Calendario::WelcomeBotFlow < ApplicationRecord
     self.class.normalize(text).include?(self.class.normalize(match_value))
   end
 
-  # El primer keyword que matchea por prioridad (mas alto primero), o el
-  # default de la bandeja si ninguno matchea.
-  def self.match_for(inbox, text)
+  # Etiquetas del contacto Y de la conversacion -- cualquiera de las dos
+  # cuenta (un hospital se etiqueta normalmente en el CONTACTO, de forma
+  # permanente; "chats_internos" podria ser mas ad-hoc, por conversacion).
+  def matches_tag?(conversation)
+    return false unless tag?
+
+    tags = Array(conversation&.contact&.label_list) + Array(conversation&.label_list)
+    tags.any? { |tag| self.class.normalize(tag) == self.class.normalize(match_value) }
+  end
+
+  # Prioridad de resolucion: tag (mas especifico, ej. un hospital que
+  # siempre debe ir a su propio flow aunque escriba "cita") > keyword >
+  # default de la bandeja. Dentro de cada tipo, el de mayor `priority`
+  # gana si hay varios.
+  def self.match_for(inbox, text, conversation: nil)
     flows = where(inbox: inbox).active.order(priority: :desc)
-    flows.find { |flow| flow.keyword? && flow.matches?(text) } ||
+    flows.find { |flow| flow.matches_tag?(conversation) } ||
+      flows.find { |flow| flow.keyword? && flow.matches?(text) } ||
       flows.find(&:default?)
   end
 

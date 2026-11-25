@@ -24,10 +24,6 @@ const tabs = computed(() => [
     name: 'mensajeria_message_templates_index',
     label: t('CALENDARIO.TABS.TEMPLATE_LIBRARY'),
   },
-  {
-    name: 'mensajeria_returning_appointment_prompt_index',
-    label: t('CALENDARIO.TABS.RETURNING_PROMPT'),
-  },
 ]);
 
 const isActive = name => route.name === name;

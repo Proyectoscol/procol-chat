@@ -152,7 +152,6 @@ Rails.application.routes.draw do
             resources :message_templates, only: [:index, :create, :update, :destroy] do
               post :activate, on: :member
             end
-            resources :returning_appointment_prompt_configs, only: [:index, :create, :update]
             resources :account_data_exports, only: [:index, :create]
             resources :account_data_imports, only: [:index, :create]
           end

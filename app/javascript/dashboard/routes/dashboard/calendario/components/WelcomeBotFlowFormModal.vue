@@ -34,6 +34,12 @@ const whatsappInboxes = computed(() =>
 );
 const getInbox = useMapGetter('inboxes/getInbox');
 
+// Etiquetas reales de la cuenta (Label, el mismo catalogo que usa el
+// sidebar de conversaciones) -- picker de match_type "tag", para que el
+// admin elija de una lista real en vez de escribir un nombre a mano que
+// puede no calzar con lo que de verdad tienen etiquetado los contactos.
+const allLabels = useMapGetter('labels/getLabels');
+
 const isEditMode = computed(() => !!props.flow);
 
 const name = ref('');
@@ -43,13 +49,28 @@ const inboxId = ref('');
 // elegida (Twilio::TemplateSyncService) -- vacio para bandejas Meta, que no
 // tienen esta columna. Permite mandar un quick-reply real de WhatsApp en
 // vez de texto plano (ver Calendario::WelcomeBotFlowRunner#send_whatsapp_buttons).
-const twilioTemplates = computed(() => {
+const allTwilioTemplates = computed(() => {
   if (!inboxId.value) return [];
   const inboxRecord = getInbox.value(inboxId.value);
-  return (inboxRecord?.content_templates?.templates || []).filter(
-    template => template.status === 'approved'
-  );
+  return inboxRecord?.content_templates?.templates || [];
 });
+const twilioTemplates = computed(() =>
+  allTwilioTemplates.value.filter(template => template.status === 'approved')
+);
+
+// Botones REALES de la plantilla elegida (ya sincronizados por
+// Twilio::TemplateSyncService, ver types['twilio/quick-reply'].actions) --
+// rediseño 2026-11-25, pedido explicito del usuario: nunca escribir los
+// botones a mano, leerlos de la plantilla para que el texto calce exacto
+// con lo que Twilio de verdad manda (si no calza, el "if.equals" del
+// siguiente paso nunca hace match).
+const templateButtonTitles = contentSid => {
+  const template = allTwilioTemplates.value.find(
+    tpl => tpl.content_sid === contentSid
+  );
+  const actions = template?.types?.['twilio/quick-reply']?.actions;
+  return (actions || []).map(action => action.title);
+};
 
 const matchType = ref('default');
 const matchValue = ref('');
@@ -83,6 +104,7 @@ const makeStep = () => ({
   ackMessage: '',
   ackMessageKey: '',
   contentSid: '',
+  onUnmatched: 'handoff',
   condition: { enabled: false, stepIndex: 0, equals: '' },
 });
 
@@ -120,6 +142,7 @@ const setFormValues = () => {
     ackMessage: step.ack_message || '',
     ackMessageKey: step.ack_message_key || '',
     contentSid: step.content_sid || '',
+    onUnmatched: step.on_unmatched || 'handoff',
     condition: step.if
       ? { enabled: true, stepIndex: step.if.step, equals: step.if.equals }
       : { enabled: false, stepIndex: 0, equals: '' },
@@ -135,6 +158,7 @@ watch(() => props.flow, setFormValues, { immediate: true });
 
 onMounted(() => {
   store.dispatch('inboxes/get');
+  store.dispatch('labels/get');
 });
 
 const matchTypeOptions = computed(() => [
@@ -145,6 +169,33 @@ const matchTypeOptions = computed(() => [
   {
     value: 'keyword',
     label: t('CALENDARIO.WELCOME_BOT.FORM.MATCH_TYPE_OPTIONS.KEYWORD'),
+  },
+  {
+    value: 'tag',
+    label: t('CALENDARIO.WELCOME_BOT.FORM.MATCH_TYPE_OPTIONS.TAG'),
+  },
+]);
+
+const labelOptions = computed(() => [
+  {
+    value: '',
+    label: t('CALENDARIO.WELCOME_BOT.FORM.MATCH_VALUE_PLACEHOLDER'),
+  },
+  ...allLabels.value.map(label => ({ value: label.title, label: label.title })),
+]);
+
+const onUnmatchedOptions = computed(() => [
+  {
+    value: 'handoff',
+    label: t('CALENDARIO.WELCOME_BOT.FORM.ON_UNMATCHED_OPTIONS.HANDOFF'),
+  },
+  {
+    value: 'repeat',
+    label: t('CALENDARIO.WELCOME_BOT.FORM.ON_UNMATCHED_OPTIONS.REPEAT'),
+  },
+  {
+    value: 'continue',
+    label: t('CALENDARIO.WELCOME_BOT.FORM.ON_UNMATCHED_OPTIONS.CONTINUE'),
   },
 ]);
 
@@ -267,7 +318,11 @@ watch(
 
 const isFormInvalid = computed(() => {
   if (!name.value.trim() || !inboxId.value) return true;
-  if (matchType.value === 'keyword' && !matchValue.value.trim()) return true;
+  if (
+    (matchType.value === 'keyword' || matchType.value === 'tag') &&
+    !matchValue.value.trim()
+  )
+    return true;
   if (!steps.value.length) return true;
   // Solo "ask" necesita texto propio -- los demas tipos tienen defaults en
   // el backend si se dejan en blanco (ver Calendario::WelcomeBotAppointmentActions).
@@ -307,6 +362,14 @@ const contentSidOptionsFor = step => {
   return options;
 };
 
+// Autocompleta optionsText con el texto EXACTO de los botones de la
+// plantilla elegida -- pedido explicito del usuario: nunca mas escribir
+// botones a mano.
+const fillOptionsFromTemplate = step => {
+  const titles = templateButtonTitles(step.contentSid);
+  if (titles.length) step.optionsText = titles.join('\n');
+};
+
 const stepOptionsFor = step =>
   step.optionsText
     .split('\n')
@@ -326,6 +389,9 @@ const stepsForSubmit = () =>
     }
     if (STEP_TYPES_WITH_OPTIONS.includes(step.type) && step.contentSid) {
       payload.content_sid = step.contentSid;
+    }
+    if (STEP_TYPES_WITH_OPTIONS.includes(step.type)) {
+      payload.on_unmatched = step.onUnmatched;
     }
     if (step.type === 'lookup_appointment') {
       if (step.askTemplate.trim())
@@ -370,7 +436,10 @@ const submit = async () => {
     name: name.value.trim(),
     inbox_id: inboxId.value,
     match_type: matchType.value,
-    match_value: matchType.value === 'keyword' ? matchValue.value.trim() : null,
+    match_value:
+      matchType.value === 'keyword' || matchType.value === 'tag'
+        ? matchValue.value.trim()
+        : null,
     priority: Number(priority.value),
     active: active.value,
     escalation_message: escalationMessage.value.trim(),
@@ -440,6 +509,16 @@ const submit = async () => {
         :label="t('CALENDARIO.WELCOME_BOT.FORM.MATCH_VALUE_LABEL')"
         :placeholder="t('CALENDARIO.WELCOME_BOT.FORM.MATCH_VALUE_PLACEHOLDER')"
       />
+
+      <div v-if="matchType === 'tag'" class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-n-slate-12">
+          {{ t('CALENDARIO.WELCOME_BOT.FORM.MATCH_VALUE_LABEL') }}
+        </label>
+        <Select v-model="matchValue" :options="labelOptions" />
+        <p class="text-xs text-n-slate-10">
+          {{ t('CALENDARIO.WELCOME_BOT.FORM.MATCH_VALUE_TAG_HINT') }}
+        </p>
+      </div>
 
       <Input
         v-model="priority"
@@ -568,10 +647,26 @@ const submit = async () => {
             <label class="text-xs font-medium text-n-slate-11">
               {{ t('CALENDARIO.WELCOME_BOT.FORM.STEP_CONTENT_SID_LABEL') }}
             </label>
-            <Select
-              v-model="step.contentSid"
-              :options="contentSidOptionsFor(step)"
-            />
+            <div class="flex items-center gap-2">
+              <Select
+                v-model="step.contentSid"
+                :options="contentSidOptionsFor(step)"
+                class="flex-1"
+              />
+              <Button
+                v-if="templateButtonTitles(step.contentSid).length"
+                faded
+                slate
+                sm
+                type="button"
+                :label="
+                  t(
+                    'CALENDARIO.WELCOME_BOT.FORM.STEP_FILL_FROM_TEMPLATE_BUTTON'
+                  )
+                "
+                @click="fillOptionsFromTemplate(step)"
+              />
+            </div>
             <p class="text-xs text-n-slate-10">
               {{ t('CALENDARIO.WELCOME_BOT.FORM.STEP_CONTENT_SID_HINT') }}
             </p>
@@ -591,6 +686,14 @@ const submit = async () => {
               {{
                 t('CALENDARIO.WELCOME_BOT.FORM.STEP_CONTENT_SID_NOT_APPROVED')
               }}
+            </p>
+
+            <label class="text-xs font-medium text-n-slate-11 mt-1">
+              {{ t('CALENDARIO.WELCOME_BOT.FORM.STEP_ON_UNMATCHED_LABEL') }}
+            </label>
+            <Select v-model="step.onUnmatched" :options="onUnmatchedOptions" />
+            <p class="text-xs text-n-slate-10">
+              {{ t('CALENDARIO.WELCOME_BOT.FORM.STEP_ON_UNMATCHED_HINT') }}
             </p>
           </div>
 

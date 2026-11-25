@@ -1,9 +1,7 @@
-# Compartido entre Calendario::NoShowReplyListener y
-# Calendario::ReturningAppointmentPromptListener -- ambos reaccionan a la
-# respuesta de texto libre de un paciente sobre su cita (reprogramar vs
-# cancelar), con las mismas palabras clave. Ver el comentario de clase de
-# NoShowReplyListener para por que se hace match por texto en vez de un
-# "payload" de boton.
+# Usado por Calendario::NoShowReplyListener -- reacciona a la respuesta de
+# texto libre de un paciente sobre su cita (reprogramar vs cancelar). Ver
+# el comentario de clase de NoShowReplyListener para por que se hace match
+# por texto en vez de un "payload" de boton.
 module Calendario::AppointmentReplyKeywordClassifier
   RESCHEDULE_KEYWORDS = %w[reprogramar reagendar].freeze
   CANCEL_KEYWORDS = %w[cancelar].freeze

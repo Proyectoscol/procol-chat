@@ -11,8 +11,7 @@
       "STATS": "Stats",
       "TRIGGERS": "Notifications",
       "WELCOME_BOT": "Welcome bot",
-      "TEMPLATE_LIBRARY": "Template library",
-      "RETURNING_PROMPT": "Returning patient"
+      "TEMPLATE_LIBRARY": "Template library"
     },
     "WELCOME_BOT_TRIGGER": {
       "DESCRIPTION": "Manually start a bot flow for this contact -- same behavior as a live trigger: sends the real first step, with reminders if there's no reply.",
@@ -81,25 +80,6 @@
         "CREATE_SUCCESS": "Template saved",
         "ERROR": "Could not save the template"
       }
-    },
-    "RETURNING_PROMPT": {
-      "DESCRIPTION": "If a patient with an upcoming appointment (pending or confirmed) writes again on a different day and already has an agent assigned, the welcome bot never reaches them -- this sends a separate message asking if they want to reschedule, cancel, or talk to the front desk, once per appointment.",
-      "NO_INBOXES": "No WhatsApp inboxes configured yet.",
-      "FETCH_ERROR": "Could not load the configuration.",
-      "ACTIVE_LABEL": "Active",
-      "TEST_MODE_ON": "Test mode (nothing real is sent)",
-      "TEST_MODE_OFF": "Live -- a real message is sent to the patient",
-      "TEST_MODE_HINT": "While in test mode, a private note is saved instead of sending the message over WhatsApp.",
-      "TEMPLATE_KEY_LABEL": "Template library key (optional)",
-      "TEMPLATE_KEY_PLACEHOLDER": "e.g. returning_patient",
-      "ASK_TEMPLATE_LABEL": "Text (if no library key)",
-      "TWILIO_TEMPLATE_LABEL": "Twilio button template (optional)",
-      "TEMPLATE_PLACEHOLDER": "No real buttons -- plain text only",
-      "TWILIO_TEMPLATE_HINT": "If you don't pick one, the message is sent as plain text with the options listed below.",
-      "OPTIONS_LABEL": "Options (for the plain-text fallback)",
-      "SAVE_BUTTON": "Save",
-      "SAVE_SUCCESS": "Configuration saved",
-      "SAVE_ERROR": "Could not save the configuration"
     },
     "CONTACT_APPOINTMENTS": {
       "EMPTY": "No appointments for this contact yet.",
@@ -706,10 +686,12 @@
         "MATCH_TYPE_HINT": "Only one \"default\" flow can be active per inbox -- it runs for any first message that does not match a keyword flow.",
         "MATCH_TYPE_OPTIONS": {
           "DEFAULT": "Any first message (default)",
-          "KEYWORD": "Only when the first message contains a keyword"
+          "KEYWORD": "Only when the first message contains a keyword",
+          "TAG": "Only conversations/contacts with a tag"
         },
         "MATCH_VALUE_LABEL": "Keyword",
         "MATCH_VALUE_PLACEHOLDER": "e.g. urodinamia",
+        "MATCH_VALUE_TAG_HINT": "Matched against the contact's and the conversation's labels (the same ones from the conversation sidebar). A flow with this tag and no steps (empty \"Steps\") excludes those chats from the bot entirely.",
         "PRIORITY_LABEL": "Priority",
         "PRIORITY_HINT": "Keyword flows are checked from highest to lowest priority; the default flow is used only if none match.",
         "STEPS_LABEL": "Steps",
@@ -735,6 +717,14 @@
         "STEP_CONTENT_SID_EMPTY": "This inbox has no approved templates available. Sync Twilio templates from the channel settings.",
         "STEP_CONTENT_SID_NOT_APPROVED": "This step uses a template Twilio no longer reports as approved by Meta (it may never have been submitted, or got reclassified). Verify its status before trusting it to reach the patient as real buttons.",
         "STEP_CONTENT_SID_UNKNOWN": "(not confirmed approved) {contentSid}",
+        "STEP_FILL_FROM_TEMPLATE_BUTTON": "Use template buttons",
+        "STEP_ON_UNMATCHED_LABEL": "If the patient replies with something that doesn't match any option",
+        "STEP_ON_UNMATCHED_HINT": "\"Hand off\" (default) transfers the conversation to an agent with a note explaining the reply didn't match. \"Repeat question\" resends the same question without advancing. \"Continue\" accepts the free-text reply anyway and moves to the next step.",
+        "ON_UNMATCHED_OPTIONS": {
+          "HANDOFF": "Hand off to an agent",
+          "REPEAT": "Repeat the question",
+          "CONTINUE": "Continue with the free-text reply"
+        },
         "STEP_EMPTY_MESSAGE_LABEL": "Message when no upcoming appointment is found",
         "STEP_EMPTY_MESSAGE_PLACEHOLDER": "e.g. We couldn't find any upcoming appointments for your number. Connecting you with reception.",
         "STEP_WAITLIST_KEYWORD_LABEL": "Keyword for \"stay on waitlist\"",

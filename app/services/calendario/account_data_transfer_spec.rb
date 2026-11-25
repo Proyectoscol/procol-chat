@@ -4,7 +4,7 @@
 # (docs: data_imports/calendario_agendas_dr_corrales_2026/README.md).
 #
 # Deliberadamente NO incluye automatizaciones (Calendario::AppointmentEventTrigger,
-# WelcomeBotFlow, MessageTemplate, ReturningAppointmentPromptConfig, BotSession)
+# WelcomeBotFlow, MessageTemplate, BotSession)
 # -- decisión explícita del usuario: esas se configuran de nuevo en cada
 # instancia, revisadas con calma antes de activarlas con pacientes reales.
 #

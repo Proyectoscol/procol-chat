@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_24_190000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_25_170000) do
   # These extensions should be enabled to support this database
   enable_extension "btree_gist"
   enable_extension "pg_stat_statements"
@@ -505,7 +505,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_24_190000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "reschedules_count", default: 0, null: false
-    t.datetime "returning_patient_prompt_sent_at"
     t.integer "amount_to_collect"
     t.index ["account_id", "starts_at"], name: "index_calendario_appointments_on_account_id_and_starts_at"
     t.index ["account_id"], name: "index_calendario_appointments_on_account_id"
@@ -615,22 +614,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_24_190000) do
     t.index ["account_id"], name: "index_calendario_professionals_on_account_id"
     t.index ["specialty_id"], name: "index_calendario_professionals_on_specialty_id"
     t.index ["user_id"], name: "index_calendario_professionals_on_user_id"
-  end
-
-  create_table "calendario_returning_appointment_prompt_configs", force: :cascade do |t|
-    t.bigint "account_id", null: false
-    t.bigint "inbox_id", null: false
-    t.boolean "active", default: false, null: false
-    t.boolean "test_mode", default: true, null: false
-    t.string "message_template_key"
-    t.text "ask_template"
-    t.jsonb "options", default: ["Sí, cancelar cita", "Sí, reagendar", "Hablar con recepción"], null: false
-    t.string "content_sid"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["account_id"], name: "idx_on_account_id_3def070bd1"
-    t.index ["inbox_id"], name: "idx_on_inbox_id_89da483931"
-    t.index ["inbox_id"], name: "index_one_prompt_config_per_inbox", unique: true
   end
 
   create_table "calendario_service_prices", force: :cascade do |t|
@@ -2426,8 +2409,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_24_190000) do
   add_foreign_key "calendario_professionals", "accounts", on_delete: :cascade
   add_foreign_key "calendario_professionals", "calendario_specialties", column: "specialty_id", on_delete: :nullify
   add_foreign_key "calendario_professionals", "users", on_delete: :nullify
-  add_foreign_key "calendario_returning_appointment_prompt_configs", "accounts", on_delete: :cascade
-  add_foreign_key "calendario_returning_appointment_prompt_configs", "inboxes", on_delete: :cascade
   add_foreign_key "calendario_service_prices", "calendario_payers", column: "payer_id", on_delete: :cascade
   add_foreign_key "calendario_service_prices", "calendario_services", column: "service_id", on_delete: :cascade
   add_foreign_key "calendario_service_professionals", "calendario_professionals", column: "professional_id", on_delete: :cascade
