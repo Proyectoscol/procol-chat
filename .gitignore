@@ -135,3 +135,6 @@ CLAUDE.local.md
 .pnpm-store/*
 local/
 Procfile.worktree
+
+# Diagramas de trabajo personales (no son parte del codigo del proyecto)
+/TRIAJE_GENERAL_MAPA.md
