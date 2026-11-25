@@ -23,8 +23,17 @@ module Calendario::WelcomeBotMessaging
     message = conversation.messages.build(
       account: account, inbox: inbox, message_type: :outgoing, content: step_body(step)
     )
+    # content_variables solo cuando el paso lo marca explicitamente
+    # ('dynamic_body_variable' => true, ver Calendario::WelcomeBotAppointmentActions
+    # #lookup_confirmation_step) -- esa es la UNICA plantilla con un
+    # placeholder real ("{{1}}", la confirmacion de cita con fecha/hora
+    # via Liquid). Los demas pasos (menu, especialidad, tipo de pago,
+    # embarazo) tienen body FIJO en su plantilla -- mandarles una variable
+    # que no esperan arriesgaria que Twilio rechace el envio.
+    content_variables = step['dynamic_body_variable'] ? { '1' => step['ask'] } : {}
     result = Twilio::SendOnTwilioService.new(message: message).send_csat_template_message(
-      phone_number: conversation.contact_inbox.source_id, content_sid: step['content_sid']
+      phone_number: conversation.contact_inbox.source_id, content_sid: step['content_sid'],
+      content_variables: content_variables
     )
     message.source_id = result[:message_id] if result[:success] && result[:message_id].present?
     message.save!

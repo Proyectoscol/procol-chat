@@ -104,7 +104,10 @@ class Calendario::WelcomeBotAppointmentActions
   def lookup_confirmation_step(step, appointment)
     ask_template = resolved_text(step, 'ask_template_key', 'ask_template', DEFAULT_APPOINTMENT_CONFIRMATION_TEMPLATE)
     confirmation_text = render_appointment_liquid(ask_template, appointment)
-    step.merge('ask' => confirmation_text, 'options' => Array(step['options']).presence || DEFAULT_LOOKUP_OPTIONS)
+    step.merge(
+      'ask' => confirmation_text, 'options' => Array(step['options']).presence || DEFAULT_LOOKUP_OPTIONS,
+      'dynamic_body_variable' => true
+    )
   end
 
   # Re-resuelve la cita SIEMPRE a traves de conversation.contact (nunca por
