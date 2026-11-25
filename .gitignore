@@ -136,6 +136,7 @@ CLAUDE.local.md
 local/
 Procfile.worktree
 
-# Diagramas de trabajo personales (no son parte del codigo del proyecto)
-/TRIAJE_GENERAL_MAPA.md
-/TWILIO_TEMPLATES_WORKFLOW.md
+# Espacio de trabajo personal -- diagramas, notas, imagenes de referencia
+# para plantillas, etc. Nunca se commitea ni se pushea (ver pedido del
+# usuario 2026-11-25).
+/espacio-trabajo/
