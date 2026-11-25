@@ -145,7 +145,32 @@ con normalidad.
   última corrida en local; producción tiene su propia copia dentro del
   contenedor en la misma ruta).
 
-## 6. Pendientes (no bloqueantes, quedaron fuera a propósito)
+## 6. Bug adicional encontrado y corregido: `created_at` de lista de espera (hoja PENDIENTES)
+
+Al revisar la UI de producción, el usuario detectó que las entradas de
+`Calendario::WaitlistEntry` importadas desde la hoja PENDIENTES de
+`PARTICULARES 2026.xlsx` (importadas en una sesión ANTERIOR, 2026-11-24,
+no por el trabajo de hoy) mostraban "0 días en espera" para solicitudes
+reales de hace meses — `created_at` quedó en el momento del import en vez
+de la fecha real de la columna FECHA.
+
+Corregido con un script nuevo y acotado,
+`correct_waitlist_pendientes_dates.rb`: lee la columna FECHA de la hoja
+PENDIENTES (`pendientes_fila_fecha.csv`, generado directamente del Excel) e
+identifica cada `WaitlistEntry` por el número de fila exacto que ya trae en
+sus notas (`[Importado de Excel: PENDIENTES fila N]`). Mismo patrón que
+`correct_appointments_batch4.rb`: dry-run por defecto, `APPLY=1` para
+persistir, `ALLOW_PROD=1` en producción.
+
+11 de las 222 filas no tenían fecha en formato numérico/Excel-serial:
+4 traían la fecha como texto con un typo en el año ("03/12/025",
+"15/10/20265" — un dígito faltante/de más) que se corrigió parseando el
+texto directamente, y 6 estaban genuinamente vacías — se interpolaron por
+posición contra las filas vecinas (mismo criterio que las horas faltantes
+de la fase 2, ver sección 1). **Las 222 quedaron corregidas, 0 sin
+fecha.** Verificado en local primero, luego aplicado en producción.
+
+## 7. Pendientes (no bloqueantes, quedaron fuera a propósito)
 
 - 9 variantes de "procedimiento" sin procedimiento real que extraer (dato
   de EPS/nota colado en esa columna) — 18 filas en total, en ambos
