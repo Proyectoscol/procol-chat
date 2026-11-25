@@ -45,8 +45,19 @@ class Calendario::WelcomeBotListener < BaseListener
   # Mismo patron que la vieja Calendario::ReturningAppointmentPromptListener#new_calendar_day? --
   # sin mensaje entrante anterior no hay "otro dia" con que comparar, asi
   # que no aplica (nunca reinicia solo porque "no hay historial").
+  #
+  # BUG REAL encontrado en produccion 2026-11-25 (ver transcript real,
+  # conversacion #292): `Message` tiene `default_scope { order(created_at: :asc) }`
+  # -- un `.order(created_at: :desc)` encadenado NO reemplaza un default_scope,
+  # lo apila (`ORDER BY created_at ASC, created_at DESC`), y como ambos
+  # terminos son la MISMA columna, el resultado queda ascendente de todas
+  # formas. Eso hacia que `previous` fuera siempre el PRIMER mensaje de toda
+  # la conversacion, nunca el inmediatamente anterior -- cualquier mensaje
+  # despues del primer dia se veia como "dia distinto" y reiniciaba el
+  # triaje en cada respuesta, incluso segundos despues del handoff anterior.
+  # `.reorder` SI reemplaza el default_scope.
   def new_calendar_day?(conversation, message)
-    previous = conversation.messages.incoming.where.not(id: message.id).order(created_at: :desc).first
+    previous = conversation.messages.incoming.where.not(id: message.id).reorder(created_at: :desc).first
     return false if previous.blank?
 
     local_date(conversation, previous.created_at) != local_date(conversation, message.created_at)
