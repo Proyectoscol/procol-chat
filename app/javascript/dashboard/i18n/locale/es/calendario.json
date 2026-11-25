@@ -754,7 +754,7 @@
         "SAVE": "Guardar",
         "CREATE": "Crear",
         "ESCALATION_MESSAGE_LABEL": "Mensaje de escalamiento (si no responde a los 2 recordatorios)",
-        "ESCALATION_MESSAGE_PLACEHOLDER": "ej. Hola, mi nombre es Beatriz. Vi que tuviste interés en escribirnos, ¿en qué te puedo ayudar?",
+        "ESCALATION_MESSAGE_PLACEHOLDER": "ej. Hola, disculpa la demora. Un asesor te va a atender enseguida.",
         "ESCALATION_MESSAGE_HINT": "Se usa como mensaje de escalamiento final cuando no se configuran recordatorios personalizados abajo (ver \"Recordatorios\"). Déjalo vacío para usar un mensaje genérico.",
         "REMINDER_SCHEDULE_LABEL": "Recordatorios",
         "REMINDER_SCHEDULE_HINT": "El último recordatorio siempre escala la conversación a un agente disponible. Si no agregas ninguno, se usa el comportamiento por defecto: 1 recordatorio a los 5 minutos y escalamiento a los 20.",

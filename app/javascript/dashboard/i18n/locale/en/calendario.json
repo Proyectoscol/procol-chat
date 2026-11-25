@@ -754,7 +754,7 @@
         "SAVE": "Save",
         "CREATE": "Create",
         "ESCALATION_MESSAGE_LABEL": "Escalation message (if nobody answers the 2 reminders)",
-        "ESCALATION_MESSAGE_PLACEHOLDER": "e.g. Hi, my name is Beatriz. I saw you reached out — how can I help?",
+        "ESCALATION_MESSAGE_PLACEHOLDER": "e.g. Hi, sorry for the delay. An advisor will assist you shortly.",
         "ESCALATION_MESSAGE_HINT": "Used as the final escalation message when no custom reminders are configured below (see \"Reminders\"). Leave blank to use a generic message.",
         "REMINDER_SCHEDULE_LABEL": "Reminders",
         "REMINDER_SCHEDULE_HINT": "The last reminder always escalates the conversation to an available agent. If you don't add any, the default behavior is used: 1 reminder after 5 minutes and escalation after 20.",
