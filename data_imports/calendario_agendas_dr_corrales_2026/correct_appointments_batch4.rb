@@ -308,7 +308,12 @@ ActiveRecord::Base.transaction do
     payer_name = resolve_payer_name(row['entidad'], known_payer_names)
     payer_unmapped[normalize(row['entidad'])] += 1 if payer_name.nil? && normalize(row['entidad']).present? && normalize(row['entidad']) != 'CONSULTA'
 
-    starts_at = Time.zone.parse(row['cita_fecha_hora'])
+    # BOGOTA.parse, NUNCA Time.zone.parse -- Time.zone de esta app es UTC,
+    # asi que Time.zone.parse interpretaria la hora LOCAL del Excel como si
+    # fuera UTC (bug real detectado 2026-11-25: corrio esto sobre
+    # produccion y desfaso 935 citas 5 horas antes de la hora real, ver
+    # fix_batch4_timezone_bug.rb).
+    starts_at = BOGOTA.parse(row['cita_fecha_hora'])
     same_day_matches = Calendario::Appointment.where(
       account_id: account.id, contact_id: contact.id, professional_id: professional.id,
       starts_at: starts_at.all_day
