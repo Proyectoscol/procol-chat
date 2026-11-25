@@ -49,9 +49,20 @@ class Calendario::AppointmentStatsService
     end
   end
 
+  # Dias del RANGO pedido, no cuantos de esos dias tienen al menos una cita
+  # -- bug real encontrado 2026-11-25: con `days.size` (dias CON datos), un
+  # rango de 7 dias donde solo 2 tienen citas (ej. todo lo que se creo en
+  # una carga masiva) daba un promedio inflado sin sentido (total / 2 en
+  # vez de total / 7).
+  def requested_day_count
+    return days.size if range_since.blank? || range_until.blank?
+
+    (range_until.to_date - range_since.to_date).to_i + 1
+  end
+
   def summary
     total = appointments.size
-    day_count = days.size
+    day_count = requested_day_count
 
     {
       total: total,
