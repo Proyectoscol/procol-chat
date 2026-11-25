@@ -113,12 +113,24 @@ class Calendario::WelcomeBotFlowRunner
   def ask_current_step(session)
     step = session.current_step_config
     return finish!(session) if step.blank?
+    return handle_notify_step(session, step) if step['type'] == 'notify'
 
     handler = ACTION_STEP_HANDLERS[step['type']]
     return appointment_actions.public_send(handler, session, step) if handler
 
     step['content_sid'].present? ? send_whatsapp_buttons(step) : send_text_question(step)
     session.update!(last_prompted_at: Time.current, reminder_count: 0)
+  end
+
+  # Paso puramente informativo -- manda un mensaje sin botones y sigue de
+  # inmediato al proximo paso aplicable, igual que los pasos de accion
+  # (cancelar/reagendar/handoff), pero sin tocar Calendario::Appointment.
+  # Util para cualquier mensaje "de paso" que no requiere respuesta (ej. el
+  # aviso de que ginecologia no atiende pacientes en embarazo).
+  def handle_notify_step(session, step)
+    text = resolved_text(step, 'ack_message_key', 'ack_message', '')
+    send_text_question('ask' => text) if text.present?
+    move_to_next_step!(session)
   end
 
   def finish!(session)
@@ -139,15 +151,31 @@ class Calendario::WelcomeBotFlowRunner
                           .exists?
   end
 
-  HANDOFF_MESSAGE = 'Gracias por indicarnos esos datos. Mi nombre es *Beatriz* y me encargaré de tu atención. ' \
-                    '¿Hay algo más que debamos saber, o prefieres esperar nuestra respuesta?'.freeze
+  # Key de Calendario::MessageTemplate editable desde el admin -- fase de
+  # rediseño 2026-11-25: antes era un texto fijo que siempre decia "Mi
+  # nombre es Beatriz", lo cual era incorrecto en cuanto la asignacion deja
+  # de ser siempre la misma persona (ver Calendario::WelcomeBotAssignmentService,
+  # round-robin real entre todos los agentes).
+  HANDOFF_MESSAGE_KEY = 'bot_handoff_default'.freeze
+  DEFAULT_HANDOFF_MESSAGE = 'Gracias por indicarnos esos datos. {{ agent_intro }}' \
+                            '¿Hay algo más que debamos saber, o prefieres esperar nuestra respuesta?'.freeze
 
   def hand_off_to_human(session)
     create_private_note(
       "Triage completado (#{session.welcome_bot_flow.name}). Respuestas: " \
       "#{session.answers.values.join(' / ')}"
     )
-    send_text_question('ask' => HANDOFF_MESSAGE)
+    # Asignar PRIMERO: el nombre del agente real solo se conoce despues de
+    # que assign_available_agent corre (round-robin), asi el mensaje nunca
+    # queda desfasado respecto a quien realmente quedo asignado.
     assign_available_agent
+    send_text_question('ask' => handoff_message)
+  end
+
+  def handoff_message
+    template = Calendario::MessageTemplate.active_body(account, HANDOFF_MESSAGE_KEY).presence || DEFAULT_HANDOFF_MESSAGE
+    agent_name = conversation.reload.assignee&.name
+    agent_intro = agent_name.present? ? "Mi nombre es *#{agent_name}* y me encargaré de tu atención. " : ''
+    render_liquid(template, 'agent_intro' => agent_intro)
   end
 end

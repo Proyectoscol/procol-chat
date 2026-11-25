@@ -720,7 +720,8 @@
           "LOOKUP_APPOINTMENT": "Look up existing appointment",
           "PERFORM_CANCELLATION": "Cancel appointment (action)",
           "REQUEST_RESCHEDULE": "Request reschedule (action)",
-          "HANDOFF": "Hand off to reception (action)"
+          "HANDOFF": "Hand off to reception (action)",
+          "NOTIFY": "Informational message (action, no reply expected)"
         },
         "STEP_ASK_LABEL": "Question",
         "STEP_OPTIONS_LABEL": "Options (one per line, optional)",
@@ -745,6 +746,7 @@
         "STEP_TEMPLATE_KEY_HINT": "If filled with a key from the Template library tab, its active version replaces the text above -- activating a new version in the library changes the real message without editing this step.",
         "STEP_CONDITION_LABEL": "Only ask this if a previous answer matches",
         "STEP_CONDITION_IF": "If",
+        "STEP_SUMMARY_BRANCH": "↳ {base} (if {reference} = \"{value}\")",
         "STEP_CONDITION_EQUALS": "equals",
         "ADD_STEP_BUTTON": "Add step",
         "ACTIVE_LABEL": "Active",

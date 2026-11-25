@@ -83,9 +83,7 @@ class Calendario::BotSessionReminderJob < ApplicationJob
 
     conversation = session.conversation
     inbox = conversation.inbox
-    AutoAssignment::AgentAssignmentService.new(
-      conversation: conversation, allowed_agent_ids: inbox.member_ids_with_assignment_capacity
-    ).perform
+    Calendario::WelcomeBotAssignmentService.new(conversation: conversation).perform
 
     session.update!(status: 'handed_off')
     still_active = Calendario::BotSession.active

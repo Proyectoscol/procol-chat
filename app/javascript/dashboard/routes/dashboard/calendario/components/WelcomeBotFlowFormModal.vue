@@ -175,6 +175,10 @@ const stepTypeOptions = computed(() => [
     value: 'handoff',
     label: t('CALENDARIO.WELCOME_BOT.FORM.STEP_TYPE_OPTIONS.HANDOFF'),
   },
+  {
+    value: 'notify',
+    label: t('CALENDARIO.WELCOME_BOT.FORM.STEP_TYPE_OPTIONS.NOTIFY'),
+  },
 ]);
 
 const inboxOptions = computed(() => [
@@ -213,6 +217,35 @@ const conditionOptionsFor = stepIndex => {
     .split('\n')
     .map(line => line.trim())
     .filter(Boolean);
+};
+
+// Editor "mapa mental" simplificado (rediseño 2026-11-25): mostrar el
+// texto real de la pregunta en vez de solo "Paso N" -- sin esto, armar una
+// rama obligaba a contar pasos a mano para saber a cual se referia cada
+// numero.
+const stepReferenceLabel = stepIndex => {
+  const referenced = steps.value[stepIndex];
+  const number = t('CALENDARIO.WELCOME_BOT.FORM.STEP_NUMBER', {
+    number: stepIndex + 1,
+  });
+  const snippet = referenced?.ask?.trim();
+  return snippet ? `${number}: ${snippet.slice(0, 40)}` : number;
+};
+
+// Una sola linea de texto ya armada por paso -- se calcula aca (no en el
+// template) para que ningun texto suelto quede fuera de i18n/prettier.
+const stepSummaryLine = (step, index) => {
+  const number = t('CALENDARIO.WELCOME_BOT.FORM.STEP_NUMBER', {
+    number: index + 1,
+  });
+  const base = `${number}: ${step.ask || step.type}`;
+  if (!step.condition.enabled) return base;
+
+  return t('CALENDARIO.WELCOME_BOT.FORM.STEP_SUMMARY_BRANCH', {
+    base,
+    reference: stepReferenceLabel(step.condition.stepIndex),
+    value: step.condition.equals,
+  });
 };
 
 // El <select> de "equals" muestra la primera opcion seleccionada por
@@ -307,7 +340,7 @@ const stepsForSubmit = () =>
     if (step.type === 'perform_cancellation' && step.waitlistKeyword.trim()) {
       payload.waitlist_keyword = step.waitlistKeyword.trim();
     }
-    if (['request_reschedule', 'handoff'].includes(step.type)) {
+    if (['request_reschedule', 'handoff', 'notify'].includes(step.type)) {
       if (step.ackMessage.trim()) payload.ack_message = step.ackMessage.trim();
       if (step.ackMessageKey.trim())
         payload.ack_message_key = step.ackMessageKey.trim();
@@ -421,6 +454,29 @@ const submit = async () => {
         <label class="text-sm font-medium text-n-slate-12">
           {{ t('CALENDARIO.WELCOME_BOT.FORM.STEPS_LABEL') }}
         </label>
+
+        <!-- Vista rapida de ramas -- "de un vistazo" pedido por el
+             usuario, sin construir un canvas: cada paso con su rama de
+             origen indentada debajo. -->
+        <ol class="flex flex-col gap-0.5 rounded-lg bg-n-alpha-1 p-2 text-xs">
+          <li
+            v-for="(step, index) in steps"
+            :key="index"
+            class="text-n-slate-11"
+            :class="step.condition.enabled ? 'pl-4' : ''"
+          >
+            {{ stepSummaryLine(step, index) }}
+          </li>
+        </ol>
+
+        <div
+          v-if="props.flow?.template_warnings?.length"
+          class="flex flex-col gap-1 rounded-lg bg-n-amber-3 p-2 text-xs text-n-amber-11"
+        >
+          <p v-for="warning in props.flow.template_warnings" :key="warning">
+            {{ warning }}
+          </p>
+        </div>
 
         <div
           v-for="(step, index) in steps"
@@ -552,7 +608,9 @@ const submit = async () => {
           </template>
 
           <template
-            v-if="['request_reschedule', 'handoff'].includes(step.type)"
+            v-if="
+              ['request_reschedule', 'handoff', 'notify'].includes(step.type)
+            "
           >
             <TextArea
               v-model="step.ackMessage"
@@ -600,9 +658,7 @@ const submit = async () => {
                 :options="
                   Array.from({ length: index }, (_, i) => ({
                     value: i,
-                    label: t('CALENDARIO.WELCOME_BOT.FORM.STEP_NUMBER', {
-                      number: i + 1,
-                    }),
+                    label: stepReferenceLabel(i),
                   }))
                 "
               />

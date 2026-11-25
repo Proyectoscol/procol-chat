@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
@@ -90,11 +90,20 @@ const setStatus = async (appointment, status) => {
   }
 };
 
-onMounted(() => {
-  refresh();
-  store.dispatch('calendarioServices/get');
-  store.dispatch('calendarioProfessionals/get');
-});
+// ContactPanel.vue mantiene esta misma instancia del componente al cambiar
+// de conversacion (el sidebar lo renderiza dentro de un Draggable con
+// item-key="name", no por contacto) -- onMounted nunca vuelve a correr, asi
+// que sin este watch la tarjeta se queda mostrando la cita del contacto
+// anterior. Mismo patron que ContactPanel.vue#watch(contactId, ...).
+watch(
+  () => props.contact?.id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) refresh();
+  },
+  { immediate: true }
+);
+store.dispatch('calendarioServices/get');
+store.dispatch('calendarioProfessionals/get');
 </script>
 
 <template>

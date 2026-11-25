@@ -107,17 +107,6 @@ class Calendario::WelcomeBotAppointmentActions
     step.merge('ask' => confirmation_text, 'options' => Array(step['options']).presence || DEFAULT_LOOKUP_OPTIONS)
   end
 
-  # Si el paso referencia una key de Calendario::MessageTemplate, su version
-  # activa tiene prioridad sobre el texto literal guardado en el paso mismo
-  # -- misma logica que Calendario::AppointmentEventTrigger#effective_template_params,
-  # para que la biblioteca sea la fuente de verdad en los dos lugares donde
-  # hay texto editable hacia el paciente.
-  def resolved_text(step, key_field, literal_field, default)
-    key = step[key_field]
-    library_text = key.present? ? Calendario::MessageTemplate.active_body(account, key) : nil
-    library_text.presence || step[literal_field].presence || default
-  end
-
   # Re-resuelve la cita SIEMPRE a traves de conversation.contact (nunca por
   # el id crudo solo) -- aunque el id ya se guardo en un paso anterior de
   # esta misma sesion, esto garantiza que jamas se opere sobre una cita que
@@ -130,9 +119,7 @@ class Calendario::WelcomeBotAppointmentActions
   end
 
   def render_appointment_liquid(template, appointment)
-    Liquid::Template.parse(template).render!('appointment' => Calendario::AppointmentDrop.new(appointment))
-  rescue Liquid::Error
-    template
+    render_liquid(template, 'appointment' => Calendario::AppointmentDrop.new(appointment))
   end
 
   def end_session!(session)

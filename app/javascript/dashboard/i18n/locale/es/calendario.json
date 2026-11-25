@@ -720,7 +720,8 @@
           "LOOKUP_APPOINTMENT": "Consultar cita existente",
           "PERFORM_CANCELLATION": "Cancelar cita (acción)",
           "REQUEST_RESCHEDULE": "Solicitar reagendamiento (acción)",
-          "HANDOFF": "Transferir a recepción (acción)"
+          "HANDOFF": "Transferir a recepción (acción)",
+          "NOTIFY": "Mensaje informativo (acción, no espera respuesta)"
         },
         "STEP_ASK_LABEL": "Pregunta",
         "STEP_OPTIONS_LABEL": "Opciones (una por linea, opcional)",
@@ -745,6 +746,7 @@
         "STEP_TEMPLATE_KEY_HINT": "Si se llena con una clave de la pestaña Biblioteca de plantillas, su versión activa reemplaza al texto de arriba -- activar una nueva versión en la biblioteca cambia el mensaje real sin editar este paso.",
         "STEP_CONDITION_LABEL": "Preguntar solo si una respuesta anterior coincide",
         "STEP_CONDITION_IF": "Si",
+        "STEP_SUMMARY_BRANCH": "↳ {base} (si {reference} = \"{value}\")",
         "STEP_CONDITION_EQUALS": "es igual a",
         "ADD_STEP_BUTTON": "Agregar paso",
         "ACTIVE_LABEL": "Activo",

@@ -50,13 +50,27 @@ module Calendario::WelcomeBotMessaging
     Calendario::WelcomeBotFlow.normalize(text)
   end
 
-  # Mismo servicio que usa la auto-asignacion legada de Chatwoot: hace
-  # round-robin entre los miembros de la bandeja que estan en linea Y tienen
-  # cupo disponible. Si nadie esta disponible, no asigna a nadie (se queda
-  # abierta sin asignar, igual que cualquier conversacion normal).
+  # Si el paso (o el caller) referencia una key de Calendario::MessageTemplate,
+  # su version activa tiene prioridad sobre el texto literal -- la
+  # biblioteca es la fuente de verdad para todo texto editable hacia el
+  # paciente, no solo las acciones de cita (ver Calendario::WelcomeBotAppointmentActions,
+  # que usaba una copia de este mismo metodo antes de moverlo aqui).
+  def resolved_text(step, key_field, literal_field, default)
+    key = step[key_field]
+    library_text = key.present? ? Calendario::MessageTemplate.active_body(account, key) : nil
+    library_text.presence || step[literal_field].presence || default
+  end
+
+  def render_liquid(template, locals)
+    Liquid::Template.parse(template).render!(locals)
+  rescue Liquid::Error
+    template
+  end
+
+  # A diferencia de la auto-asignacion generica de Chatwoot, NUNCA filtra por
+  # agente "online" -- un paciente que escribe fuera de horario debe quedar
+  # igual de asignado (ver Calendario::WelcomeBotAssignmentService).
   def assign_available_agent
-    AutoAssignment::AgentAssignmentService.new(
-      conversation: conversation, allowed_agent_ids: inbox.member_ids_with_assignment_capacity
-    ).perform
+    Calendario::WelcomeBotAssignmentService.new(conversation: conversation).perform
   end
 end

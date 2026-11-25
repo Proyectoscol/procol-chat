@@ -51,7 +51,8 @@ class Api::V1::Accounts::Calendario::WelcomeBotFlowsController < Api::V1::Accoun
     {
       id: flow.id, name: flow.name, match_type: flow.match_type, match_value: flow.match_value,
       priority: flow.priority, active: flow.active, steps: flow.steps, escalation_message: flow.escalation_message,
-      reminder_schedule: flow.reminder_schedule, inbox_id: flow.inbox_id, inbox_name: flow.inbox.name
+      reminder_schedule: flow.reminder_schedule, inbox_id: flow.inbox_id, inbox_name: flow.inbox.name,
+      template_warnings: flow.missing_template_warnings
     }
   end
 
