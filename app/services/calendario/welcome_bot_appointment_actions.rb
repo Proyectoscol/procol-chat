@@ -22,8 +22,11 @@ class Calendario::WelcomeBotAppointmentActions
     'con {{ appointment.professional_name }} ({{ appointment.service_name }})?'.freeze
   DEFAULT_LOOKUP_OPTIONS = ['Reagendar', 'Cancelar', 'Hablar con recepción'].freeze
   DEFAULT_WAITLIST_KEYWORD = 'lista de espera'.freeze
+  # Bug real 2026-11-26: el texto fijo prometia "en breve" sin importar la
+  # hora -- ver Calendario::WelcomeBotMessaging#office_status_notice (mismo
+  # fix que ya se aplico al handoff general).
   DEFAULT_RESCHEDULE_ACK_MESSAGE =
-    'Hemos recibido tu solicitud de reagendamiento. Un asesor te contactará en breve para coordinar la nueva fecha.'.freeze
+    'Hemos recibido tu solicitud de reagendamiento. {{ office_status_notice }}'.freeze
   DEFAULT_CONFIRMATION_ACK_MESSAGE =
     '¡Gracias por confirmar! Te esperamos en tu cita.'.freeze
   DEFAULT_ALREADY_CONFIRMED_MESSAGE =
@@ -80,7 +83,8 @@ class Calendario::WelcomeBotAppointmentActions
     appointment.update!(status: :pending)
     assign_available_agent if conversation.assignee_id.blank?
     create_private_note("Cita ##{appointment.id}: el paciente solicitó reagendar vía bot de bienvenida. Reagendar manualmente.")
-    send_text_question('ask' => resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_RESCHEDULE_ACK_MESSAGE))
+    ack_text = resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_RESCHEDULE_ACK_MESSAGE)
+    send_text_question('ask' => render_liquid(ack_text, 'office_status_notice' => office_status_notice))
 
     end_session!(session)
   end
