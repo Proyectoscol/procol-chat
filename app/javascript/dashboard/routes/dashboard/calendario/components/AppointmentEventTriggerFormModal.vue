@@ -39,6 +39,7 @@ const getFilteredWhatsAppTemplates = useMapGetter(
 );
 const getInbox = useMapGetter('inboxes/getInbox');
 const services = useMapGetter('calendarioServices/getServices');
+const welcomeBotFlows = useMapGetter('calendarioWelcomeBotFlows/getFlows');
 
 const isEditMode = computed(() => !!props.trigger);
 
@@ -72,6 +73,14 @@ const isSaving = ref(false);
 const templateParserRef = ref(null);
 const twilioContentSid = ref('');
 const twilioVariableMapping = ref({});
+// bot_flow_id: marca el disparador como "interactivo" -- al enviarse,
+// arranca una Calendario::BotSession en ese flujo (ver
+// Calendario::AppointmentReminderBotSession) para enrutar la respuesta del
+// paciente (confirmar/cancelar/reagendar) a la cita puntual del mensaje.
+// Solo tiene sentido para recordatorios con botones -- un flujo pensado
+// para esto NUNCA debe quedar activo por si solo (se arranca a mano), por
+// eso solo se listan flujos con active: false.
+const botFlowId = ref('');
 
 // Las bandejas de Twilio con medium whatsapp no tienen catalogo de
 // plantillas aprobadas por Meta (ver inboxes.js#getWhatsAppInboxes) -- para
@@ -152,6 +161,7 @@ const setFormValues = () => {
   twilioVariableMapping.value = {
     ...(props.trigger?.template_params?.variable_mapping || {}),
   };
+  botFlowId.value = props.trigger?.template_params?.bot_flow_id || '';
   // La plantilla elegida (Meta por id interno, Twilio por content_sid) se
   // resuelve de nuevo una vez carguen los templates del inbox (ver watches
   // de approvedTemplates/twilioTemplates más abajo); no se puede resolver
@@ -174,7 +184,18 @@ watch(
 onMounted(() => {
   store.dispatch('inboxes/get');
   store.dispatch('calendarioServices/get');
+  store.dispatch('calendarioWelcomeBotFlows/get');
 });
+
+// Solo flujos pensados para arrancar a mano (nunca por palabra clave/tag
+// real) tiene sentido ofrecer aqui -- un flujo "en vivo" del triaje general
+// no deberia poder confundirse con uno de recordatorio.
+const botFlowOptions = computed(() => [
+  { value: '', label: t('CALENDARIO.TRIGGERS.FORM.BOT_FLOW_PLACEHOLDER') },
+  ...welcomeBotFlows.value
+    .filter(flow => !flow.active)
+    .map(flow => ({ value: flow.id, label: flow.name })),
+]);
 
 const kindOptions = computed(() => [
   {
@@ -355,6 +376,7 @@ const submit = async () => {
       // Calendario::AppointmentTriggerRunner#preview_text) -- el envio real
       // nunca usa este campo, siempre manda content_sid + variable_mapping.
       processed_params: { body: selectedTwilioTemplate.value.body },
+      bot_flow_id: botFlowId.value || null,
     };
   }
 
@@ -615,6 +637,20 @@ const submit = async () => {
             />
           </div>
         </div>
+      </div>
+
+      <!-- Solo aplica a bandejas Twilio (unico camino que hoy soporta
+      botones interactivos amarrados a una cita). Marcar un flujo aqui hace
+      que, al enviarse, se arranque una sesion de bot en ese flujo con la
+      cita de este mensaje precargada -- ver Calendario::AppointmentReminderBotSession. -->
+      <div v-if="selectedTwilioTemplate" class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-n-slate-12">
+          {{ t('CALENDARIO.TRIGGERS.FORM.BOT_FLOW_LABEL') }}
+        </label>
+        <Select v-model="botFlowId" :options="botFlowOptions" />
+        <p class="text-xs text-n-slate-10">
+          {{ t('CALENDARIO.TRIGGERS.FORM.BOT_FLOW_HINT') }}
+        </p>
       </div>
 
       <div class="flex items-center gap-2">
