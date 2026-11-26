@@ -3,22 +3,21 @@ import ConversationApi from '../../../../api/inbox/conversation';
 import mutationTypes from '../../../mutation-types';
 
 export default {
-  markMessagesRead: async ({ commit }, data) => {
+  markMessagesRead: async ({ commit, dispatch }, data) => {
     try {
       const {
         data: { id, agent_last_seen_at: lastSeen },
       } = await ConversationApi.markMessageRead(data);
-      setTimeout(
-        () =>
-          commit(mutationTypes.UPDATE_MESSAGE_UNREAD_COUNT, { id, lastSeen }),
-        4000
-      );
+      setTimeout(() => {
+        commit(mutationTypes.UPDATE_MESSAGE_UNREAD_COUNT, { id, lastSeen });
+        dispatch('conversationStats/get', {}, { root: true });
+      }, 4000);
     } catch (error) {
       // Handle error
     }
   },
 
-  markMessagesUnread: async ({ commit }, { id }) => {
+  markMessagesUnread: async ({ commit, dispatch }, { id }) => {
     try {
       const {
         data: { agent_last_seen_at: lastSeen, unread_count: unreadCount },
@@ -28,6 +27,7 @@ export default {
         lastSeen,
         unreadCount,
       });
+      dispatch('conversationStats/get', {}, { root: true });
     } catch (error) {
       throwErrorMessage(error);
     }
