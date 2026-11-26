@@ -79,6 +79,7 @@ class Account < ApplicationRecord
   has_many :calendario_message_templates, dependent: :destroy_async, class_name: 'Calendario::MessageTemplate'
   has_many :calendario_account_data_exports, dependent: :destroy_async, class_name: 'Calendario::AccountDataExport'
   has_many :calendario_account_data_imports, dependent: :destroy_async, class_name: 'Calendario::AccountDataImport'
+  has_many :calendario_working_day_overrides, dependent: :destroy_async, class_name: 'Calendario::WorkingDayOverride'
   has_many :campaigns, dependent: :destroy_async
   has_many :canned_responses, dependent: :destroy_async
   has_many :categories, dependent: :destroy_async, class_name: '::Category'

@@ -436,6 +436,7 @@ GEM
     hash_diff (1.1.1)
     hashdiff (1.1.0)
     hashie (5.0.0)
+    holidays (11.8.0)
     html2text (0.4.0)
       nokogiri (>= 1.0, < 2.0)
     http (5.1.1)
@@ -1095,6 +1096,7 @@ DEPENDENCIES
   haikunator
   hairtrigger
   hashie
+  holidays
   html2text
   image_processing
   iso-639

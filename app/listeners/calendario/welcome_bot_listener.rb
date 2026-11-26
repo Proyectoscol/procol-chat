@@ -97,6 +97,11 @@ class Calendario::WelcomeBotListener < BaseListener
   # tuvo su ventana entera y no respondio). Si `working_hours_enabled` esta
   # apagado en el inbox, cae al criterio viejo (cambio de fecha) como
   # fallback.
+  # Festivos colombianos (y excepciones puntuales) cuentan como dia
+  # cerrado para este chequeo, igual que un fin de semana -- ver
+  # Calendario::BusinessHours. Si cae un festivo entre los dos mensajes, esa
+  # fecha simplemente no tiene hora de cierre y no cuenta como "recepcion ya
+  # tuvo su ventana y no respondio".
   def abandoned_since_last_message?(conversation, message)
     previous = conversation.messages.incoming.where.not(id: message.id).reorder(created_at: :desc).first
     return false if previous.blank?
@@ -105,19 +110,16 @@ class Calendario::WelcomeBotListener < BaseListener
     return local_date(conversation, previous.created_at) != local_date(conversation, message.created_at) unless inbox.working_hours_enabled?
 
     zone = inbox.timezone.presence || 'UTC'
-    from_time = previous.created_at.in_time_zone(zone)
-    to_time = message.created_at.in_time_zone(zone)
-    (from_time.to_date..to_time.to_date).any? do |date|
-      working_hours_already_closed_between?(inbox, date, zone, from_time, to_time)
-    end
+    business_day_closed_between?(
+      Calendario::BusinessHours.new(inbox: inbox), previous.created_at.in_time_zone(zone), message.created_at.in_time_zone(zone)
+    )
   end
 
-  def working_hours_already_closed_between?(inbox, date, zone, from_time, to_time)
-    working_hour = inbox.working_hours.find_by(day_of_week: date.wday)
-    return false if working_hour.blank? || working_hour.closed_all_day?
-
-    close_at = date.in_time_zone(zone).change(hour: working_hour.close_hour, min: working_hour.close_minutes)
-    close_at > from_time && close_at <= to_time
+  def business_day_closed_between?(business_hours, from_time, to_time)
+    (from_time.to_date..to_time.to_date).any? do |date|
+      close_at = business_hours.close_time_on(date)
+      close_at.present? && close_at > from_time && close_at <= to_time
+    end
   end
 
   def local_date(conversation, time)

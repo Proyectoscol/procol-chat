@@ -32,6 +32,8 @@ gem 'flag_shih_tzu'
 gem 'haikunator'
 # Template parsing safely
 gem 'liquid'
+# Festivos colombianos reales (incluye Ley Emiliani) para el horario laboral de Calendario
+gem 'holidays'
 # Parse Markdown to HTML
 gem 'commonmarker'
 # Validate Data against JSON Schema

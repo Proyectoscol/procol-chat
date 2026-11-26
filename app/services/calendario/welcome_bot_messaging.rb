@@ -106,10 +106,10 @@ module Calendario::WelcomeBotMessaging
   # Bug real en produccion 2026-11-25 (10pm): el texto fijo "En breve..."
   # miente cuando se manda fuera de horario laboral -- usar como
   # `{{ office_status_notice }}` en cualquier plantilla editable que haga
-  # esa promesa, para que se ajuste sola segun `inbox.out_of_office?`
-  # (feature nativa de Chatwoot, ver Inbox#out_of_office? / WorkingHour).
+  # esa promesa, para que se ajuste sola segun el horario real (incluye
+  # festivos colombianos y excepciones, ver Calendario::BusinessHours).
   def office_status_notice
-    return DEFAULT_IN_OFFICE_NOTICE unless inbox.out_of_office?
+    return DEFAULT_IN_OFFICE_NOTICE if Calendario::BusinessHours.new(inbox: inbox).open_at?
 
     Calendario::MessageTemplate.active_body(account, OUT_OF_OFFICE_NOTICE_KEY).presence || DEFAULT_OUT_OF_OFFICE_NOTICE
   end

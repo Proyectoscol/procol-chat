@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_25_170000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_26_160446) do
   # These extensions should be enabled to support this database
   enable_extension "btree_gist"
   enable_extension "pg_stat_statements"
@@ -699,6 +699,19 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_25_170000) do
     t.index ["account_id"], name: "index_calendario_welcome_bot_flows_on_account_id"
     t.index ["inbox_id", "match_type"], name: "index_one_active_default_flow_per_inbox", unique: true, where: "(((match_type)::text = 'default'::text) AND (active = true))"
     t.index ["inbox_id"], name: "index_calendario_welcome_bot_flows_on_inbox_id"
+  end
+
+  create_table "calendario_working_day_overrides", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.date "date", null: false
+    t.boolean "open", default: true, null: false
+    t.string "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_calendario_working_day_overrides_on_account_id"
+    t.index ["inbox_id", "date"], name: "index_calendario_working_day_overrides_on_inbox_id_and_date", unique: true
+    t.index ["inbox_id"], name: "index_calendario_working_day_overrides_on_inbox_id"
   end
 
   create_table "calls", force: :cascade do |t|
@@ -2422,6 +2435,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_25_170000) do
   add_foreign_key "calendario_waitlist_entries", "contacts", on_delete: :cascade
   add_foreign_key "calendario_welcome_bot_flows", "accounts", on_delete: :cascade
   add_foreign_key "calendario_welcome_bot_flows", "inboxes", on_delete: :cascade
+  add_foreign_key "calendario_working_day_overrides", "accounts"
+  add_foreign_key "calendario_working_day_overrides", "inboxes"
   add_foreign_key "campaign_recipients", "accounts", on_delete: :cascade
   add_foreign_key "campaign_recipients", "campaigns", on_delete: :cascade
   add_foreign_key "campaign_recipients", "contacts", on_delete: :cascade
