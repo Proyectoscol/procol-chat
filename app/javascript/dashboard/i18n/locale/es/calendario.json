@@ -247,6 +247,8 @@
           "PPT": "Permiso de protección temporal"
         },
         "STARTS_AT_LABEL": "Fecha y hora",
+        "DURATION_LABEL": "Duración",
+        "DURATION_MINUTES": "{minutes} min",
         "NOTES_LABEL": "Notas",
         "AMOUNT_TO_COLLECT_LABEL": "Valor a cobrar (opcional)",
         "AMOUNT_TO_COLLECT_PLACEHOLDER": "ej. 280000",

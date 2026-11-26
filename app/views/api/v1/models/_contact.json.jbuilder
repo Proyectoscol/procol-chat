@@ -10,6 +10,7 @@ json.document_type resource.document_type
 json.secondary_phone_number resource.secondary_phone_number
 json.payer_id resource.payer_id
 json.payer_name resource.payer&.name
+json.payer_kind resource.payer&.kind
 json.thumbnail resource.avatar_url
 json.custom_attributes resource.custom_attributes
 json.last_activity_at resource.last_activity_at.to_i if resource[:last_activity_at].present?

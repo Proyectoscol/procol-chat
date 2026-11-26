@@ -247,6 +247,8 @@
           "PPT": "Temporary protection permit"
         },
         "STARTS_AT_LABEL": "Date and time",
+        "DURATION_LABEL": "Duration",
+        "DURATION_MINUTES": "{minutes} min",
         "NOTES_LABEL": "Notes",
         "AMOUNT_TO_COLLECT_LABEL": "Amount to collect (optional)",
         "AMOUNT_TO_COLLECT_PLACEHOLDER": "e.g. 280000",

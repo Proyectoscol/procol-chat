@@ -1,10 +1,12 @@
 <script setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useStore } from 'dashboard/composables/store';
+import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import Button from 'dashboard/components-next/button/Button.vue';
+import AppointmentDurationStepper from './AppointmentDurationStepper.vue';
 import { appointmentWarningMessage } from '../helpers/appointmentWarningMessage';
+import { defaultDurationMinutes } from '../helpers/appointmentDuration';
 
 const props = defineProps({
   // { contact_id, contact_name, service_id, professional_id }
@@ -19,9 +21,23 @@ const emit = defineEmits(['booked', 'cancel']);
 const { t } = useI18n();
 const store = useStore();
 
+const services = useMapGetter('calendarioServices/getServices');
+const getContactById = useMapGetter('contacts/getContact');
+
 const time = ref(props.defaultTime);
 const isSaving = ref(false);
 const warnings = ref([]);
+
+// El contacto puede no estar en el store aun (lista de espera se llena sin
+// pasar por la busqueda de contactos) -- si no esta cacheado, cae al
+// duration_minutes fijo del servicio, igual que sin pagador conocido.
+const durationMinutes = ref(
+  defaultDurationMinutes(
+    services.value.find(service => service.id === props.armedEntry.service_id),
+    props.armedEntry.professional_id,
+    getContactById.value(props.armedEntry.contact_id)?.payer_kind
+  )
+);
 
 const startsAt = () => {
   const [year, month, day] = props.date.split('-').map(Number);
@@ -36,6 +52,9 @@ const confirm = async () => {
     service_id: props.armedEntry.service_id,
     professional_id: props.armedEntry.professional_id,
     starts_at: startsAt().toISOString(),
+    ends_at: new Date(
+      startsAt().getTime() + durationMinutes.value * 60000
+    ).toISOString(),
     // Si ya se mostraron advertencias para este mismo horario, este intento
     // es la confirmacion del usuario -- crear igual (mismo patron que
     // AppointmentFormContent.vue).
@@ -85,6 +104,8 @@ const cancel = () => emit('cancel');
         class="rounded-lg border border-n-weak bg-transparent px-2 py-1 text-sm"
       />
     </div>
+
+    <AppointmentDurationStepper v-model="durationMinutes" />
 
     <p
       v-for="(warning, index) in warnings"

@@ -12,6 +12,7 @@ import {
   dateKeyInColombia,
 } from '../helpers/calendarioDateTime';
 import { ES_DATEPICKER_LANG } from '../helpers/datepickerLang';
+import AppointmentDurationStepper from './AppointmentDurationStepper.vue';
 
 const props = defineProps({
   appointment: { type: Object, required: true },
@@ -23,8 +24,16 @@ const store = useStore();
 
 const openDays = useMapGetter('calendarioOpenDays/getOpenDays');
 
-const durationMs =
-  new Date(props.appointment.ends_at) - new Date(props.appointment.starts_at);
+// Preserva la duracion que ya tenia la cita -- reagendar normalmente solo
+// mueve el horario, pero el agente puede ajustarla con el stepper si la
+// nueva franja necesita ser mas corta/larga.
+const durationMinutes = ref(
+  Math.round(
+    (new Date(props.appointment.ends_at) -
+      new Date(props.appointment.starts_at)) /
+      60000
+  )
+);
 
 const startsAt = ref(new Date(props.appointment.starts_at));
 const notes = ref(props.appointment.notes || '');
@@ -78,7 +87,9 @@ const onClose = () => emit('close');
 const submit = async () => {
   isSaving.value = true;
   const newStartsAt = startsAt.value;
-  const newEndsAt = new Date(newStartsAt.getTime() + durationMs);
+  const newEndsAt = new Date(
+    newStartsAt.getTime() + durationMinutes.value * 60000
+  );
   try {
     await store.dispatch('calendarioAppointments/update', {
       id: props.appointment.id,
@@ -126,6 +137,8 @@ const submit = async () => {
         {{ t('CALENDARIO.APPOINTMENTS.FORM.OPEN_DAY_HINT') }}
       </p>
     </div>
+
+    <AppointmentDurationStepper v-model="durationMinutes" />
 
     <TextArea
       v-model="notes"

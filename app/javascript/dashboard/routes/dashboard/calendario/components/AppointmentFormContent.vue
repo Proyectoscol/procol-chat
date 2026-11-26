@@ -16,6 +16,8 @@ import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ContactForm from 'dashboard/routes/dashboard/conversation/contact/ContactForm.vue';
 import ContactsForm from 'dashboard/components-next/Contacts/ContactsForm/ContactsForm.vue';
+import AppointmentDurationStepper from './AppointmentDurationStepper.vue';
+import { defaultDurationMinutes } from '../helpers/appointmentDuration';
 
 const props = defineProps({
   // Precarga el contacto cuando se abre esto desde una conversacion, o desde
@@ -44,6 +46,7 @@ const selectedContactId = ref(props.presetContact?.id || '');
 const serviceId = ref(props.presetServiceId || '');
 const professionalId = ref(props.presetProfessionalId || '');
 const startsAt = ref(props.presetStartsAt || null);
+const durationMinutes = ref(5);
 const notes = ref('');
 const amountToCollect = ref('');
 const isSaving = ref(false);
@@ -172,6 +175,25 @@ const sendToWaitlistInstead = async () => {
 watch([serviceId, professionalId, startsAt], () => {
   appointmentWarnings.value = [];
 });
+
+const selectedService = computed(() =>
+  services.value.find(service => service.id === serviceId.value)
+);
+
+// Duracion por defecto segun servicio+profesional+forma de pago (ver
+// helpers/appointmentDuration.js) -- se recalcula cada vez que cambia
+// cualquiera de esos tres, y el usuario puede seguir ajustandola a mano
+// con el stepper despues.
+watch(
+  [serviceId, professionalId, () => selectedContact.value?.payer_kind],
+  () => {
+    durationMinutes.value = defaultDurationMinutes(
+      selectedService.value,
+      professionalId.value,
+      selectedContact.value?.payer_kind
+    );
+  }
+);
 
 const serviceOptions = computed(() => [
   { value: '', label: t('CALENDARIO.APPOINTMENTS.FORM.SERVICE_PLACEHOLDER') },
@@ -327,6 +349,9 @@ const submit = async () => {
     service_id: serviceId.value,
     professional_id: professionalId.value,
     starts_at: startsAt.value.toISOString(),
+    ends_at: new Date(
+      startsAt.value.getTime() + durationMinutes.value * 60000
+    ).toISOString(),
     notes: notes.value,
     amount_to_collect: amountToCollect.value || null,
     conversation_id: props.presetConversationId,
@@ -550,6 +575,8 @@ const submit = async () => {
         {{ t('CALENDARIO.APPOINTMENTS.FORM.OPEN_DAY_HINT') }}
       </p>
     </div>
+
+    <AppointmentDurationStepper v-model="durationMinutes" />
 
     <TextArea
       v-model="notes"
