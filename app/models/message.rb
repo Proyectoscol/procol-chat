@@ -370,6 +370,7 @@ class Message < ApplicationRecord
       additional_attributes['campaign_id'].blank? &&
       (sender.is_a?(User) || content_attributes['external_echo'].present?)
   end
+  public :human_response?
 
   def bot_response?
     # Check if this is a response from AgentBot or Captain::Assistant

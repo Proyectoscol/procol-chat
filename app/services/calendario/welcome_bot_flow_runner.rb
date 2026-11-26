@@ -225,6 +225,6 @@ class Calendario::WelcomeBotFlowRunner
     template = Calendario::MessageTemplate.active_body(account, HANDOFF_MESSAGE_KEY).presence || DEFAULT_HANDOFF_MESSAGE
     agent_name = conversation.reload.assignee&.name
     agent_intro = agent_name.present? ? "Mi nombre es *#{agent_name}* y me encargaré de tu atención. " : ''
-    render_liquid(template, 'agent_intro' => agent_intro)
+    render_liquid(template, 'agent_intro' => agent_intro, 'office_status_notice' => office_status_notice)
   end
 end

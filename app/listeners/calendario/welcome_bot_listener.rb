@@ -48,9 +48,25 @@ class Calendario::WelcomeBotListener < BaseListener
     # "ya debería estar asignado... la atención sea con recepción... sin
     # más mensajes" -- ningún mensaje automático más, periodo.
     return true if conversation.additional_attributes['skip_welcome_bot'].present?
+    # BUG REAL encontrado en produccion 2026-11-26 (conversacion de "Nueva
+    # Eps"): el agente Beatriz pregunto "De que entidad?" y el paciente
+    # respondio un minuto despues -- pero como `new_calendar_day?` solo
+    # compara mensajes ENTRANTES entre si, el ultimo entrante previo era de
+    # el dia anterior, asi que "dia distinto" disparaba el triaje general
+    # encima de la respuesta directa del paciente a su agente. Si el ULTIMO
+    # mensaje de la conversacion (en cualquier direccion) fue una respuesta
+    # humana real de un agente, el paciente le esta respondiendo a ESE
+    # mensaje, sin importar cuantos dias hayan pasado -- nunca reactivar el
+    # bot en ese caso.
+    return true if responding_to_agent?(conversation, message)
     return false unless conversation.assignee_id.present? && Calendario::BotSession.exists?(conversation: conversation)
 
-    !new_calendar_day?(conversation, message)
+    !abandoned_since_last_message?(conversation, message)
+  end
+
+  def responding_to_agent?(conversation, message)
+    last_message = conversation.messages.where.not(id: message.id).reorder(created_at: :desc).first
+    last_message.present? && last_message.human_response?
   end
 
   # Mismo patron que la vieja Calendario::ReturningAppointmentPromptListener#new_calendar_day? --
@@ -67,11 +83,41 @@ class Calendario::WelcomeBotListener < BaseListener
   # despues del primer dia se veia como "dia distinto" y reiniciaba el
   # triaje en cada respuesta, incluso segundos despues del handoff anterior.
   # `.reorder` SI reemplaza el default_scope.
-  def new_calendar_day?(conversation, message)
+  #
+  # BUG REAL encontrado en produccion 2026-11-25 (segundo): comparar solo la
+  # FECHA calendario reactivaba el triaje con brechas minimas que cruzan
+  # medianoche -- paciente escribe 11pm, nadie de recepcion alcanza a
+  # contestar, y escribe de nuevo a las 6am (7 horas despues, antes de que
+  # abra recepcion) -- eso veia "dia distinto" y reiniciaba el triaje,
+  # pidiendole la misma informacion dos veces sin que recepcion siquiera
+  # tuviera la oportunidad real de responder. El criterio correcto no es
+  # "cambio la fecha", es "ya cerro un dia habil completo sin que
+  # respondieran" -- solo reactiva si el horario laboral de ALGUN dia entre
+  # el mensaje anterior y este ya CERRO en ese rango (es decir, recepcion
+  # tuvo su ventana entera y no respondio). Si `working_hours_enabled` esta
+  # apagado en el inbox, cae al criterio viejo (cambio de fecha) como
+  # fallback.
+  def abandoned_since_last_message?(conversation, message)
     previous = conversation.messages.incoming.where.not(id: message.id).reorder(created_at: :desc).first
     return false if previous.blank?
 
-    local_date(conversation, previous.created_at) != local_date(conversation, message.created_at)
+    inbox = conversation.inbox
+    return local_date(conversation, previous.created_at) != local_date(conversation, message.created_at) unless inbox.working_hours_enabled?
+
+    zone = inbox.timezone.presence || 'UTC'
+    from_time = previous.created_at.in_time_zone(zone)
+    to_time = message.created_at.in_time_zone(zone)
+    (from_time.to_date..to_time.to_date).any? do |date|
+      working_hours_already_closed_between?(inbox, date, zone, from_time, to_time)
+    end
+  end
+
+  def working_hours_already_closed_between?(inbox, date, zone, from_time, to_time)
+    working_hour = inbox.working_hours.find_by(day_of_week: date.wday)
+    return false if working_hour.blank? || working_hour.closed_all_day?
+
+    close_at = date.in_time_zone(zone).change(hour: working_hour.close_hour, min: working_hour.close_minutes)
+    close_at > from_time && close_at <= to_time
   end
 
   def local_date(conversation, time)

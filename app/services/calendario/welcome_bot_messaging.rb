@@ -76,6 +76,22 @@ module Calendario::WelcomeBotMessaging
     template
   end
 
+  OUT_OF_OFFICE_NOTICE_KEY = 'bot_out_of_office_notice'.freeze
+  DEFAULT_OUT_OF_OFFICE_NOTICE =
+    'Actualmente estamos fuera de nuestro horario de atención. Te atenderemos tan pronto regresemos.'.freeze
+  DEFAULT_IN_OFFICE_NOTICE = 'En breve, nuestro equipo de recepción atenderá tu solicitud.'.freeze
+
+  # Bug real en produccion 2026-11-25 (10pm): el texto fijo "En breve..."
+  # miente cuando se manda fuera de horario laboral -- usar como
+  # `{{ office_status_notice }}` en cualquier plantilla editable que haga
+  # esa promesa, para que se ajuste sola segun `inbox.out_of_office?`
+  # (feature nativa de Chatwoot, ver Inbox#out_of_office? / WorkingHour).
+  def office_status_notice
+    return DEFAULT_IN_OFFICE_NOTICE unless inbox.out_of_office?
+
+    Calendario::MessageTemplate.active_body(account, OUT_OF_OFFICE_NOTICE_KEY).presence || DEFAULT_OUT_OF_OFFICE_NOTICE
+  end
+
   # A diferencia de la auto-asignacion generica de Chatwoot, NUNCA filtra por
   # agente "online" -- un paciente que escribe fuera de horario debe quedar
   # igual de asignado (ver Calendario::WelcomeBotAssignmentService).
