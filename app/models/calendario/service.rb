@@ -61,4 +61,15 @@ class Calendario::Service < ApplicationRecord
     specific = payer.present? ? loaded_prices.find { |p| p.payer_id == payer.id } : nil
     specific&.price || loaded_prices.find { |p| p.payer_id.nil? }&.price || base_price
   end
+
+  # Duracion real de la cita -- bug real encontrado 2026-11-26: todo el
+  # servicio "Consulta" (compartido por Urologia y Ginecologia) tenia una
+  # sola duracion fija para cualquier profesional y cualquier forma de pago
+  # (ej. una particular de Ginecologia con el Dr Espitia dura 1h, no los 20
+  # min fijos que tenia el servicio). Cae a `duration_minutes` si no hay
+  # override configurado para ese profesional, mismo patron que `price_for`.
+  def duration_minutes_for(professional, payer)
+    link = professional.present? ? service_professionals.find { |sp| sp.professional_id == professional.id } : nil
+    link&.duration_minutes_for(payer) || duration_minutes
+  end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_26_160446) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_26_163133) do
   # These extensions should be enabled to support this database
   enable_extension "btree_gist"
   enable_extension "pg_stat_statements"
@@ -634,6 +634,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_26_160446) do
     t.bigint "professional_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "eps_duration_minutes"
+    t.integer "private_duration_minutes"
     t.index ["professional_id"], name: "index_calendario_service_professionals_on_professional_id"
     t.index ["service_id", "professional_id"], name: "index_calendario_svc_profs_on_service_and_professional", unique: true
     t.index ["service_id"], name: "index_calendario_service_professionals_on_service_id"

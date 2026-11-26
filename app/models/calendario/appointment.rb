@@ -234,7 +234,7 @@ class Calendario::Appointment < ApplicationRecord
   def set_ends_at_from_service
     return if starts_at.blank? || service.blank? || ends_at.present?
 
-    self.ends_at = starts_at + service.duration_minutes.minutes
+    self.ends_at = starts_at + service.duration_minutes_for(professional, contact&.payer).minutes
   end
 
   def ends_at_after_starts_at
