@@ -97,12 +97,51 @@ class Calendario::AppointmentTriggerRunner
     conversation = find_or_create_conversation
     return if conversation.blank?
 
+    content_variables = resolve_content_variables
+    if incomplete_variable_mapping?(content_variables)
+      warn_incomplete_variable_mapping(conversation, content_variables)
+      return
+    end
+
     message = build_twilio_message(conversation)
     result = Twilio::SendOnTwilioService.new(message: message).send_csat_template_message(
       phone_number: contact.phone_number, content_sid: trigger.template_params['content_sid'],
-      content_variables: resolve_content_variables
+      content_variables: content_variables
     )
     apply_send_result(message, result)
+  end
+
+  # Red de seguridad: si al disparador le falta mapear alguna variable del
+  # body de la plantilla (ej. guardado por script, o editado fuera del
+  # formulario que SI valida esto), Twilio no rechaza el envio -- renderiza
+  # el placeholder crudo ("1", "2"...) al paciente. Hallazgo real 2026-11-26:
+  # asi llego "Cita confirmada, 1" a un paciente. Mejor no enviar nada y
+  # avisar internamente que arreglar la configuracion.
+  def expected_variable_keys
+    template = channel.content_templates&.dig('templates')&.find do |t|
+      t['content_sid'] == trigger.template_params['content_sid']
+    end
+    template&.dig('body').to_s.scan(/{{\s*(\d+)\s*}}/).flatten.uniq
+  end
+
+  def incomplete_variable_mapping?(content_variables)
+    expected_variable_keys.any? { |key| content_variables[key].blank? }
+  end
+
+  def warn_incomplete_variable_mapping(conversation, content_variables)
+    missing = expected_variable_keys.reject { |key| content_variables[key].present? }
+    text = "⚠️ El disparador \"#{trigger.template_params['friendly_name']}\" no se envió: " \
+           "faltan variables sin mapear (#{missing.join(', ')}). Revisa Ajustes → Mensajería → " \
+           'Notificaciones para este disparador.'
+    conversation.messages.create!(
+      account: account, inbox: inbox, sender: Current.user, private: true,
+      message_type: :outgoing, content: text
+    )
+    ChatwootExceptionTracker.new(
+      StandardError.new("AppointmentEventTrigger##{trigger.id} variable_mapping incompleto " \
+                        "para content_sid=#{trigger.template_params['content_sid']}"),
+      account: account
+    ).capture_exception
   end
 
   def build_twilio_message(conversation)
