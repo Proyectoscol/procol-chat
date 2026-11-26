@@ -37,6 +37,17 @@ class Calendario::WelcomeBotListener < BaseListener
   # una ya entregada y el bot nunca llega a arrancar).
   def already_handled_today?(conversation, message)
     return false if Calendario::BotSession.active.exists?(conversation: conversation)
+    # additional_attributes['skip_welcome_bot']: exencion PERMANENTE, no
+    # sujeta a la regla de "dia distinto" de abajo -- revisado con Codex
+    # 2026-11-26. Una conversacion nacida de una notificacion de cita SIN
+    # botones (confirmacion/cancelacion/reprogramacion) nunca debe volver a
+    # activar el Triaje general solo porque el paciente respondio, sin
+    # importar cuantos dias pasen -- a diferencia del caso de abajo (triage
+    # completo real, donde SI tiene sentido reabrir al dia siguiente), aqui
+    # nunca hubo ningun triage que "reabrir". Pedido explicito del usuario:
+    # "ya debería estar asignado... la atención sea con recepción... sin
+    # más mensajes" -- ningún mensaje automático más, periodo.
+    return true if conversation.additional_attributes['skip_welcome_bot'].present?
     return false unless conversation.assignee_id.present? && Calendario::BotSession.exists?(conversation: conversation)
 
     !new_calendar_day?(conversation, message)

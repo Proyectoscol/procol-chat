@@ -118,7 +118,11 @@ class Calendario::AppointmentTriggerRunner
       return
     end
 
-    bot_session.start!(conversation)
+    if bot_session.interactive?
+      bot_session.start!(conversation)
+    else
+      Calendario::WelcomeBotExemption.new(conversation: conversation).apply!
+    end
 
     message = build_twilio_message(conversation)
     # BUG REAL encontrado 2026-11-26: contact.phone_number no lleva el
@@ -211,6 +215,13 @@ class Calendario::AppointmentTriggerRunner
     conversation = find_or_create_conversation
     return if conversation.blank?
 
+    # NUNCA tocar estado real de la conversacion en test_mode (ni asignar
+    # agente ni marcar skip_welcome_bot) -- hallazgo de Codex 2026-11-26: el
+    # proposito entero de test_mode es "nunca sale un mensaje real" (ver
+    # comentario de clase); un admin probando un disparador no deberia
+    # asignar de verdad a un agente ni exentar permanentemente una
+    # conversacion real solo por una corrida de prueba.
+
     conversation.messages.create!(
       account: account, inbox: inbox, sender: Current.user, private: true,
       message_type: :outgoing,
@@ -237,13 +248,26 @@ class Calendario::AppointmentTriggerRunner
     sections.join("\n\n").presence
   end
 
+  # Mismo criterio de seleccion que Twilio::IncomingMessageService#set_conversation
+  # -- hallazgo real de Codex 2026-11-26: un `find_by` sin order (como habia
+  # antes) puede devolver una conversacion distinta a la que Twilio reutiliza
+  # para la respuesta REAL del paciente si algun dia existe mas de una
+  # conversacion para el mismo contact_inbox (hoy, en produccion,
+  # lock_to_single_conversation=true y ningun contact_inbox tiene mas de una
+  # -- verificado -- pero el selector debe coincidir siempre, no solo hoy).
   def find_or_create_conversation
     contact_inbox = contact.contact_inboxes.find_by(inbox_id: inbox.id) || ContactInboxBuilder.new(
       contact: contact, inbox: inbox
     ).perform
     return if contact_inbox.blank?
 
-    contact_inbox.conversations.find_by(inbox_id: inbox.id) || Conversation.create!(
+    existing = if inbox.lock_to_single_conversation
+                 contact_inbox.conversations.last
+               else
+                 contact_inbox.conversations.where.not(status: :resolved).last
+               end
+
+    existing || Conversation.create!(
       account: account, inbox: inbox, contact: contact, contact_inbox: contact_inbox
     )
   end
