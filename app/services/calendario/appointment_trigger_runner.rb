@@ -104,8 +104,19 @@ class Calendario::AppointmentTriggerRunner
     end
 
     message = build_twilio_message(conversation)
+    # BUG REAL encontrado 2026-11-26: contact.phone_number no lleva el
+    # prefijo "whatsapp:" -- Twilio lo rechaza con error 21910 ("Invalid
+    # From and To pair. From and To should be of the same channel") porque
+    # el messaging_service_sid configurado es de WhatsApp. El envio con
+    # plantilla fallaba SIEMPRE (en los 8 disparadores activos), pero el
+    # registro del mensaje ya quedaba creado -- el pipeline generico de
+    # Chatwoot (Message#send_reply, disparado porque source_id seguia nil
+    # tras el fallo) lo reenviaba como texto plano con el preview roto
+    # ("Cita confirmada, 1"), que SI llegaba al paciente. conversation.contact_inbox.source_id
+    # ya trae el prefijo correcto -- mismo patron que
+    # Calendario::WelcomeBotMessaging#send_whatsapp_buttons, que nunca tuvo este bug.
     result = Twilio::SendOnTwilioService.new(message: message).send_csat_template_message(
-      phone_number: contact.phone_number, content_sid: trigger.template_params['content_sid'],
+      phone_number: conversation.contact_inbox.source_id, content_sid: trigger.template_params['content_sid'],
       content_variables: content_variables
     )
     apply_send_result(message, result)
@@ -147,7 +158,8 @@ class Calendario::AppointmentTriggerRunner
   def build_twilio_message(conversation)
     conversation.messages.build(
       account: account, inbox: inbox, message_type: :outgoing,
-      content: preview_text.presence || trigger.template_params['friendly_name'].to_s
+      content: preview_text.presence || trigger.template_params['friendly_name'].to_s,
+      content_attributes: { skip_send_reply: true }
     )
   end
 

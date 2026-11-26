@@ -47,7 +47,16 @@ class Base::SendOnChannelService
     # private notes aren't send to the channels
     # we should also avoid the case of message loops, when outgoing messages are created from channel
     # voice_call bubbles are call status indicators, not deliverable messages
-    message.private? || outgoing_message_originated_from_channel? || message.content_type == 'voice_call'
+    # skip_send_reply: el remitente ya intento la entrega el mismo (ej.
+    # Calendario::AppointmentTriggerRunner, que llama a la API de Twilio
+    # directo con content_sid+content_variables); si ese intento falla, el
+    # message queda con source_id vacio, y sin esta bandera este mismo
+    # job reintentaria enviarlo como texto plano con el "content" del
+    # mensaje -- que en ese caso es solo un preview para el staff, no el
+    # payload real (bug real 2026-11-26: asi llegaba "Cita confirmada, 1"
+    # al paciente cuando el envio con plantilla fallaba).
+    message.private? || outgoing_message_originated_from_channel? || message.content_type == 'voice_call' ||
+      message.content_attributes['skip_send_reply'].present?
   end
 
   def validate_target_channel
