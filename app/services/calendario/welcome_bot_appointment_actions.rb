@@ -24,6 +24,10 @@ class Calendario::WelcomeBotAppointmentActions
   DEFAULT_WAITLIST_KEYWORD = 'lista de espera'.freeze
   DEFAULT_RESCHEDULE_ACK_MESSAGE =
     'Hemos recibido tu solicitud de reagendamiento. Un asesor te contactará en breve para coordinar la nueva fecha.'.freeze
+  DEFAULT_CONFIRMATION_ACK_MESSAGE =
+    '¡Gracias por confirmar! Te esperamos en tu cita.'.freeze
+  DEFAULT_ALREADY_CONFIRMED_MESSAGE =
+    'Tu cita ya estaba confirmada. ¡Te esperamos!'.freeze
   DEFAULT_HANDOFF_ACK_MESSAGE =
     '¡Gracias por adelantarnos tus datos! Ya se le notificó a recepción para que continúe con tu atención. ' \
     'Si necesitas algo más, escríbenos por este mismo medio.'.freeze
@@ -77,6 +81,34 @@ class Calendario::WelcomeBotAppointmentActions
     assign_available_agent if conversation.assignee_id.blank?
     create_private_note("Cita ##{appointment.id}: el paciente solicitó reagendar vía bot de bienvenida. Reagendar manualmente.")
     send_text_question('ask' => resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_RESCHEDULE_ACK_MESSAGE))
+
+    end_session!(session)
+  end
+
+  # Botón "Confirmar" (pedido explicito del usuario 2026-11-26, pensado para
+  # los recordatorios de cita con botones -- 60min/24h/semana, fase 2). A
+  # diferencia de cancelar/reagendar, confirmar una cita YA confirmada es un
+  # no-op amigable (el paciente pudo tocar el boton dos veces, o volver a un
+  # mensaje viejo de WhatsApp) -- no vuelve a crear nota/asignar agente. Si
+  # la cita ya no esta en un estado confirmable (cancelada, atendida,
+  # no_show), se trata igual que una cita no encontrada: se transfiere a
+  # recepcion en vez de confirmar un estado inconsistente.
+  def perform_confirmation_step(session, step)
+    appointment = located_appointment(session)
+    return handoff_for_missing_appointment(session, step) if appointment.blank?
+
+    if appointment.confirmed?
+      send_text_question('ask' => resolved_text(step, 'already_confirmed_message_key', 'already_confirmed_message',
+                                                DEFAULT_ALREADY_CONFIRMED_MESSAGE))
+      return end_session!(session)
+    end
+
+    return handoff_for_missing_appointment(session, step) unless appointment.pending?
+
+    appointment.confirm!
+    assign_available_agent if conversation.assignee_id.blank?
+    create_private_note("Cita ##{appointment.id} confirmada por el paciente vía bot de bienvenida.")
+    send_text_question('ask' => resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_CONFIRMATION_ACK_MESSAGE))
 
     end_session!(session)
   end

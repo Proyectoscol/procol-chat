@@ -5,7 +5,7 @@
 # paso aplicable, o entrega la conversacion a un humano si no quedan pasos.
 #
 # Los pasos de tipo "accion" (cita existente -- lookup_appointment,
-# perform_cancellation, request_reschedule, handoff) se delegan a
+# perform_cancellation, request_reschedule, confirm_appointment, handoff) se delegan a
 # Calendario::WelcomeBotAppointmentActions, que es quien toca
 # Calendario::Appointment; este runner solo sabe el motor generico de
 # pasos/ramificacion.
@@ -155,6 +155,7 @@ class Calendario::WelcomeBotFlowRunner
     'lookup_appointment' => :handle_lookup_appointment,
     'perform_cancellation' => :perform_cancellation_step,
     'request_reschedule' => :perform_reschedule_step,
+    'confirm_appointment' => :perform_confirmation_step,
     'handoff' => :perform_handoff_step
   }.freeze
 
