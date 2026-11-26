@@ -20,23 +20,45 @@ module Calendario::WelcomeBotMessaging
   # mensaje sin guardar -> se manda por fuera -> se persiste con source_id
   # ya puesto para que SendReplyJob no lo reenvie como texto plano.
   def send_whatsapp_buttons(step)
-    message = conversation.messages.build(
-      account: account, inbox: inbox, message_type: :outgoing, content: step_body(step)
-    )
     # content_variables solo cuando el paso lo marca explicitamente
     # ('dynamic_body_variable' => true, ver Calendario::WelcomeBotAppointmentActions
-    # #lookup_confirmation_step) -- esa es la UNICA plantilla con un
-    # placeholder real ("{{1}}", la confirmacion de cita con fecha/hora
-    # via Liquid). Los demas pasos (menu, especialidad, tipo de pago,
-    # embarazo) tienen body FIJO en su plantilla -- mandarles una variable
-    # que no esperan arriesgaria que Twilio rechace el envio.
+    # #lookup_confirmation_step) -- esa es la UNICA plantilla pensada para
+    # llevar un placeholder real ("{{1}}", la confirmacion de cita con
+    # fecha/hora via Liquid). Los demas pasos (menu, especialidad, tipo de
+    # pago, embarazo) tienen body FIJO en su plantilla -- mandarles una
+    # variable que no esperan arriesgaria que Twilio rechace el envio.
     content_variables = step['dynamic_body_variable'] ? { '1' => step['ask'] } : {}
+    message = conversation.messages.build(
+      account: account, inbox: inbox, message_type: :outgoing,
+      content: rendered_whatsapp_body(step, content_variables)
+    )
     result = Twilio::SendOnTwilioService.new(message: message).send_csat_template_message(
       phone_number: conversation.contact_inbox.source_id, content_sid: step['content_sid'],
       content_variables: content_variables
     )
     message.source_id = result[:message_id] if result[:success] && result[:message_id].present?
     message.save!
+  end
+
+  # Bug real en produccion 2026-11-26 (conversacion #323): el mensaje que se
+  # veia en Chatwoot (la pregunta completa con fecha/hora de la cita) NUNCA
+  # llego a WhatsApp -- la plantilla aprobada de ese content_sid tiene body
+  # FIJO ("Por favor selecciona una opcion:"), sin ningun "{{1}}" real donde
+  # inyectar la pregunta dinamica, asi que Twilio simplemente ignoraba
+  # content_variables y mandaba el texto generico. Guardar `step_body(step)`
+  # a ciegas en Chatwoot le mostraba al staff una conversacion que no
+  # reflejaba lo que el paciente de verdad recibio -- imposible validar nada
+  # asi. Ahora se resuelve el body REAL de la plantilla aprobada (con las
+  # variables ya sustituidas) y eso es lo unico que se guarda como contenido
+  # del mensaje; si la plantilla no tiene placeholder para una variable,
+  # Chatwoot muestra el mismo texto fijo que de verdad llego, nunca una
+  # version inventada mas completa.
+  def rendered_whatsapp_body(step, content_variables)
+    template = inbox.channel.content_templates['templates']&.find { |t| t['content_sid'] == step['content_sid'] }
+    body = template&.dig('body').presence
+    return step_body(step) if body.blank?
+
+    content_variables.reduce(body) { |text, (key, value)| text.gsub("{{#{key}}}", value.to_s) }
   end
 
   # Paso de texto libre -- mensaje real normal, el pipeline estandar

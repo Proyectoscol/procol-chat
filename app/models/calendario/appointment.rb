@@ -84,7 +84,12 @@ class Calendario::Appointment < ApplicationRecord
   validate :control_requires_prior_history, if: -> { service.present? && service.control? }
 
   scope :for_day, ->(date) { where(starts_at: date.all_day) }
-  scope :upcoming, -> { where('starts_at >= ?', Time.current) }
+  # Bug real en produccion 2026-11-26 (conversacion de prueba #323): una cita
+  # CANCELADA pero con fecha futura seguia apareciendo como "cita existente"
+  # en el bot (Calendario::WelcomeBotAppointmentActions#handle_lookup_appointment)
+  # -- se le ofrecia Reagendar/Cancelar sobre una cita que ya no existe de
+  # verdad. "Proxima" nunca deberia incluir un estado que ya no va a pasar.
+  scope :upcoming, -> { where('starts_at >= ?', Time.current).where.not(status: :cancelled) }
 
   after_create :log_creation
   after_create :run_on_create_triggers
