@@ -83,6 +83,12 @@ class Conversation < ApplicationRecord
   scope :assigned, -> { where.not(assignee_id: nil) }
   scope :assigned_to, ->(agent) { where(assignee_id: agent.id) }
   scope :unattended, -> { where(first_reply_created_at: nil).or(where.not(waiting_since: nil)) }
+  scope :unread, lambda {
+    joins(:messages)
+      .merge(Message.unscoped.incoming.where(private: false))
+      .where('messages.created_at > COALESCE(conversations.agent_last_seen_at, conversations.created_at)')
+      .distinct
+  }
   scope :resolvable_not_waiting, lambda { |auto_resolve_after|
     return none if auto_resolve_after.to_i.zero?
 

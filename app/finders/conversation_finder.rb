@@ -40,7 +40,7 @@ class ConversationFinder
   def perform
     set_up
 
-    mine_count, unassigned_count, all_count, = set_count_for_all_conversations
+    mine_count, unassigned_count, all_count, unread_count = set_count_for_all_conversations
     assigned_count = all_count - unassigned_count
 
     filter_by_assignee_type
@@ -51,7 +51,8 @@ class ConversationFinder
         mine_count: mine_count,
         assigned_count: assigned_count,
         unassigned_count: unassigned_count,
-        all_count: all_count
+        all_count: all_count,
+        unread_count: unread_count
       }
     }
   end
@@ -59,7 +60,7 @@ class ConversationFinder
   def perform_meta_only
     set_up
 
-    mine_count, unassigned_count, all_count, = set_count_for_all_conversations
+    mine_count, unassigned_count, all_count, unread_count = set_count_for_all_conversations
     assigned_count = all_count - unassigned_count
 
     {
@@ -67,7 +68,8 @@ class ConversationFinder
         mine_count: mine_count,
         assigned_count: assigned_count,
         unassigned_count: unassigned_count,
-        all_count: all_count
+        all_count: all_count,
+        unread_count: unread_count
       }
     }
   end
@@ -131,6 +133,9 @@ class ConversationFinder
       @conversations = @conversations.unassigned
     when 'assigned'
       @conversations = @conversations.assigned
+    when 'unread'
+      @conversations = @conversations.unread
+      @conversations = @conversations.assigned_to(current_user) unless @is_admin
     end
     @conversations
   end
@@ -184,10 +189,12 @@ class ConversationFinder
   end
 
   def set_count_for_all_conversations
+    unread_conversations = @is_admin ? @conversations.unread : @conversations.unread.assigned_to(current_user)
     [
       @conversations.assigned_to(current_user).count,
       @conversations.unassigned.count,
-      @conversations.count
+      @conversations.count,
+      unread_conversations.count
     ]
   end
 

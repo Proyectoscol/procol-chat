@@ -104,6 +104,13 @@ const getters = {
       return isUnAssigned && shouldFilter;
     });
   },
+  getUnreadChats: _state => activeFilters => {
+    return _state.allConversations.filter(conversation => {
+      const isUnread = (conversation.unread_count || 0) > 0;
+      const shouldFilter = applyPageFilters(conversation, activeFilters);
+      return isUnread && shouldFilter;
+    });
+  },
   getParticipatingChats: (_state, _, __, rootGetters) => activeFilters => {
     const currentUserId = rootGetters.getCurrentUser?.id;
     const getWatchers = rootGetters['conversationWatchers/getByConversationId'];

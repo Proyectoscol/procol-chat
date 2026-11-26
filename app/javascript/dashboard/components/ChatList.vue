@@ -95,6 +95,7 @@ const chatLists = useMapGetter('getFilteredConversations');
 const mineChatsList = useMapGetter('getMineChats');
 const allChatList = useMapGetter('getAllStatusChats');
 const unAssignedChatsList = useMapGetter('getUnAssignedChats');
+const unreadChatsList = useMapGetter('getUnreadChats');
 const participatingChatsList = useMapGetter('getParticipatingChats');
 const chatListLoading = useMapGetter('getChatListLoadingStatus');
 const activeInbox = useMapGetter('getSelectedInbox');
@@ -219,8 +220,8 @@ const conversationCustomAttributes = useFunctionGetter(
 const activeAssigneeTabCount = computed(() => {
   const count = assigneeTabItems.value.find(
     item => item.key === activeAssigneeTab.value
-  ).count;
-  return count;
+  )?.count;
+  return count ?? 0;
 });
 
 const conversationListPagination = computed(() => {
@@ -302,6 +303,9 @@ function filterByAssigneeTab(conversations) {
   if (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.UNASSIGNED) {
     return conversations.filter(c => !c.meta?.assignee);
   }
+  if (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.UNREAD) {
+    return conversations.filter(c => (c.unread_count || 0) > 0);
+  }
   return [...conversations];
 }
 
@@ -320,6 +324,8 @@ const conversationList = computed(() => {
       localConversationList = [...mineChatsList.value(filters)];
     } else if (activeAssigneeTab.value === 'unassigned') {
       localConversationList = [...unAssignedChatsList.value(filters)];
+    } else if (activeAssigneeTab.value === 'unread') {
+      localConversationList = [...unreadChatsList.value(filters)];
     } else {
       localConversationList = [...allChatList.value(filters)];
     }
