@@ -13,12 +13,17 @@
 # crea una nota privada en la conversacion con el texto que se habria
 # enviado. Nunca sale un mensaje real mientras test_mode este activo.
 class Calendario::AppointmentTriggerRunner
-  pattr_initialize [:trigger!, :appointment!]
+  # defer_attempt: cuantas veces ya se aplazo este mismo envio por choque de
+  # sesion de bot activa (ver Calendario::AppointmentReminderBotSession) --
+  # 0 en el primer intento, lo incrementa AppointmentTriggerReminderJob cada
+  # vez que se reencola.
+  pattr_initialize [:trigger!, :appointment!, { defer_attempt: 0 }]
 
   def perform
     return :already_fired if already_fired?
     return :inactive unless trigger.active? && appointment_still_applies?
     return :no_phone if appointment.contact.phone_number.blank?
+    return :deferred if deferred_for_session_conflict?
 
     trigger.test_mode? ? create_private_note : send_template_message
     record_firing!
@@ -26,6 +31,10 @@ class Calendario::AppointmentTriggerRunner
   end
 
   private
+
+  def deferred_for_session_conflict?
+    !trigger.test_mode? && bot_session.defer?(find_or_create_conversation)
+  end
 
   delegate :inbox, to: :trigger
   delegate :channel, to: :inbox
@@ -50,6 +59,12 @@ class Calendario::AppointmentTriggerRunner
     return appointment.status == trigger.target_status if trigger.on_status_change?
 
     true
+  end
+
+  def bot_session
+    @bot_session ||= Calendario::AppointmentReminderBotSession.new(
+      trigger: trigger, appointment: appointment, defer_attempt: defer_attempt
+    )
   end
 
   # IMPORTANTE: el send real (Meta) usa trigger.template_params crudo, nunca
@@ -102,6 +117,8 @@ class Calendario::AppointmentTriggerRunner
       warn_incomplete_variable_mapping(conversation, content_variables)
       return
     end
+
+    bot_session.start!(conversation)
 
     message = build_twilio_message(conversation)
     # BUG REAL encontrado 2026-11-26: contact.phone_number no lleva el
