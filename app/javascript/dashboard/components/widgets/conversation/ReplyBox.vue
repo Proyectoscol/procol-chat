@@ -169,6 +169,16 @@ export default {
     showContentTemplates() {
       return this.isATwilioWhatsAppChannel && !this.isPrivate;
     },
+    // Acceso directo pedido por el usuario 2026-11-26: cuando la ventana de
+    // 24h de WhatsApp ya cerro (ej. paciente escribio un sabado en la
+    // noche y recepcion retoma hasta el lunes/martes, o el lunes siguiente
+    // es festivo), el editor queda bloqueado y la UNICA forma de reabrir la
+    // conversacion es una plantilla -- buscarla a mano en el picker es
+    // tedioso para el agente. Este boton manda directo la plantilla
+    // "aaa_abrir_conversacion_v1" (ver Calendario, sin variables, UTILITY).
+    showOpenConversationShortcut() {
+      return this.showContentTemplates && this.isEditorDisabled;
+    },
     isPrivate() {
       if (
         this.currentChat.can_reply ||
@@ -916,6 +926,29 @@ export default {
       });
       this.hideContentTemplatesModal();
     },
+    sendOpenConversationTemplate() {
+      const templates = this.inbox?.content_templates?.templates || [];
+      const template = templates.find(
+        t =>
+          t.friendly_name === 'aaa_abrir_conversacion_v1' &&
+          t.status === 'approved'
+      );
+      if (!template) {
+        useAlert(
+          'No se encontró la plantilla "aaa_abrir_conversacion_v1" aprobada -- refresca las plantillas o revisa si ya fue aprobada por Meta.'
+        );
+        return;
+      }
+      this.sendMessage({
+        conversationId: this.currentChat.id,
+        message: template.body,
+        templateParams: {
+          name: template.friendly_name,
+          language: template.language,
+          processed_params: {},
+        },
+      });
+    },
     setReplyMode(mode = REPLY_EDITOR_MODES.REPLY) {
       // Clear attachments when switching between private note and reply modes
       // This is to prevent from breaking the upload rules
@@ -1391,6 +1424,7 @@ export default {
         :enable-multiple-file-upload="enableMultipleFileUpload"
         :enable-whats-app-templates="showWhatsappTemplates"
         :enable-content-templates="showContentTemplates"
+        :enable-open-conversation-shortcut="showOpenConversationShortcut"
         :inbox="inbox"
         :is-on-private-note="isOnPrivateNote"
         :is-recording-audio="isRecordingAudio"
@@ -1416,6 +1450,7 @@ export default {
         :new-conversation-modal-active="newConversationModalActive"
         @select-whatsapp-template="openWhatsappTemplateModal"
         @select-content-template="openContentTemplateModal"
+        @send-open-conversation-template="sendOpenConversationTemplate"
         @toggle-insert-article="toggleInsertArticle"
         @toggle-quoted-reply="toggleQuotedReply"
       />

@@ -92,6 +92,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    enableOpenConversationShortcut: {
+      type: Boolean,
+      default: false,
+    },
     conversationId: {
       type: Number,
       required: true,
@@ -130,6 +134,7 @@ export default {
     'toggleInsertArticle',
     'selectWhatsappTemplate',
     'selectContentTemplate',
+    'sendOpenConversationTemplate',
     'toggleQuotedReply',
   ],
   setup(props) {
@@ -366,6 +371,15 @@ export default {
         faded
         sm
         @click="$emit('selectContentTemplate')"
+      />
+      <NextButton
+        v-if="enableOpenConversationShortcut"
+        v-tooltip.top-end="'Enviar saludo para abrir conversación'"
+        icon="i-ph-hand-waving"
+        slate
+        faded
+        sm
+        @click="$emit('sendOpenConversationTemplate')"
       />
       <VideoCallButton
         v-if="
