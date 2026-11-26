@@ -23,4 +23,13 @@ class ContactDrop < BaseDrop
     custom_attributes = @obj.try(:custom_attributes) || {}
     custom_attributes.transform_keys(&:to_s)
   end
+
+  # Entidad/EPS del paciente -- Contact#payer solo existe cuando el modulo
+  # Calendario esta presente (belongs_to :payer, optional: true), por eso
+  # el guard con respond_to? en vez de asumirlo en cualquier cuenta.
+  def payer_name
+    return '' unless @obj.respond_to?(:payer)
+
+    @obj.payer&.name.to_s
+  end
 end
