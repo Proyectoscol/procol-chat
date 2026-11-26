@@ -10,14 +10,16 @@ import countries from 'shared/constants/countries.js';
 import { isPhoneNumberValid } from 'shared/helpers/Validators';
 import parsePhoneNumber from 'libphonenumber-js';
 import NextButton from 'dashboard/components-next/button/Button.vue';
-import Avatar from 'next/avatar/Avatar.vue';
 import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
 import calendarioPayersAPI from 'dashboard/api/calendarioPayers';
+
+// Colombia por defecto -- la inmensa mayoria de los pacientes son de aqui,
+// y asi el selector de pais no queda vacio al crear un contacto nuevo.
+const DEFAULT_COUNTRY = { id: 'CO', name: 'Colombia' };
 
 export default {
   components: {
     NextButton,
-    Avatar,
     ComboBox,
   },
   props: {
@@ -41,55 +43,35 @@ export default {
   data() {
     return {
       countries: countries,
-      companyName: '',
-      description: '',
       email: '',
       name: '',
       phoneNumber: '',
       activeDialCode: '',
-      // Documento, telefono secundario y EPS son datos del paciente (no de
-      // la cita) -- se editan aqui, en el formulario general de contacto,
-      // para que sean consistentes sin importar desde donde se editen.
+      // Documento, telefono secundario, fecha/lugar de nacimiento y EPS son
+      // datos del paciente (no de la cita) -- se editan aqui, en el
+      // formulario general de contacto, para que sean consistentes sin
+      // importar desde donde se editen.
       documentType: 'cc',
       identifier: '',
       secondaryPhoneNumber: '',
+      dateOfBirth: '',
       payerId: '',
       payers: [],
-      avatarFile: null,
-      avatarUrl: '',
       country: {
-        id: '',
-        name: '',
+        id: DEFAULT_COUNTRY.id,
+        name: DEFAULT_COUNTRY.name,
       },
       city: '',
-      socialProfileUserNames: {
-        facebook: '',
-        twitter: '',
-        linkedin: '',
-        github: '',
-        telegram: '',
-      },
-      socialProfileKeys: [
-        { key: 'facebook', prefixURL: 'https://facebook.com/' },
-        { key: 'twitter', prefixURL: 'https://twitter.com/' },
-        { key: 'linkedin', prefixURL: 'https://linkedin.com/' },
-        { key: 'github', prefixURL: 'https://github.com/' },
-        { key: 'telegram', prefixURL: 'https://t.me/' },
-        { key: 'tiktok', prefixURL: 'https://tiktok.com/@' },
-      ],
     };
   },
   validations: {
     name: {
       required,
     },
-    description: {},
     email: {
       email,
     },
-    companyName: {},
     phoneNumber: {},
-    bio: {},
   },
   computed: {
     documentTypeOptions() {
@@ -208,6 +190,8 @@ export default {
         name,
       } = this.contact;
       const additionalAttributes = this.contact.additional_attributes || {};
+      const customAttributes = this.contact.custom_attributes || {};
+      const isNewContact = !this.contact.id;
 
       this.name = name || '';
       this.email = emailAddress || '';
@@ -215,31 +199,17 @@ export default {
       this.documentType = this.contact.document_type || 'cc';
       this.identifier = this.contact.identifier || '';
       this.secondaryPhoneNumber = this.contact.secondary_phone_number || '';
+      this.dateOfBirth = customAttributes.date_of_birth || '';
       this.payerId = this.contact.payer_id || '';
-      this.companyName = additionalAttributes.company_name || '';
-      this.country = {
-        id: additionalAttributes.country_code || '',
-        name:
-          additionalAttributes.country ||
-          this.$t('CONTACT_FORM.FORM.COUNTRY.SELECT_COUNTRY'),
-      };
+      this.country = isNewContact
+        ? { id: DEFAULT_COUNTRY.id, name: DEFAULT_COUNTRY.name }
+        : {
+            id: additionalAttributes.country_code || '',
+            name:
+              additionalAttributes.country ||
+              this.$t('CONTACT_FORM.FORM.COUNTRY.SELECT_COUNTRY'),
+          };
       this.city = additionalAttributes.city || '';
-      this.description = additionalAttributes.description || '';
-      this.avatarUrl = this.contact.thumbnail || '';
-      const {
-        social_profiles: socialProfiles = {},
-        screen_name: twitterScreenName,
-        social_telegram_user_name: telegramUserName,
-      } = additionalAttributes;
-      this.socialProfileUserNames = {
-        twitter: socialProfiles.twitter || twitterScreenName || '',
-        facebook: socialProfiles.facebook || '',
-        linkedin: socialProfiles.linkedin || '',
-        github: socialProfiles.github || '',
-        telegram: socialProfiles.telegram || telegramUserName || '',
-        instagram: socialProfiles.instagram || '',
-        tiktok: socialProfiles.tiktok || '',
-      };
     },
     getContactObject() {
       if (this.country === null) {
@@ -257,10 +227,12 @@ export default {
         identifier: this.identifier,
         secondary_phone_number: this.secondaryPhoneNumber,
         payer_id: this.payerId || null,
+        custom_attributes: {
+          ...this.contact.custom_attributes,
+          date_of_birth: this.dateOfBirth,
+        },
         additional_attributes: {
           ...this.contact.additional_attributes,
-          description: this.description,
-          company_name: this.companyName,
           country_code: this.country.id,
           country:
             this.country.name ===
@@ -268,13 +240,8 @@ export default {
               ? ''
               : this.country.name,
           city: this.city,
-          social_profiles: this.socialProfileUserNames,
         },
       };
-      if (this.avatarFile) {
-        contactObject.avatar = this.avatarFile;
-        contactObject.isFormData = true;
-      }
       return contactObject;
     },
     setPhoneCode(code) {
@@ -316,27 +283,6 @@ export default {
         }
       }
     },
-    handleImageUpload({ file, url }) {
-      this.avatarFile = file;
-      this.avatarUrl = url;
-    },
-    async handleAvatarDelete() {
-      try {
-        if (this.contact && this.contact.id) {
-          await this.$store.dispatch('contacts/deleteAvatar', this.contact.id);
-          useAlert(this.$t('CONTACT_FORM.DELETE_AVATAR.API.SUCCESS_MESSAGE'));
-        }
-        this.avatarFile = null;
-        this.avatarUrl = '';
-        this.activeDialCode = '';
-      } catch (error) {
-        useAlert(
-          error.message
-            ? error.message
-            : this.$t('CONTACT_FORM.DELETE_AVATAR.API.ERROR_MESSAGE')
-        );
-      }
-    },
   },
 };
 </script>
@@ -346,20 +292,6 @@ export default {
     class="w-full px-8 pt-6 pb-8 contact--form"
     @submit.prevent="handleSubmit"
   >
-    <div class="flex flex-col mb-4 items-start gap-1 w-full">
-      <label class="mb-0.5 text-sm font-medium text-n-slate-12">
-        {{ $t('CONTACT_FORM.FORM.AVATAR.LABEL') }}
-      </label>
-      <Avatar
-        :src="avatarUrl"
-        :size="72"
-        :name="contact.name"
-        allow-upload
-        rounded-full
-        @upload="handleImageUpload"
-        @delete="handleAvatarDelete"
-      />
-    </div>
     <div>
       <div class="w-full">
         <label :class="{ error: v$.name.$error }">
@@ -385,17 +317,6 @@ export default {
           </span>
         </label>
       </div>
-    </div>
-    <div class="w-full">
-      <label :class="{ error: v$.description.$error }">
-        {{ $t('CONTACT_FORM.FORM.BIO.LABEL') }}
-        <textarea
-          v-model="description"
-          type="text"
-          :placeholder="$t('CONTACT_FORM.FORM.BIO.PLACEHOLDER')"
-          @input="v$.description.$touch"
-        />
-      </label>
     </div>
     <div>
       <div class="w-full">
@@ -468,11 +389,17 @@ export default {
         </option>
       </select>
     </div>
+    <div class="w-full mb-4">
+      <label>
+        {{ $t('CONTACT_FORM.FORM.BIRTH_DATE.LABEL') }}
+        <input v-model="dateOfBirth" type="date" class="reset-base !mb-0" />
+      </label>
+    </div>
     <woot-input
-      v-model="companyName"
+      v-model="city"
       class="w-full"
-      :label="$t('CONTACT_FORM.FORM.COMPANY_NAME.LABEL')"
-      :placeholder="$t('CONTACT_FORM.FORM.COMPANY_NAME.PLACEHOLDER')"
+      :label="$t('CONTACT_FORM.FORM.CITY.LABEL')"
+      :placeholder="$t('CONTACT_FORM.FORM.CITY.PLACEHOLDER')"
     />
     <div class="w-full mb-4">
       <label>
@@ -491,32 +418,6 @@ export default {
         :search-placeholder="$t('CONTACT_FORM.FORM.COUNTRY.SELECT_PLACEHOLDER')"
         @update:model-value="onCountryChange"
       />
-    </div>
-    <woot-input
-      v-model="city"
-      class="w-full"
-      :label="$t('CONTACT_FORM.FORM.CITY.LABEL')"
-      :placeholder="$t('CONTACT_FORM.FORM.CITY.PLACEHOLDER')"
-    />
-
-    <div class="w-full">
-      <label>{{ $t('CONTACTS_PAGE.LIST.TABLE_HEADER.SOCIAL_PROFILES') }}</label>
-      <div
-        v-for="socialProfile in socialProfileKeys"
-        :key="socialProfile.key"
-        class="flex items-stretch w-full mb-4"
-      >
-        <span
-          class="flex items-center h-10 px-2 text-sm border-solid border-y ltr:border-l rtl:border-r ltr:rounded-l-md rtl:rounded-r-md bg-n-solid-3 text-n-slate-11 border-n-weak"
-        >
-          {{ socialProfile.prefixURL }}
-        </span>
-        <input
-          v-model="socialProfileUserNames[socialProfile.key]"
-          class="input-group-field ltr:!rounded-l-none rtl:!rounded-r-none !mb-0"
-          type="text"
-        />
-      </div>
     </div>
     <div class="flex flex-row justify-start w-full gap-2 px-0 py-2">
       <NextButton

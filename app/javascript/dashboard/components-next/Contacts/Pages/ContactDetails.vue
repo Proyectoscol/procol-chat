@@ -69,8 +69,11 @@ const handleFormUpdate = updatedData => {
 
 const updateContact = async () => {
   try {
-    const { customAttributes, ...basicContactData } = contactData.value;
-    await store.dispatch('contacts/update', basicContactData);
+    // El backend fusiona custom_attributes (nunca reemplaza el blob
+    // completo), asi que es seguro reenviarlo -- antes se descartaba aqui,
+    // lo que silenciosamente perdia ediciones a atributos personalizados
+    // hechas desde este mismo formulario (ej. fecha de nacimiento).
+    await store.dispatch('contacts/update', contactData.value);
     await store.dispatch(
       'contacts/fetchContactableInbox',
       props.selectedContact.id

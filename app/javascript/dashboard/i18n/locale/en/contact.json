@@ -1,14 +1,9 @@
 {
   "CONTACT_PANEL": {
     "NOT_AVAILABLE": "Not Available",
-    "EMAIL_ADDRESS": "Email Address",
-    "PHONE_NUMBER": "Phone number",
-    "IDENTIFIER": "Identifier",
-    "PAYER": "Insurer / EPS",
+    "AGE_YEARS": "{count} year old | {count} years old",
     "NEW_APPOINTMENT": "Book appointment",
     "COPY_SUCCESSFUL": "Copied to clipboard successfully",
-    "COMPANY": "Company",
-    "LOCATION": "Location",
     "BROWSER_LANGUAGE": "Browser Language",
     "CONVERSATION_TITLE": "Conversation Details",
     "VIEW_PROFILE": "View Profile",
@@ -87,16 +82,12 @@
     "FORM": {
       "SUBMIT": "Submit",
       "CANCEL": "Cancel",
-      "AVATAR": {
-        "LABEL": "Contact Avatar"
-      },
       "NAME": {
         "PLACEHOLDER": "Enter the full name of the contact",
         "LABEL": "Full Name"
       },
-      "BIO": {
-        "PLACEHOLDER": "Enter the bio of the contact",
-        "LABEL": "Bio"
+      "BIRTH_DATE": {
+        "LABEL": "Date of birth"
       },
       "EMAIL_ADDRESS": {
         "PLACEHOLDER": "Enter the email address of the contact",
@@ -131,10 +122,6 @@
         "PLACEHOLDER": "Enter the location of the contact",
         "LABEL": "Location"
       },
-      "COMPANY_NAME": {
-        "PLACEHOLDER": "Enter the company name",
-        "LABEL": "Company Name"
-      },
       "COUNTRY": {
         "PLACEHOLDER": "Enter the country name",
         "LABEL": "Country Name",
@@ -143,32 +130,8 @@
         "SELECT_COUNTRY": "Select Country"
       },
       "CITY": {
-        "PLACEHOLDER": "Enter the city name",
-        "LABEL": "City Name"
-      },
-      "SOCIAL_PROFILES": {
-        "FACEBOOK": {
-          "PLACEHOLDER": "Enter the Facebook username",
-          "LABEL": "Facebook"
-        },
-        "TWITTER": {
-          "PLACEHOLDER": "Enter the Twitter username",
-          "LABEL": "Twitter"
-        },
-        "LINKEDIN": {
-          "PLACEHOLDER": "Enter the LinkedIn username",
-          "LABEL": "LinkedIn"
-        },
-        "GITHUB": {
-          "PLACEHOLDER": "Enter the Github username",
-          "LABEL": "Github"
-        }
-      }
-    },
-    "DELETE_AVATAR": {
-      "API": {
-        "SUCCESS_MESSAGE": "Contact avatar deleted successfully",
-        "ERROR_MESSAGE": "Could not delete the contact avatar. Please try again later."
+        "PLACEHOLDER": "Birth city",
+        "LABEL": "Birth city"
       }
     },
     "SUCCESS_MESSAGE": "Contact saved successfully",
@@ -457,16 +420,19 @@
             "DUPLICATE": "This phone number is in use for another contact."
           },
           "CITY": {
-            "PLACEHOLDER": "Enter the city name"
+            "PLACEHOLDER": "Birth city"
           },
           "COUNTRY": {
             "PLACEHOLDER": "Select country"
           },
-          "BIO": {
-            "PLACEHOLDER": "Enter the bio"
+          "SECONDARY_PHONE_NUMBER": {
+            "PLACEHOLDER": "Secondary phone number"
           },
-          "COMPANY_NAME": {
-            "PLACEHOLDER": "Enter the company name"
+          "BIRTH_DATE": {
+            "PLACEHOLDER": "Date of birth"
+          },
+          "PAYER": {
+            "PLACEHOLDER": "Payer / EPS"
           }
         },
         "UPDATE_BUTTON": "Update contact",

@@ -1,14 +1,9 @@
 {
   "CONTACT_PANEL": {
     "NOT_AVAILABLE": "No Disponible",
-    "EMAIL_ADDRESS": "Dirección de correo",
-    "PHONE_NUMBER": "Número de teléfono",
-    "IDENTIFIER": "Idenrificador",
-    "PAYER": "Entidad / EPS",
+    "AGE_YEARS": "{count} año | {count} años",
     "NEW_APPOINTMENT": "Agendar cita",
     "COPY_SUCCESSFUL": "Copiado al portapapeles satisfactoriamente",
-    "COMPANY": "Empresa",
-    "LOCATION": "Ubicación",
     "BROWSER_LANGUAGE": "Idioma del navegador",
     "CONVERSATION_TITLE": "Detalles de la conversación",
     "VIEW_PROFILE": "Ver Perfil",
@@ -85,16 +80,12 @@
     "FORM": {
       "SUBMIT": "Enviar",
       "CANCEL": "Cancelar",
-      "AVATAR": {
-        "LABEL": "Avatar"
-      },
       "NAME": {
         "PLACEHOLDER": "Escriba el nombre completo del contacto",
         "LABEL": "Nombre completo"
       },
-      "BIO": {
-        "PLACEHOLDER": "Escriba la bio del contacto",
-        "LABEL": "Biografía"
+      "BIRTH_DATE": {
+        "LABEL": "Fecha de nacimiento"
       },
       "EMAIL_ADDRESS": {
         "PLACEHOLDER": "Escriba la dirección email del contacto",
@@ -129,10 +120,6 @@
         "PLACEHOLDER": "Escriba la ubicación del contacto",
         "LABEL": "Ubicación"
       },
-      "COMPANY_NAME": {
-        "PLACEHOLDER": "Escriba el nombre de la empresa",
-        "LABEL": "Empresa"
-      },
       "COUNTRY": {
         "PLACEHOLDER": "Introduzca el nombre del país",
         "LABEL": "Nombre del país",
@@ -141,32 +128,8 @@
         "SELECT_COUNTRY": "Seleccionar país"
       },
       "CITY": {
-        "PLACEHOLDER": "Introduzca el nombre de la ciudad",
-        "LABEL": "Nombre de ciudad"
-      },
-      "SOCIAL_PROFILES": {
-        "FACEBOOK": {
-          "PLACEHOLDER": "Escriba el usuario de Facebook",
-          "LABEL": "Facebook"
-        },
-        "TWITTER": {
-          "PLACEHOLDER": "Escriba el usuario de Twitter",
-          "LABEL": "Twitter"
-        },
-        "LINKEDIN": {
-          "PLACEHOLDER": "Escriba el usuario de LinkedIn",
-          "LABEL": "LinkedIn"
-        },
-        "GITHUB": {
-          "PLACEHOLDER": "Escriba el usuario de Github",
-          "LABEL": "Github"
-        }
-      }
-    },
-    "DELETE_AVATAR": {
-      "API": {
-        "SUCCESS_MESSAGE": "Avatar de contacto eliminado correctamente",
-        "ERROR_MESSAGE": "No se pudo eliminar el avatar de contacto. Por favor, inténtelo de nuevo más tarde."
+        "PLACEHOLDER": "Ciudad de nacimiento",
+        "LABEL": "Ciudad de nacimiento"
       }
     },
     "SUCCESS_MESSAGE": "Contacto guardado correctamente",
@@ -439,6 +402,12 @@
           "LAST_NAME": {
             "PLACEHOLDER": "Ingrese el apellido"
           },
+          "DOCUMENT_TYPE": {
+            "PLACEHOLDER": "Tipo de documento"
+          },
+          "IDENTIFIER": {
+            "PLACEHOLDER": "Número de documento"
+          },
           "EMAIL_ADDRESS": {
             "PLACEHOLDER": "Ingrese el correo electrónico",
             "DUPLICATE": "Ésta dirección de correo está siendo utilizada por otro contacto."
@@ -448,16 +417,19 @@
             "DUPLICATE": "Este número de teléfono está en uso para otro contacto."
           },
           "CITY": {
-            "PLACEHOLDER": "Introduzca el nombre de la ciudad"
+            "PLACEHOLDER": "Ciudad de nacimiento"
           },
           "COUNTRY": {
             "PLACEHOLDER": "Seleccione el país"
           },
-          "BIO": {
-            "PLACEHOLDER": "Ingrese la biografía"
+          "SECONDARY_PHONE_NUMBER": {
+            "PLACEHOLDER": "Teléfono secundario"
           },
-          "COMPANY_NAME": {
-            "PLACEHOLDER": "Escriba el nombre de la empresa"
+          "BIRTH_DATE": {
+            "PLACEHOLDER": "Fecha de nacimiento"
+          },
+          "PAYER": {
+            "PLACEHOLDER": "Entidad / EPS"
           }
         },
         "UPDATE_BUTTON": "Actualizar contacto",

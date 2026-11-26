@@ -1,14 +1,15 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
-import Input from 'dashboard/components-next/input/Input.vue';
+import ContactsForm from 'dashboard/components-next/Contacts/ContactsForm/ContactsForm.vue';
 import calendarioWaitlistEntriesAPI from 'dashboard/api/calendarioWaitlistEntries';
 import { classifyContactQuery } from '../helpers/classifyContactQuery';
+import { splitName } from '@chatwoot/utils';
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -170,49 +171,31 @@ let searchTimeout = null;
 // si la busqueda no encuentra al contacto, se puede crear uno nuevo sin
 // salir del modal. Pedido explicito del usuario: paridad entre ambos flujos.
 const showCreateContactForm = ref(false);
-const newContact = ref({
-  name: '',
-  phoneNumber: '',
-  identifier: '',
-  documentType: 'cc',
-});
+const createContactFormRef = ref(null);
+const newContact = ref(null);
 const isCreatingContact = ref(false);
-
-const documentTypeOptions = computed(() => [
-  { value: 'cc', label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.CC') },
-  { value: 'ti', label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.TI') },
-  { value: 'ce', label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.CE') },
-  { value: 'pa', label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.PA') },
-  { value: 'rc', label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.RC') },
-  {
-    value: 'pep',
-    label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.PEP'),
-  },
-  {
-    value: 'ppt',
-    label: t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPES.PPT'),
-  },
-]);
 
 const openCreateContactForm = () => {
   const classified = classifyContactQuery(contactQuery.value);
-  newContact.value = {
-    name: classified.name || '',
-    phoneNumber: classified.phoneNumber || '',
-    identifier: classified.identifier || '',
-    documentType: 'cc',
-  };
+  newContact.value = null;
   showCreateContactForm.value = true;
+  nextTick(() => {
+    const formState = createContactFormRef.value?.state;
+    if (!formState) return;
+    // ContactsForm separa nombre/apellido internamente (`state.name` es
+    // derivado, no editable directo) -- hay que precargar ambos para que
+    // el nombre detectado en la busqueda se vea reflejado en los inputs.
+    const { firstName, lastName } = splitName(classified.name || '');
+    formState.firstName = firstName;
+    formState.lastName = lastName;
+    formState.name = classified.name || '';
+    formState.phoneNumber = classified.phoneNumber || '';
+    formState.identifier = classified.identifier || '';
+  });
 };
 
-// El documento no es obligatorio si ya se tiene el telefono -- hay casos
-// donde solo se conoce el numero y se solicita el resto despues por
-// WhatsApp (mismo criterio que el backend en ContactsController#create).
 const isNewContactInvalid = computed(
-  () =>
-    !newContact.value.name.trim() ||
-    (!newContact.value.identifier.trim() &&
-      !newContact.value.phoneNumber.trim())
+  () => !newContact.value || createContactFormRef.value?.isFormInvalid
 );
 
 const serviceOptions = computed(() => [
@@ -286,6 +269,7 @@ const selectContact = contact => {
 };
 
 const createContactInline = async () => {
+  if (!newContact.value) return;
   isCreatingContact.value = true;
   try {
     const contact = await store.dispatch('contacts/create', newContact.value);
@@ -613,29 +597,10 @@ defineExpose({ fetchEntries });
           <p class="text-xs text-n-slate-11">
             {{ t('CALENDARIO.APPOINTMENTS.FORM.CREATE_CONTACT_TITLE') }}
           </p>
-          <Input
-            v-model="newContact.name"
-            :label="t('CALENDARIO.APPOINTMENTS.FORM.NEW_CONTACT_NAME')"
-          />
-          <div class="flex gap-2">
-            <div class="flex flex-col gap-1 w-1/3">
-              <label class="text-xs text-n-slate-11">{{
-                t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPE_LABEL')
-              }}</label>
-              <Select
-                v-model="newContact.documentType"
-                :options="documentTypeOptions"
-              />
-            </div>
-            <Input
-              v-model="newContact.identifier"
-              class="flex-1"
-              :label="t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_NUMBER_LABEL')"
-            />
-          </div>
-          <Input
-            v-model="newContact.phoneNumber"
-            :label="t('CALENDARIO.APPOINTMENTS.FORM.NEW_CONTACT_PHONE')"
+          <ContactsForm
+            ref="createContactFormRef"
+            is-new-contact
+            @update="value => (newContact = value)"
           />
           <div class="flex items-center justify-end gap-2">
             <Button

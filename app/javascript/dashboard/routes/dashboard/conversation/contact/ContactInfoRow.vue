@@ -3,13 +3,11 @@ import { useAlert } from 'dashboard/composables';
 import EmojiOrIcon from 'shared/components/EmojiOrIcon.vue';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import NextButton from 'dashboard/components-next/button/Button.vue';
-import InlineInput from 'dashboard/components-next/inline-input/InlineInput.vue';
 
 export default {
   components: {
     EmojiOrIcon,
     NextButton,
-    InlineInput,
   },
   props: {
     href: {
@@ -32,46 +30,20 @@ export default {
       type: Boolean,
       default: false,
     },
+    // El pencil no edita el campo inline -- abre el modal completo de
+    // edicion de contacto (pedido explicito: todos los campos, aunque esten
+    // vacios, se editan desde el mismo formulario unificado).
     editable: {
       type: Boolean,
       default: false,
     },
-    title: {
-      type: String,
-      default: '',
-    },
   },
-  emits: ['update'],
-  data() {
-    return {
-      isEditing: false,
-      editValue: '',
-    };
-  },
+  emits: ['editClick'],
   methods: {
     async onCopy(e) {
       e.preventDefault();
       await copyTextToClipboard(this.value);
       useAlert(this.$t('CONTACT_PANEL.COPY_SUCCESSFUL'));
-    },
-    startEditing() {
-      if (!this.editable) return;
-      this.editValue = this.value || '';
-      this.isEditing = true;
-      this.$nextTick(() => {
-        this.$refs.editInput?.focus();
-      });
-    },
-    saveEdit() {
-      if (!this.isEditing) return;
-      this.isEditing = false;
-      const trimmed = this.editValue.trim();
-      if (trimmed !== (this.value || '')) {
-        this.$emit('update', trimmed);
-      }
-    },
-    cancelEdit() {
-      this.isEditing = false;
     },
   },
 };
@@ -79,28 +51,9 @@ export default {
 
 <template>
   <div class="group/row w-full h-5 ltr:-ml-1 rtl:-mr-1">
-    <!-- Inline edit mode -->
-    <div v-if="isEditing" class="flex items-center gap-2">
-      <EmojiOrIcon
-        :icon="icon"
-        :emoji="emoji"
-        icon-size="14"
-        class="flex-shrink-0 ltr:ml-1 rtl:mr-1"
-      />
-      <InlineInput
-        ref="editInput"
-        v-model="editValue"
-        :placeholder="title"
-        class="!w-fit"
-        @enter-press="saveEdit"
-        @escape-press="cancelEdit"
-        @blur="saveEdit"
-      />
-    </div>
-
     <!-- Read mode with link -->
     <a
-      v-else-if="href"
+      v-if="href"
       :href="href"
       class="flex items-center gap-2 text-n-slate-11 hover:underline"
     >
@@ -136,7 +89,7 @@ export default {
         slate
         class="ltr:-ml-1 rtl:-mr-1 opacity-0 group-hover/row:opacity-100 transition-opacity"
         icon="i-lucide-pencil"
-        @click.prevent="startEditing"
+        @click.prevent="$emit('editClick')"
       />
     </a>
 
@@ -163,7 +116,7 @@ export default {
         slate
         class="ltr:-ml-1 rtl:-mr-1 opacity-0 group-hover/row:opacity-100 transition-opacity"
         icon="i-lucide-pencil"
-        @click="startEditing"
+        @click="$emit('editClick')"
       />
     </div>
   </div>

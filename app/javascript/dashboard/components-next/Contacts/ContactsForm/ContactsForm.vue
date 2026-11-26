@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, watch } from 'vue';
+import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { required, requiredIf, email } from '@vuelidate/validators';
 import { useVuelidate } from '@vuelidate/core';
@@ -7,8 +7,8 @@ import { splitName } from '@chatwoot/utils';
 import countries from 'shared/constants/countries.js';
 import Input from 'dashboard/components-next/input/Input.vue';
 import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
-import Icon from 'dashboard/components-next/icon/Icon.vue';
 import PhoneNumberInput from 'dashboard/components-next/phonenumberinput/PhoneNumberInput.vue';
+import calendarioPayersAPI from 'dashboard/api/calendarioPayers';
 
 const props = defineProps({
   contactData: {
@@ -36,52 +36,59 @@ const FORM_CONFIG = {
   IDENTIFIER: { field: 'identifier', newContactOnly: true },
   EMAIL_ADDRESS: { field: 'email' },
   PHONE_NUMBER: { field: 'phoneNumber' },
+  SECONDARY_PHONE_NUMBER: { field: 'secondaryPhoneNumber' },
+  BIRTH_DATE: { field: 'customAttributes.date_of_birth' },
   CITY: { field: 'additionalAttributes.city' },
   COUNTRY: { field: 'additionalAttributes.countryCode' },
-  BIO: { field: 'additionalAttributes.description' },
-  COMPANY_NAME: { field: 'additionalAttributes.companyName' },
+  PAYER: { field: 'payerId' },
 };
 
 const DOCUMENT_TYPE_OPTIONS = ['cc', 'ti', 'ce', 'pa', 'rc', 'pep', 'ppt'];
 
-const SOCIAL_CONFIG = {
-  LINKEDIN: 'i-ri-linkedin-box-fill',
-  FACEBOOK: 'i-ri-facebook-circle-fill',
-  INSTAGRAM: 'i-ri-instagram-line',
-  TELEGRAM: 'i-ri-telegram-fill',
-  TIKTOK: 'i-ri-tiktok-fill',
-  TWITTER: 'i-ri-twitter-x-fill',
-  GITHUB: 'i-ri-github-fill',
-};
+// Colombia por defecto -- la inmensa mayoria de los pacientes son de aqui,
+// y asi el selector de pais no queda vacio al crear un contacto nuevo.
+const DEFAULT_COUNTRY = { id: 'CO', name: 'Colombia' };
 
-const defaultState = {
+// Funcion (no objeto compartido) -- un objeto module-level con sub-objetos
+// anidados (additionalAttributes/customAttributes) se pasaria por
+// REFERENCIA en cada `{ ...defaultState }`, asi que escribir en el
+// formulario corrompia ese "default" compartido entre contactos distintos
+// de la misma sesion (bug real encontrado: la ciudad/pais del contacto
+// anterior se filtraba al formulario de uno nuevo tras resetForm()).
+const createDefaultState = () => ({
   id: 0,
   name: '',
   email: '',
   firstName: '',
   lastName: '',
-  documentType: '',
+  documentType: 'cc',
   identifier: '',
   phoneNumber: '',
-  additionalAttributes: {
-    description: '',
-    companyName: '',
-    countryCode: '',
-    country: '',
-    city: '',
-    socialProfiles: {
-      facebook: '',
-      github: '',
-      instagram: '',
-      telegram: '',
-      tiktok: '',
-      linkedin: '',
-      twitter: '',
-    },
+  secondaryPhoneNumber: '',
+  payerId: '',
+  customAttributes: {
+    date_of_birth: '',
   },
-};
+  additionalAttributes: {
+    countryCode: DEFAULT_COUNTRY.id,
+    country: DEFAULT_COUNTRY.name,
+    city: '',
+  },
+});
 
-const state = reactive({ ...defaultState });
+const state = reactive(createDefaultState());
+
+const payers = ref([]);
+const payerOptions = computed(() => [
+  ...[...payers.value]
+    .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+    .map(payer => ({ value: payer.id, label: payer.name })),
+]);
+
+onMounted(async () => {
+  const response = await calendarioPayersAPI.get();
+  payers.value = response.data;
+});
 
 // El documento no es obligatorio si ya se tiene el telefono -- hay casos
 // donde solo se conoce el numero y se solicita el resto despues por
@@ -110,21 +117,17 @@ const prepareStateBasedOnProps = () => {
     name = '',
     email: emailAddress,
     phoneNumber,
+    secondaryPhoneNumber = '',
+    payerId = '',
+    customAttributes = {},
     additionalAttributes = {},
   } = props.contactData || {};
   const { firstName, lastName } = splitName(name || '');
   const {
-    description = '',
-    companyName = '',
     countryCode = '',
     country = '',
     city = '',
-    socialTelegramUserName = '',
-    socialProfiles = {},
   } = additionalAttributes || {};
-
-  const telegramUsername =
-    socialProfiles?.telegram || socialTelegramUserName || '';
 
   Object.assign(state, {
     id,
@@ -133,16 +136,15 @@ const prepareStateBasedOnProps = () => {
     lastName,
     email: emailAddress,
     phoneNumber,
+    secondaryPhoneNumber,
+    payerId,
+    customAttributes: {
+      date_of_birth: customAttributes.date_of_birth || '',
+    },
     additionalAttributes: {
-      description,
-      companyName,
       countryCode,
       country,
       city,
-      socialProfiles: {
-        ...socialProfiles,
-        telegram: telegramUsername,
-      },
     },
   });
 };
@@ -169,14 +171,6 @@ const editDetailsForm = computed(() =>
         `CONTACTS_LAYOUT.CARD.EDIT_DETAILS_FORM.FORM.${key}.PLACEHOLDER`
       ),
     }))
-);
-
-const socialProfilesForm = computed(() =>
-  Object.entries(SOCIAL_CONFIG).map(([key, icon]) => ({
-    key,
-    placeholder: t(`CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.FORM.${key}.PLACEHOLDER`),
-    icon,
-  }))
 );
 
 const isValidationField = key => {
@@ -251,7 +245,7 @@ const resetValidation = () => {
 };
 
 const resetForm = () => {
-  Object.assign(state, defaultState);
+  Object.assign(state, createDefaultState());
 };
 
 watch(
@@ -310,6 +304,24 @@ defineExpose({
             :placeholder="item.placeholder"
             :show-border="isDetailsView"
           />
+          <ComboBox
+            v-else-if="item.key === 'PAYER'"
+            v-model="getFormBinding(item.key).value"
+            :options="payerOptions"
+            :placeholder="item.placeholder"
+            class="[&>div>button]:h-8"
+            :class="{
+              '[&>div>button]:bg-n-alpha-black2 [&>div>button:not(.focused)]:!outline-transparent':
+                !isDetailsView,
+              '[&>div>button]:!bg-n-alpha-black2': isDetailsView,
+            }"
+          />
+          <input
+            v-else-if="item.key === 'BIRTH_DATE'"
+            v-model="getFormBinding(item.key).value"
+            type="date"
+            class="reset-base !mb-0 h-8 w-full"
+          />
           <Input
             v-else
             v-model="getFormBinding(item.key).value"
@@ -331,36 +343,6 @@ defineExpose({
             "
           />
         </template>
-      </div>
-    </div>
-    <div class="flex flex-col items-start gap-2">
-      <span class="py-1 text-sm font-medium text-n-slate-12">
-        {{ t('CONTACTS_LAYOUT.CARD.SOCIAL_MEDIA.TITLE') }}
-      </span>
-      <div class="flex flex-wrap gap-2">
-        <div
-          v-for="item in socialProfilesForm"
-          :key="item.key"
-          class="flex items-center h-8 gap-2 px-2 rounded-lg"
-          :class="{
-            'bg-n-alpha-2 dark:bg-n-solid-2': isDetailsView,
-            'bg-n-alpha-2 dark:bg-n-solid-3': !isDetailsView,
-          }"
-        >
-          <Icon
-            :icon="item.icon"
-            class="flex-shrink-0 text-n-slate-11 size-4"
-          />
-          <input
-            v-model="
-              state.additionalAttributes.socialProfiles[item.key.toLowerCase()]
-            "
-            class="w-auto min-w-[100px] text-sm bg-transparent outline-none reset-base text-n-slate-12 dark:text-n-slate-12 placeholder:text-n-slate-10 dark:placeholder:text-n-slate-10"
-            :placeholder="item.placeholder"
-            :size="item.placeholder.length"
-            @input="emit('update', state)"
-          />
-        </div>
       </div>
     </div>
   </div>

@@ -8,7 +8,15 @@ export const getters = {
     const contacts = $state.sortOrder.map(
       contactId => $state.records[contactId]
     );
-    return camelcaseKeys(contacts, { deep: true });
+    // stopPaths: igual que getContactById -- custom_attributes son claves
+    // definidas por el backend (ej. date_of_birth), no deben camelcasearse
+    // o un formulario que lea/escriba esa clave queda inconsistente segun
+    // desde que getter llego el contacto (bug real encontrado: la fecha de
+    // nacimiento se veia vacia al editar desde la lista de Contactos).
+    return camelcaseKeys(contacts, {
+      deep: true,
+      stopPaths: ['custom_attributes'],
+    });
   },
   getUIFlags($state) {
     return $state.uiFlags;

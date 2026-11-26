@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
@@ -9,11 +9,13 @@ import { dateKeyInColombia } from '../helpers/calendarioDateTime';
 import { appointmentWarningMessage } from '../helpers/appointmentWarningMessage';
 import { ES_DATEPICKER_LANG } from '../helpers/datepickerLang';
 import { classifyContactQuery } from '../helpers/classifyContactQuery';
+import { splitName } from '@chatwoot/utils';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Select from 'dashboard/components-next/select/Select.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ContactForm from 'dashboard/routes/dashboard/conversation/contact/ContactForm.vue';
+import ContactsForm from 'dashboard/components-next/Contacts/ContactsForm/ContactsForm.vue';
 
 const props = defineProps({
   // Precarga el contacto cuando se abre esto desde una conversacion, o desde
@@ -57,14 +59,8 @@ const listboxId = `${comboboxId}-listbox`;
 const isResultsOpen = ref(false);
 const activeResultIndex = ref(-1);
 const showCreateForm = ref(false);
-const newContact = ref({
-  name: '',
-  phoneNumber: '',
-  identifier: '',
-  documentType: 'cc',
-  secondaryPhoneNumber: '',
-  payerId: '',
-});
+const createContactFormRef = ref(null);
+const newContact = ref(null);
 const isCreatingContact = ref(false);
 const isEditingContact = ref(false);
 
@@ -102,19 +98,10 @@ const getDayClasses = (value, _innerValue, classes) =>
     : classes;
 
 const payers = ref([]);
-const payerOptions = computed(() =>
-  [...payers.value]
-    .sort((a, b) => a.name.localeCompare(b.name, 'es'))
-    .map(payer => ({ value: payer.id, label: payer.name }))
-);
 
 onMounted(async () => {
   const response = await calendarioPayersAPI.get();
   payers.value = response.data;
-  // "Particular" (el pagador real, sembrado en toda cuenta) es el default al
-  // crear un contacto nuevo desde aqui.
-  const particular = payers.value.find(payer => payer.kind === 'particular');
-  if (particular) newContact.value.payerId = particular.id;
 
   // El contacto puede llegar preseleccionado (desde una conversacion o la
   // lista de espera) sin su registro completo en el store -- se trae antes
@@ -275,37 +262,41 @@ const onContactKeydown = event => {
 };
 
 const openCreateForm = () => {
-  const particular = payers.value.find(payer => payer.kind === 'particular');
   const classified = classifyContactQuery(contactQuery.value);
-  newContact.value = {
-    name: classified.name || '',
-    phoneNumber: classified.phoneNumber || '',
-    identifier: classified.identifier || '',
-    documentType: 'cc',
-    secondaryPhoneNumber: '',
-    payerId: particular?.id || '',
-  };
+  newContact.value = null;
   showCreateForm.value = true;
   closeResults();
+  // ContactsForm (el mismo componente de "nuevo contacto" de la pagina de
+  // Contactos) ya trae sus propios defaults (documento cedula, pais
+  // Colombia) -- aqui solo se precargan los datos que ya se detectaron en
+  // la busqueda, y el pagador "particular" (default especifico de este
+  // flujo de agendamiento, sembrado en toda cuenta).
+  nextTick(() => {
+    const formState = createContactFormRef.value?.state;
+    if (!formState) return;
+    // ContactsForm separa nombre/apellido internamente (`state.name` es
+    // derivado, no editable directo) -- hay que precargar ambos para que
+    // el nombre detectado en la busqueda se vea reflejado en los inputs.
+    const { firstName, lastName } = splitName(classified.name || '');
+    formState.firstName = firstName;
+    formState.lastName = lastName;
+    formState.name = classified.name || '';
+    formState.phoneNumber = classified.phoneNumber || '';
+    formState.identifier = classified.identifier || '';
+    const particular = payers.value.find(payer => payer.kind === 'particular');
+    if (particular) formState.payerId = particular.id;
+  });
 };
 
-// El documento no es obligatorio si ya se tiene el telefono -- hay casos
-// donde solo se conoce el numero y se solicita el resto despues por
-// WhatsApp (mismo criterio que el backend en ContactsController#create).
 const isNewContactInvalid = computed(
-  () =>
-    !newContact.value.name.trim() ||
-    (!newContact.value.identifier.trim() &&
-      !newContact.value.phoneNumber.trim())
+  () => !newContact.value || createContactFormRef.value?.isFormInvalid
 );
 
 const createContactInline = async () => {
+  if (!newContact.value) return;
   isCreatingContact.value = true;
   try {
-    const contact = await store.dispatch('contacts/create', {
-      ...newContact.value,
-      payerId: newContact.value.payerId || null,
-    });
+    const contact = await store.dispatch('contacts/create', newContact.value);
     selectContact(contact);
     showCreateForm.value = false;
   } catch (error) {
@@ -500,43 +491,11 @@ const submit = async () => {
       <p class="text-xs text-n-slate-11">
         {{ t('CALENDARIO.APPOINTMENTS.FORM.CREATE_CONTACT_TITLE') }}
       </p>
-      <Input
-        v-model="newContact.name"
-        :label="t('CALENDARIO.APPOINTMENTS.FORM.NEW_CONTACT_NAME')"
+      <ContactsForm
+        ref="createContactFormRef"
+        is-new-contact
+        @update="value => (newContact = value)"
       />
-      <div class="flex gap-2">
-        <div class="flex flex-col gap-1 w-1/3">
-          <label class="text-sm font-medium text-n-slate-12">{{
-            t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_TYPE_LABEL')
-          }}</label>
-          <Select
-            v-model="newContact.documentType"
-            :options="documentTypeOptions"
-          />
-        </div>
-        <Input
-          v-model="newContact.identifier"
-          class="flex-1"
-          :label="t('CALENDARIO.APPOINTMENTS.FORM.DOCUMENT_NUMBER_LABEL')"
-        />
-      </div>
-      <Input
-        v-model="newContact.phoneNumber"
-        :label="t('CALENDARIO.APPOINTMENTS.FORM.NEW_CONTACT_PHONE')"
-      />
-      <Input
-        v-model="newContact.secondaryPhoneNumber"
-        :label="t('CALENDARIO.APPOINTMENTS.FORM.SECONDARY_PHONE_LABEL')"
-        :placeholder="
-          t('CALENDARIO.APPOINTMENTS.FORM.SECONDARY_PHONE_PLACEHOLDER')
-        "
-      />
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium text-n-slate-12">{{
-          t('CALENDARIO.APPOINTMENTS.FORM.PAYER_LABEL')
-        }}</label>
-        <Select v-model="newContact.payerId" :options="payerOptions" />
-      </div>
       <div class="flex items-center justify-end gap-2">
         <Button
           faded

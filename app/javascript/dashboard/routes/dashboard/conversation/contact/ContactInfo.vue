@@ -9,7 +9,6 @@ import { dynamicTime } from 'shared/helpers/timeHelper';
 import { useAdmin } from 'dashboard/composables/useAdmin';
 import ContactInfoRow from './ContactInfoRow.vue';
 import Avatar from 'next/avatar/Avatar.vue';
-import SocialIcons from './SocialIcons.vue';
 import EditContact from './EditContact.vue';
 import ContactMergeModal from 'dashboard/modules/contact/ContactMergeModal.vue';
 import ContactDeleteModal from 'dashboard/modules/contact/ContactDeleteModal.vue';
@@ -26,7 +25,6 @@ export default {
     EditContact,
     Avatar,
     ComposeConversation,
-    SocialIcons,
     ContactMergeModal,
     ContactDeleteModal,
     VoiceCallButton,
@@ -86,21 +84,26 @@ export default {
       }
       return this.findCountryFlag(countryCode, cityAndCountry);
     },
-    socialProfiles() {
-      const {
-        social_profiles: socialProfiles,
-        screen_name: twitterScreenName,
-        social_telegram_user_name: telegramUsername,
-      } = this.additionalAttributes;
-
-      const telegram = socialProfiles?.telegram || telegramUsername || '';
-      const twitter = socialProfiles?.twitter || twitterScreenName || '';
-
-      return {
-        ...(socialProfiles || {}),
-        twitter,
-        telegram,
-      };
+    dateOfBirth() {
+      return this.contact.custom_attributes?.date_of_birth || '';
+    },
+    // Edad calculada a partir de la fecha de nacimiento -- pedido explicito
+    // del usuario para verla de un vistazo en el panel, sin tener que
+    // calcularla a mano cada vez.
+    age() {
+      if (!this.dateOfBirth) return '';
+      const birthDate = new Date(this.dateOfBirth);
+      if (Number.isNaN(birthDate.getTime())) return '';
+      const today = new Date();
+      let years = today.getFullYear() - birthDate.getFullYear();
+      const hasHadBirthdayThisYear =
+        today.getMonth() > birthDate.getMonth() ||
+        (today.getMonth() === birthDate.getMonth() &&
+          today.getDate() >= birthDate.getDate());
+      if (!hasHadBirthdayThisYear) years -= 1;
+      return years >= 0
+        ? this.$t('CONTACT_PANEL.AGE_YEARS', { count: years })
+        : '';
     },
     // Contactos importados sin telefono real pueden tener solo el username
     // de WhatsApp guardado (social_whatsapp_user_name) -- se usa para
@@ -157,9 +160,6 @@ export default {
     },
     cancelNameEdit() {
       this.isEditingName = false;
-    },
-    onFieldUpdate(field, value) {
-      this.updateContactField({ [field]: value });
     },
     async updateContactField(attrs) {
       const contactId = this.contact.id;
@@ -255,79 +255,57 @@ export default {
           </div>
         </div>
 
-        <p v-if="additionalAttributes.description" class="break-words mb-0.5">
-          {{ additionalAttributes.description }}
-        </p>
-        <div class="flex flex-col items-start w-full gap-2">
+        <div class="grid grid-cols-2 items-start w-full gap-x-3 gap-y-2">
           <ContactInfoRow
+            class="col-span-2"
             :href="contact.email ? `mailto:${contact.email}` : ''"
             :value="contact.email"
             icon="mail"
             emoji="✉️"
-            :title="$t('CONTACT_PANEL.EMAIL_ADDRESS')"
             show-copy
             editable
-            @update="value => onFieldUpdate('email', value)"
+            @edit-click="toggleEditModal"
           />
           <ContactInfoRow
             v-if="!contact.phone_number && whatsappUsername"
+            class="col-span-2"
             :value="`@${whatsappUsername}`"
             icon="mention"
             emoji="🔖"
-            :title="$t('CONTACT_PANEL.PHONE_NUMBER')"
             show-copy
             editable
-            @update="value => onFieldUpdate('phone_number', value)"
+            @edit-click="toggleEditModal"
           />
           <ContactInfoRow
             v-else
+            class="col-span-2"
             :href="contact.phone_number ? `tel:${contact.phone_number}` : ''"
             :value="contact.phone_number"
             icon="call"
             emoji="📞"
-            :title="$t('CONTACT_PANEL.PHONE_NUMBER')"
             show-copy
             editable
-            @update="value => onFieldUpdate('phone_number', value)"
+            @edit-click="toggleEditModal"
           />
           <ContactInfoRow
-            v-if="contact.identifier"
             :value="contact.identifier"
             icon="contact-identify"
             emoji="🪪"
-            :title="$t('CONTACT_PANEL.IDENTIFIER')"
           />
           <ContactInfoRow
-            v-if="contact.payer_name"
             :value="contact.payer_name"
             icon="lock-shield"
             emoji="🏥"
-            :title="$t('CONTACT_PANEL.PAYER')"
           />
-          <ContactInfoRow
-            :value="additionalAttributes.company_name"
-            icon="building-bank"
-            emoji="🏢"
-            :title="$t('CONTACT_PANEL.COMPANY')"
-            editable
-            @update="
-              value =>
-                updateContactField({
-                  additional_attributes: {
-                    ...additionalAttributes,
-                    company_name: value,
-                  },
-                })
-            "
-          />
+          <ContactInfoRow :value="dateOfBirth" icon="calendar" emoji="🎂" />
+          <ContactInfoRow :value="age" icon="info" emoji="⏳" />
           <ContactInfoRow
             v-if="location || additionalAttributes.location"
+            class="col-span-2"
             :value="location || additionalAttributes.location"
             icon="map"
             emoji="🌍"
-            :title="$t('CONTACT_PANEL.LOCATION')"
           />
-          <SocialIcons :social-profiles="socialProfiles" />
         </div>
       </div>
       <div class="flex items-center w-full mt-0.5 gap-2">
