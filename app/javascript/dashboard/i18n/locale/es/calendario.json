@@ -299,6 +299,7 @@
         "WINDOW_MORNING": "Mañana",
         "WINDOW_AFTERNOON": "Tarde",
         "WINDOW_FULL_DAY": "Todo el día",
+        "NOTES_LABEL": "Notas (opcional)",
         "SUBMIT": "Aplicar",
         "SUMMARY": "{opened} fecha(s) abiertas, {skipped} ya estaban abiertas"
       }

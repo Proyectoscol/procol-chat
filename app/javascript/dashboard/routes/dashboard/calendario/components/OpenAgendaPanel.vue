@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useStore } from 'dashboard/composables/store';
 import Button from 'dashboard/components-next/button/Button.vue';
+import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import DatePicker from 'vue-datepicker-next';
 import { ES_DATEPICKER_LANG } from '../helpers/datepickerLang';
 
@@ -32,6 +33,7 @@ const selectedDate = ref(new Date());
 // Sin default a proposito -- la asistente tiene que elegir la franja, un
 // clic apurado no debe abrir "manana" por omision.
 const timeWindow = ref('');
+const notes = ref('');
 const isSubmitting = ref(false);
 
 const timeWindowOptions = [
@@ -75,6 +77,7 @@ const submit = async () => {
         professional_id: props.professionalId,
         date,
         time_window: timeWindow.value,
+        notes: notes.value || null,
       });
       opened += 1;
     } catch (error) {
@@ -145,6 +148,12 @@ const submit = async () => {
           </button>
         </div>
       </div>
+
+      <TextArea
+        v-model="notes"
+        :label="t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.NOTES_LABEL')"
+        :max-length="500"
+      />
     </div>
 
     <div class="flex items-center gap-2">
