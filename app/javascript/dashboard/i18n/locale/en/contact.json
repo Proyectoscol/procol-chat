@@ -117,8 +117,7 @@
       },
       "PAYER": {
         "LABEL": "Insurer / EPS",
-        "PLACEHOLDER": "No insurer assigned",
-        "ERROR": "Select an insurer/EPS before continuing"
+        "PLACEHOLDER": "No insurer assigned"
       },
       "LOCATION": {
         "PLACEHOLDER": "Enter the location of the contact",

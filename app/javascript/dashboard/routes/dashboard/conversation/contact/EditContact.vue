@@ -8,7 +8,6 @@ import Button from 'dashboard/components-next/button/Button.vue';
 const props = defineProps({
   show: { type: Boolean, default: false },
   contact: { type: Object, default: () => ({}) },
-  requirePayer: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['cancel', 'saved']);
@@ -66,7 +65,6 @@ useKeyboardEvents({
       <ContactForm
         :contact="contact"
         :in-progress="uiFlags.isUpdating"
-        :require-payer="requirePayer"
         :on-submit="onSubmit"
         @success="onSaved"
         @cancel="onCancel"

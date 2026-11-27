@@ -59,14 +59,6 @@ export default {
       editName: '',
       showAppointmentModal: false,
       showWaitlistModal: false,
-      // Pedido explicito del usuario 2026-11-27 (caso real: contacto sin
-      // nombre ni EPS, se creo una cita manualmente y nunca salio ningun
-      // mensaje -- fallo en silencio porque ningun disparador aplica sin
-      // payer_kind). Guarda cual boton se intento abrir ('appointment' o
-      // 'waitlist') mientras el contacto esta incompleto, para retomarlo
-      // justo despues de guardar la edicion obligatoria.
-      pendingAction: null,
-      editingForCompletion: false,
     };
   },
   computed: {
@@ -76,16 +68,6 @@ export default {
     }),
     contactProfileLink() {
       return `/app/accounts/${this.$route.params.accountId}/contacts/${this.contact.id}`;
-    },
-    // Un nombre vacio o un simple placeholder (".", espacios) y la falta de
-    // EPS/pagador hacen inviable el envio automatico de plantillas (ver
-    // Calendario::AppointmentEventTrigger#applies_to? -- payer_kinds nunca
-    // matchea un payer nulo). Agendar o agregar a lista de espera con el
-    // contacto asi queda siempre en silencio, sin ningun mensaje real.
-    contactIsIncomplete() {
-      const name = (this.contact.name || '').trim();
-      const hasRealName = name.length > 0 && !/^\.+$/.test(name);
-      return !hasRealName || !this.contact.payer_id;
     },
     additionalAttributes() {
       return this.contact.additional_attributes || {};
@@ -162,42 +144,16 @@ export default {
     toggleWaitlistModal() {
       this.showWaitlistModal = !this.showWaitlistModal;
     },
-    // Puntos de entrada reales de los botones "Agendar cita"/"Agregar a
-    // lista de espera" -- si el contacto esta incompleto, se exige
-    // completarlo primero (lateral de edicion, EPS obligatoria) en vez de
-    // abrir el modal directo y terminar en una cita que nunca notifica a
-    // nadie.
     openCreateAppointment() {
-      if (this.contactIsIncomplete) {
-        this.pendingAction = 'appointment';
-        this.editingForCompletion = true;
-        this.showEditModal = true;
-        return;
-      }
       this.showAppointmentModal = true;
     },
     openCreateWaitlist() {
-      if (this.contactIsIncomplete) {
-        this.pendingAction = 'waitlist';
-        this.editingForCompletion = true;
-        this.showEditModal = true;
-        return;
-      }
       this.showWaitlistModal = true;
     },
     onContactEditSaved() {
       this.showEditModal = false;
-      if (this.pendingAction === 'appointment') {
-        this.showAppointmentModal = true;
-      } else if (this.pendingAction === 'waitlist') {
-        this.showWaitlistModal = true;
-      }
-      this.pendingAction = null;
-      this.editingForCompletion = false;
     },
     onContactEditCancelled() {
-      this.pendingAction = null;
-      this.editingForCompletion = false;
       this.toggleEditModal();
     },
     findCountryFlag(countryCode, cityAndCountry) {
@@ -445,7 +401,6 @@ export default {
       <EditContact
         :show="showEditModal"
         :contact="contact"
-        :require-payer="editingForCompletion"
         @cancel="onContactEditCancelled"
         @saved="onContactEditSaved"
       />

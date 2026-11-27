@@ -35,15 +35,6 @@ export default {
       type: Function,
       default: () => {},
     },
-    // Pedido explicito del usuario 2026-11-27: antes de agendar una cita o
-    // agregar a lista de espera, un contacto sin EPS/pagador rompe el envio
-    // automatico de plantillas en silencio (ningun disparador aplica sin
-    // payer_kind) -- exigir el pagador en ESTE punto de entrada evita esa
-    // cita inviable. No aplica al editar un contacto por el lapiz normal.
-    requirePayer: {
-      type: Boolean,
-      default: false,
-    },
   },
   emits: ['cancel', 'success'],
   setup() {
@@ -73,17 +64,14 @@ export default {
       city: '',
     };
   },
-  validations() {
-    return {
-      name: {
-        required,
-      },
-      email: {
-        email,
-      },
-      phoneNumber: {},
-      payerId: this.requirePayer ? { required } : {},
-    };
+  validations: {
+    name: {
+      required,
+    },
+    email: {
+      email,
+    },
+    phoneNumber: {},
   },
   computed: {
     documentTypeOptions() {
@@ -385,10 +373,9 @@ export default {
       />
     </div>
     <div class="w-full mb-4">
-      <label :class="{ error: v$.payerId.$error }">
+      <label>
         {{ $t('CONTACT_FORM.FORM.PAYER.LABEL') }}
-        <span v-if="requirePayer" class="text-n-ruby-9">*</span>
-        <select v-model="payerId" class="mb-0" @change="v$.payerId.$touch">
+        <select v-model="payerId" class="mb-0">
           <option value="">
             {{ $t('CONTACT_FORM.FORM.PAYER.PLACEHOLDER') }}
           </option>
@@ -400,9 +387,6 @@ export default {
             {{ option.label }}
           </option>
         </select>
-        <span v-if="v$.payerId.$error" class="message">
-          {{ $t('CONTACT_FORM.FORM.PAYER.ERROR') }}
-        </span>
       </label>
     </div>
     <div class="w-full mb-4">
