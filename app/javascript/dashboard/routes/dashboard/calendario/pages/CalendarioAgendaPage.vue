@@ -16,6 +16,7 @@ import AppointmentRow from '../components/AppointmentRow.vue';
 import {
   dateKeyInColombia,
   formatDateOnlyEs,
+  formatInstantTimeEs,
 } from '../helpers/calendarioDateTime';
 
 const { t } = useI18n();
@@ -200,6 +201,99 @@ const groupedByProfessional = computed(() => {
   );
 });
 
+const escapeHtml = value =>
+  String(value ?? '').replace(
+    /[&<>"']/g,
+    char =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      })[char]
+  );
+
+const statusLabel = status =>
+  t(`CALENDARIO.APPOINTMENTS.STATUS.${status.toUpperCase()}`);
+
+// Pedido explicito del usuario: "imprimir... cada profesional de forma
+// organizada, uno debajo del otro... tipo Excel" -- una ventana nueva con
+// una tabla simple por profesional (groupedByProfessional ya trae los
+// datos en el orden/agrupacion correctos) y window.print(), en vez de
+// pelear con el CSS de impresion del resto de la app. escapeHtml porque
+// nombres de contacto/servicio son datos del usuario (no de este codigo)
+// y van directo a innerHTML de la ventana nueva.
+const printAgenda = () => {
+  const dateLabel = isViewingToday.value
+    ? formatDateOnlyEs(todayKey(), {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : viewedDateLabel.value;
+
+  const sections = groupedByProfessional.value
+    .map(
+      group => `
+        <h2>${escapeHtml(group.professionalName)}</h2>
+        <table>
+          <thead>
+            <tr><th>Hora</th><th>Paciente</th><th>Servicio</th><th>Entidad</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            ${group.appointments
+              .map(
+                appointment => `
+                  <tr>
+                    <td>${formatInstantTimeEs(appointment.starts_at)}</td>
+                    <td>${escapeHtml(appointment.contact_name)}</td>
+                    <td>${escapeHtml(appointment.service_name)}</td>
+                    <td>${escapeHtml(appointment.payer_name)}</td>
+                    <td>${escapeHtml(statusLabel(appointment.status))}</td>
+                  </tr>
+                `
+              )
+              .join('')}
+          </tbody>
+        </table>
+      `
+    )
+    .join('');
+
+  const html = `
+    <html>
+      <head>
+        <title>Agenda ${escapeHtml(dateLabel)}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+          h1 { font-size: 18px; margin-bottom: 4px; text-transform: capitalize; }
+          h2 { font-size: 14px; margin-top: 24px; margin-bottom: 4px; border-bottom: 2px solid #333; padding-bottom: 2px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 12px; }
+          th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; }
+          th { background: #f0f0f0; }
+          @media print {
+            h2 { page-break-after: avoid; }
+            tr { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Agenda ${escapeHtml(dateLabel)}</h1>
+        ${sections || '<p>Sin citas para este dia.</p>'}
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+};
+
 const openConversation = appointment => {
   if (!appointment.conversation_id) return;
   router.push(
@@ -357,6 +451,16 @@ onMounted(async () => {
           @click="goToNextAgendaDay"
         />
       </div>
+    </div>
+    <div class="flex justify-end">
+      <Button
+        faded
+        slate
+        sm
+        icon="i-lucide-printer"
+        :label="t('CALENDARIO.AGENDA.PRINT_BUTTON')"
+        @click="printAgenda"
+      />
     </div>
 
     <div class="flex flex-wrap items-end gap-3">

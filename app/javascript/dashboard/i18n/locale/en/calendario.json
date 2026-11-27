@@ -124,6 +124,7 @@
       "VIEWING_DATE": "Viewing: {date}",
       "BACK_TO_TODAY": "Back to today",
       "NEXT_DAY_BUTTON": "Next business day with appointments",
+      "PRINT_BUTTON": "Print",
       "NOW_LINE_LABEL": "Now",
       "NO_FUTURE_APPOINTMENTS": "There are no appointments scheduled on any future date."
     },

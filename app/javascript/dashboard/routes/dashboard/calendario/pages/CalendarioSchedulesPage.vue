@@ -257,6 +257,26 @@ const allAppointmentsForOpenDay = openDay => {
 const appointmentsForOpenDay = openDay =>
   allAppointmentsForOpenDay(openDay).filter(matchesFilters);
 
+// Bug real reportado por el usuario 2026-11-27: cuando un profesional solo
+// abre UNA ventana ese dia (el caso normal), esa unica tarjeta muestra
+// TODAS las citas sin importar la hora (a proposito, ver comentario de
+// appointmentMatchesWindow mas arriba) -- pero el encabezado de la tarjeta
+// seguia mostrando la etiqueta de esa UNICA ventana ("Mañana"), aunque
+// adentro hubiera citas de la tarde. Subagrupar SIEMPRE por la hora real de
+// cada cita (no por el time_window del OpenDay) resuelve el problema de
+// raiz y de paso cumple el pedido de organizacion: "que aparezca debajo de
+// cada profesional lo que es manana y lo que es tarde".
+const splitByTimeOfDay = openDay => {
+  const list = appointmentsForOpenDay(openDay);
+  const morning = list.filter(
+    a => hourInColombia(a.starts_at) < AFTERNOON_START_HOUR
+  );
+  const afternoon = list.filter(
+    a => hourInColombia(a.starts_at) >= AFTERNOON_START_HOUR
+  );
+  return { morning, afternoon };
+};
+
 // Distingue "de verdad no hay citas" de "hay citas pero los filtros las
 // esconden" -- sin esto, un dia con citas que no calzan con el filtro
 // mostraria por error "Agenda abierta, todavia sin citas".
@@ -895,20 +915,36 @@ onMounted(async () => {
 
                   <div
                     v-if="appointmentsForOpenDay(openDay).length"
-                    class="flex flex-col divide-y divide-n-weak"
+                    class="flex flex-col gap-2"
                   >
-                    <AppointmentRow
-                      v-for="appointment in appointmentsForOpenDay(openDay)"
-                      :key="appointment.id"
-                      :appointment="appointment"
-                      :account-id="accountId"
-                      :updating="updatingAppointmentId === appointment.id"
-                      @open-detail="openDetailModal"
-                      @open-conversation="openConversation"
-                      @set-status="setStatus"
-                      @reschedule="openRescheduleModal"
-                      @quick-book-after="openQuickBookAfter"
-                    />
+                    <div
+                      v-for="period in ['morning', 'afternoon']"
+                      v-show="splitByTimeOfDay(openDay)[period].length"
+                      :key="period"
+                      class="flex flex-col gap-1"
+                    >
+                      <span
+                        class="text-[11px] font-medium text-n-slate-10 uppercase tracking-wide"
+                      >
+                        {{ windowLabel(period) }}
+                      </span>
+                      <div class="flex flex-col divide-y divide-n-weak">
+                        <AppointmentRow
+                          v-for="appointment in splitByTimeOfDay(openDay)[
+                            period
+                          ]"
+                          :key="appointment.id"
+                          :appointment="appointment"
+                          :account-id="accountId"
+                          :updating="updatingAppointmentId === appointment.id"
+                          @open-detail="openDetailModal"
+                          @open-conversation="openConversation"
+                          @set-status="setStatus"
+                          @reschedule="openRescheduleModal"
+                          @quick-book-after="openQuickBookAfter"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <p v-else class="text-xs text-n-slate-10 italic">
                     {{
