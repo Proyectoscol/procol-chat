@@ -25,6 +25,7 @@ class Twilio::IncomingMessageService # rubocop:disable Metrics/ClassLength
     attach_files
     attach_location if location_message?
     @message.save!
+    Calendario::PersonalInfoFlowSubmissionService.new(message: @message).perform if interactive_message?
   end
 
   private

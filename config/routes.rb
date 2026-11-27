@@ -182,6 +182,7 @@ Rails.application.routes.draw do
               resource :direct_uploads, only: [:create]
               resource :draft_messages, only: [:show, :update, :destroy]
               resource :welcome_bot_trigger, only: [:create]
+              resource :personal_info_flow_request, only: [:create]
             end
             member do
               post :mute

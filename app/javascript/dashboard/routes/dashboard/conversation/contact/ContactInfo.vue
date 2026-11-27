@@ -17,6 +17,7 @@ import VoiceCallButton from 'dashboard/components-next/Contacts/VoiceCallButton.
 import InlineInput from 'dashboard/components-next/inline-input/InlineInput.vue';
 import AppointmentFormModal from 'dashboard/routes/dashboard/calendario/components/AppointmentFormModal.vue';
 import WaitlistPanel from 'dashboard/routes/dashboard/calendario/components/WaitlistPanel.vue';
+import calendarioPersonalInfoFlowAPI from 'dashboard/api/calendarioPersonalInfoFlow';
 
 export default {
   components: {
@@ -59,6 +60,7 @@ export default {
       editName: '',
       showAppointmentModal: false,
       showWaitlistModal: false,
+      isSendingPersonalInfoFlow: false,
     };
   },
   computed: {
@@ -149,6 +151,21 @@ export default {
     },
     openCreateWaitlist() {
       this.showWaitlistModal = true;
+    },
+    async requestPersonalInfo() {
+      if (this.isSendingPersonalInfoFlow) return;
+      this.isSendingPersonalInfoFlow = true;
+      try {
+        await calendarioPersonalInfoFlowAPI.create(this.conversationId);
+        useAlert(this.$t('CONTACT_PANEL.REQUEST_PERSONAL_INFO_SUCCESS'));
+      } catch (error) {
+        useAlert(
+          error?.response?.data?.error ||
+            this.$t('CONTACT_PANEL.REQUEST_PERSONAL_INFO_ERROR')
+        );
+      } finally {
+        this.isSendingPersonalInfoFlow = false;
+      }
     },
     onContactEditSaved() {
       this.showEditModal = false;
@@ -367,6 +384,15 @@ export default {
           faded
           sm
           @click="openCreateWaitlist"
+        />
+        <NextButton
+          v-tooltip.top-end="$t('CONTACT_PANEL.REQUEST_PERSONAL_INFO')"
+          icon="i-lucide-clipboard-list"
+          slate
+          faded
+          sm
+          :is-loading="isSendingPersonalInfoFlow"
+          @click="requestPersonalInfo"
         />
         <ContactMergeModal :primary-contact="contact">
           <template #trigger>
