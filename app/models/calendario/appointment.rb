@@ -97,6 +97,15 @@ class Calendario::Appointment < ApplicationRecord
   after_create :consume_available_credit_if_control
   after_update :log_reschedule, if: :saved_change_to_starts_at?
   after_update :run_on_reschedule_triggers, if: :saved_change_to_starts_at?
+  # Bug real en produccion 2026-11-27: schedule_before_start_triggers solo
+  # corria al crear la cita -- si el punto "antes de la cita" ya habia
+  # pasado para la hora original (ej. cita creada casi encima de su propia
+  # hora), ese job nunca se encolaba, y reagendar a una hora mas tarde no lo
+  # recuperaba (nada volvia a llamar a este metodo). Encolar jobs nuevos
+  # aqui es seguro aunque ya existiera uno viejo con la hora anterior: el
+  # guard already_fired? en el runner evita un envio duplicado si el
+  # obsoleto llega a correr primero.
+  after_update :schedule_before_start_triggers, if: :saved_change_to_starts_at?
   after_update :log_status_change, if: :saved_change_to_status?
   after_update :run_on_status_change_triggers, if: :saved_change_to_status?
   after_update :grant_included_session_credits, if: :saved_change_to_status?
