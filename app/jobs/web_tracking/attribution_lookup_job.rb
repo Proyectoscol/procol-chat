@@ -21,9 +21,15 @@ class WebTracking::AttributionLookupJob < ApplicationJob
     return if conversation.blank? || !conversation.inbox.twilio_whatsapp?
 
     contact = conversation.contact
-    return if contact.blank? || contact.phone_number.blank?
+    return if contact.blank?
 
-    visitor = WebTracking::VisitorLookupService.new(phone_number: contact.phone_number).perform
+    service = WebTracking::VisitorLookupService.new(phone_number: contact.phone_number)
+    # Ruta real primero: correlacion por tiempo contra un click reciente de
+    # "whatsapp_cta_click" al numero DEL INBOX (ver VisitorLookupService) --
+    # el telefono del contacto es solo el respaldo (formulario del sitio,
+    # minoria de los casos), nunca el metodo principal.
+    visitor = service.by_recent_click(whatsapp_number: conversation.inbox.channel.phone_number)
+    visitor ||= service.by_phone
     return if visitor.blank?
 
     update_contact_attributes(contact, visitor)
