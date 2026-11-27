@@ -37,16 +37,43 @@ class WebTracking::VisitorLookupService
 
   private
 
+  # Hallazgo real 2026-11-27: un lookup que NO encuentra nada (404 "not
+  # found", candidate_count 0 o 2+) devolvia nil en silencio total -- sin
+  # log, sin excepcion -- asi que cuando un caso que a simple vista deberia
+  # haber matcheado (click real 34s antes del primer mensaje, mismo numero
+  # de inbox) no encontro atribucion, no quedaba ningun rastro de POR QUE
+  # para diagnosticarlo despues (la ventana de busqueda de tracking-api es
+  # de maximo 30 min, no se puede re-consultar pasado ese tiempo). Ahora
+  # cada intento deja log: el resultado exacto (encontrado/candidate_count/
+  # no configurado) para poder diagnosticar la PROXIMA vez sin tener que
+  # reconstruirlo a mano cruzando contra el panel de tracking.
   def get(path, **query)
-    return if base_url.blank? || token.blank?
+    return log_not_configured(path, query) if base_url.blank? || token.blank?
 
     response = HTTParty.get("#{base_url}#{path}", query: query, headers: { 'X-Internal-Token' => token }, timeout: 5)
-    return unless response.success?
+    return log_no_match(path, query, response) unless response.success?
 
-    response.parsed_response['visitor']
+    log_match(path, query, response)
   rescue StandardError => e
+    Rails.logger.error("[WebTracking] #{path} error -- query=#{query.inspect} #{e.class}: #{e.message}")
     ChatwootExceptionTracker.new(e).capture_exception
     nil
+  end
+
+  def log_not_configured(path, query)
+    Rails.logger.warn("[WebTracking] #{path} sin configurar (TRACKING_API_BASE/TRACKING_API_INTERNAL_TOKEN) -- query=#{query.inspect}")
+    nil
+  end
+
+  def log_no_match(path, query, response)
+    Rails.logger.info("[WebTracking] #{path} sin match -- query=#{query.inspect} status=#{response.code} body=#{response.body}")
+    nil
+  end
+
+  def log_match(path, query, response)
+    visitor = response.parsed_response['visitor']
+    Rails.logger.info("[WebTracking] #{path} match -- query=#{query.inspect} visitor_id=#{visitor&.dig('visitorId')}")
+    visitor
   end
 
   # Mismo criterio en ambos lados (ver lastTenDigits en tracking-api/src/routes/internal.ts):
