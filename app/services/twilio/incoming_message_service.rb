@@ -21,12 +21,27 @@ class Twilio::IncomingMessageService # rubocop:disable Metrics/ClassLength
       source_id: params[:SmsSid]
     )
     @message.content_attributes = interactive_content_attributes if interactive_message?
+    merge_original_replied_message_sid
     attach_files
     attach_location if location_message?
     @message.save!
   end
 
   private
+
+  # Bug real encontrado en auditoria con Codex 2026-11-27 (hallazgo #6):
+  # cuando el paciente toca un boton quick-reply de una plantilla (o
+  # responde directamente a un mensaje), Twilio incluye el SID del mensaje
+  # original en este campo -- se guarda aca para que
+  # Calendario::WelcomeBotFlowRunner pueda cruzarlo contra la sesion activa
+  # y detectar una respuesta a un mensaje viejo/distinto.
+  def merge_original_replied_message_sid
+    return if params[:OriginalRepliedMessageSid].blank?
+
+    @message.content_attributes = @message.content_attributes.merge(
+      original_replied_message_sid: params[:OriginalRepliedMessageSid]
+    )
+  end
 
   def twilio_channel
     @twilio_channel ||= ::Channel::TwilioSms.find_by(messaging_service_sid: params[:MessagingServiceSid]) if params[:MessagingServiceSid].present?

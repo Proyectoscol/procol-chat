@@ -46,8 +46,8 @@ class Calendario::WelcomeBotAppointmentActions
     session.update!(answers: session.answers.merge('_appointment_id' => appointment.id))
     ask_step = lookup_confirmation_step(step, appointment)
 
-    step['content_sid'].present? ? send_whatsapp_buttons(ask_step) : send_text_question(ask_step)
-    session.update!(last_prompted_at: Time.current, reminder_count: 0)
+    sent_message = step['content_sid'].present? ? send_whatsapp_buttons(ask_step) : send_text_question(ask_step)
+    session.update!(last_prompted_at: Time.current, reminder_count: 0, source_message_sid: sent_message&.source_id)
   end
 
   # La respuesta a "lista de espera o definitiva" es el mensaje entrante que

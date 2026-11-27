@@ -38,6 +38,7 @@ module Calendario::WelcomeBotMessaging
     )
     message.source_id = result[:message_id] if result[:success] && result[:message_id].present?
     message.save!
+    message
   end
 
   # Bug real en produccion 2026-11-26 (conversacion #323): el mensaje que se

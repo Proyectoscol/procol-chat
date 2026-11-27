@@ -66,12 +66,35 @@ class Calendario::WelcomeBotFlowRunner
     session = active_session
     step = session.current_step_config
     return finish!(session) if step.blank?
+    return handoff_for_stale_reply(session) if stale_reply?(session)
     return handle_unmatched_answer(session, step) if unmatched_answer?(step, message.content)
 
     answers = session.answers.merge(session.current_step.to_s => message.content)
     session.update!(answers: answers)
 
     move_to_next_step!(session)
+  end
+
+  # Bug real encontrado en auditoria con Codex 2026-11-27 (hallazgo #6): un
+  # boton viejo de WhatsApp (de una pregunta ya resuelta, de ESTA sesion o
+  # de una anterior) podia terminar respondiendo la pregunta ACTUAL de la
+  # sesion activa, aunque el paciente en realidad estuviera tocando un
+  # mensaje distinto. Si Twilio reporta a que mensaje responde
+  # (OriginalRepliedMessageSid, ver Twilio::IncomingMessageService) y no
+  # coincide con el mensaje que esta sesion esta esperando, no se trata como
+  # la respuesta real -- un mensaje sin ese dato (texto libre normal, sin
+  # responder a nada en particular) sigue funcionando igual que siempre.
+  def stale_reply?(session)
+    replied_sid = message&.content_attributes&.[]('original_replied_message_sid')
+    replied_sid.present? && session.source_message_sid.present? && replied_sid != session.source_message_sid
+  end
+
+  def handoff_for_stale_reply(session)
+    finish!(
+      session,
+      note: "El paciente respondió a un mensaje anterior o distinto (\"#{message.content}\"), " \
+            'se transfiere a un agente en vez de aplicar la respuesta a la pregunta equivocada.'
+    )
   end
 
   # Un paso con "options"/"buttons" espera UNA de esas respuestas exactas
@@ -107,8 +130,8 @@ class Calendario::WelcomeBotFlowRunner
 
   def repeat_current_step(session, _step)
     step = session.current_step_config.merge('ask' => "No entendí tu respuesta. #{session.current_step_config['ask']}")
-    step['content_sid'].present? ? send_whatsapp_buttons(step) : send_text_question(step)
-    session.update!(last_prompted_at: Time.current)
+    sent_message = step['content_sid'].present? ? send_whatsapp_buttons(step) : send_text_question(step)
+    session.update!(last_prompted_at: Time.current, source_message_sid: sent_message&.source_id)
   end
 
   def continue_with_free_text(session, _step)
@@ -167,8 +190,8 @@ class Calendario::WelcomeBotFlowRunner
     handler = ACTION_STEP_HANDLERS[step['type']]
     return appointment_actions.public_send(handler, session, step) if handler
 
-    step['content_sid'].present? ? send_whatsapp_buttons(step) : send_text_question(step)
-    session.update!(last_prompted_at: Time.current, reminder_count: 0)
+    sent_message = step['content_sid'].present? ? send_whatsapp_buttons(step) : send_text_question(step)
+    session.update!(last_prompted_at: Time.current, reminder_count: 0, source_message_sid: sent_message&.source_id)
   end
 
   # Paso puramente informativo -- manda un mensaje sin botones y sigue de

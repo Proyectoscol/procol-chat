@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_27_064500) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_27_070000) do
   # These extensions should be enabled to support this database
   enable_extension "btree_gist"
   enable_extension "pg_stat_statements"
@@ -527,6 +527,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_27_064500) do
     t.string "status", default: "active", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "source_message_sid"
     t.index ["account_id"], name: "index_calendario_bot_sessions_on_account_id"
     t.index ["conversation_id"], name: "index_calendario_bot_sessions_on_conversation_id"
     t.index ["conversation_id"], name: "index_one_active_bot_session_per_conversation", unique: true, where: "((status)::text = 'active'::text)"

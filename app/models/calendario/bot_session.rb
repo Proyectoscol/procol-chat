@@ -13,6 +13,7 @@
 #  current_step        :integer          default(0), not null
 #  last_prompted_at    :datetime
 #  reminder_count      :integer          default(0), not null
+#  source_message_sid  :string
 #  status              :string           default("active"), not null
 #  created_at          :datetime         not null
 #  updated_at          :datetime         not null

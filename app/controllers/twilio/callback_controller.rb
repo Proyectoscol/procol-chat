@@ -37,7 +37,14 @@ class Twilio::CallbackController < ApplicationController
       :ProfileUsername,
       :Username,
       :FlowData,
-      :InteractiveData
+      :InteractiveData,
+      # Bug real encontrado en auditoria con Codex 2026-11-27 (hallazgo #6):
+      # Twilio manda este campo cuando el paciente responde a un mensaje
+      # especifico de WhatsApp (incluye el tap de un boton quick-reply de
+      # una plantilla), pero no estaba en el whitelist -- sin el, era
+      # imposible saber a que mensaje exacto respondia un boton, y un
+      # boton viejo podia accionar la sesion activa de una cita distinta.
+      :OriginalRepliedMessageSid
     )
   end
 end

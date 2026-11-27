@@ -36,7 +36,11 @@ class Calendario::AppointmentReminderBotSession
     true
   end
 
-  def start!(conversation)
+  # source_message_sid: el SID de Twilio del mensaje con botones que ya se
+  # mando (el recordatorio) -- ver auditoria con Codex 2026-11-27, hallazgo
+  # #6: sin esto, un boton viejo de OTRO recordatorio en la misma
+  # conversacion podia accionar esta sesion.
+  def start!(conversation, source_message_sid: nil)
     return unless interactive?
     return if Calendario::BotSession.active.exists?(conversation: conversation)
 
@@ -45,7 +49,8 @@ class Calendario::AppointmentReminderBotSession
 
     Calendario::BotSession.create!(
       account: appointment.account, conversation: conversation, welcome_bot_flow: flow,
-      current_step: 0, answers: { '_appointment_id' => appointment.id }, status: 'active'
+      current_step: 0, answers: { '_appointment_id' => appointment.id }, status: 'active',
+      source_message_sid: source_message_sid
     )
   rescue ActiveRecord::RecordNotUnique
     nil # carrera real con otra sesion -- la plantilla igual sale, sin sesion interactiva

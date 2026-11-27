@@ -239,13 +239,13 @@ class Calendario::AppointmentTriggerRunner
     )
     return false unless apply_send_result(message, result)
 
-    start_or_exempt_bot_session(conversation)
+    start_or_exempt_bot_session(conversation, message)
     true
   end
 
-  def start_or_exempt_bot_session(conversation)
+  def start_or_exempt_bot_session(conversation, message)
     if bot_session.interactive?
-      bot_session.start!(conversation)
+      bot_session.start!(conversation, source_message_sid: message.source_id)
     else
       Calendario::WelcomeBotExemption.new(conversation: conversation).apply!
     end
