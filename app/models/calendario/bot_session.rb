@@ -54,4 +54,26 @@ class Calendario::BotSession < ApplicationRecord
   def current_step_config
     welcome_bot_flow.steps[current_step]
   end
+
+  # Antes duplicado en WelcomeBotFlowRunner#finish! y
+  # WelcomeBotAppointmentActions#end_session! -- centralizado aqui para que
+  # Calendario::AgentTakeoverListener (y cualquier otro caller futuro) no
+  # tenga que repetirlo. Solo reactiva la auto-asignacion de la bandeja si
+  # NINGUNA otra conversacion sigue en triage -- es un flag de bandeja
+  # completa, no de una sola conversacion.
+  def end!
+    update!(status: 'handed_off')
+    inbox = conversation.inbox
+    inbox.update!(enable_auto_assignment: true) unless other_active_session_for_inbox?
+  end
+
+  private
+
+  def other_active_session_for_inbox?
+    self.class.active
+        .joins(:welcome_bot_flow)
+        .where(calendario_welcome_bot_flows: { inbox_id: conversation.inbox_id })
+        .where.not(conversation_id: conversation_id)
+        .exists?
+  end
 end

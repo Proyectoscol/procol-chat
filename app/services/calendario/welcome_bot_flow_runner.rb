@@ -206,21 +206,8 @@ class Calendario::WelcomeBotFlowRunner
   end
 
   def finish!(session, note: nil)
-    session.update!(status: 'handed_off')
-    # Solo reactiva la auto-asignacion si NINGUNA otra conversacion de esta
-    # misma bandeja sigue en triage -- es un flag de la bandeja completa,
-    # no de una sola conversacion; reactivarlo con otra sesion todavia
-    # activa le devolveria la carrera a la auto-asignacion contra ESA otra.
-    inbox.update!(enable_auto_assignment: true) unless other_active_sessions_for_inbox?
+    session.end!
     hand_off_to_human(session, note: note)
-  end
-
-  def other_active_sessions_for_inbox?
-    Calendario::BotSession.active
-                          .joins(:welcome_bot_flow)
-                          .where(calendario_welcome_bot_flows: { inbox_id: inbox.id })
-                          .where.not(conversation_id: conversation.id)
-                          .exists?
   end
 
   # Key de Calendario::MessageTemplate editable desde el admin -- fase de

@@ -204,15 +204,6 @@ class Calendario::WelcomeBotAppointmentActions
   end
 
   def end_session!(session)
-    session.update!(status: 'handed_off')
-    inbox.update!(enable_auto_assignment: true) unless other_active_sessions_for_inbox?
-  end
-
-  def other_active_sessions_for_inbox?
-    Calendario::BotSession.active
-                          .joins(:welcome_bot_flow)
-                          .where(calendario_welcome_bot_flows: { inbox_id: inbox.id })
-                          .where.not(conversation_id: conversation.id)
-                          .exists?
+    session.end!
   end
 end
