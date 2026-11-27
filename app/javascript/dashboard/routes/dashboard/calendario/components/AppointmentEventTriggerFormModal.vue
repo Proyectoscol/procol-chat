@@ -350,6 +350,7 @@ const offsetMinutesForSubmit = () => {
 };
 
 const submit = async () => {
+  if (isSaving.value) return;
   let templateParams;
   if (selectedInboxIsMetaWhatsapp.value) {
     if (!selectedTemplate.value) return;
@@ -715,7 +716,7 @@ const submit = async () => {
               : t('CALENDARIO.TRIGGERS.FORM.CREATE')
           "
           :is-loading="isSaving"
-          :disabled="isFormInvalid"
+          :disabled="isFormInvalid || isSaving"
         />
       </div>
     </form>

@@ -64,6 +64,7 @@ const isFormInvalid = computed(
 const onClose = () => emit('close');
 
 const submit = async () => {
+  if (isSubmitting.value) return;
   isSubmitting.value = true;
   let opened = 0;
   let skipped = 0;
@@ -167,7 +168,7 @@ const submit = async () => {
       <Button
         :label="t('CALENDARIO.SCHEDULES.OPEN_MULTIPLE.SUBMIT')"
         :is-loading="isSubmitting"
-        :disabled="isFormInvalid"
+        :disabled="isFormInvalid || isSubmitting"
         @click="submit"
       />
     </div>

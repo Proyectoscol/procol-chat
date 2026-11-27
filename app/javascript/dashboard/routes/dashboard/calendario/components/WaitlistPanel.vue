@@ -354,6 +354,7 @@ watch(
 );
 
 const submitAddEntry = async () => {
+  if (isCreatingEntry.value) return;
   isCreatingEntry.value = true;
   try {
     if (editingEntryId.value) {
@@ -703,7 +704,7 @@ defineExpose({ fetchEntries });
                 : t('CALENDARIO.WAITLIST.ADD_FORM.SUBMIT')
             "
             :is-loading="isCreatingEntry"
-            :disabled="isAddFormInvalid"
+            :disabled="isAddFormInvalid || isCreatingEntry"
             @click="submitAddEntry"
           />
         </div>

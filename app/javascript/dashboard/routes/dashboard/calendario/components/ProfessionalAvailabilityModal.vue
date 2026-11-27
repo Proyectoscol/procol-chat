@@ -72,6 +72,7 @@ const isFormInvalid = computed(
 const onClose = () => emit('close');
 
 const addWindow = async () => {
+  if (isSaving.value) return;
   isSaving.value = true;
   try {
     await store.dispatch('calendarioProfessionalAvailabilities/create', {
@@ -203,7 +204,7 @@ onMounted(() => {
           size="sm"
           :label="t('CALENDARIO.PROFESSIONALS.AVAILABILITY.ADD_BUTTON')"
           :is-loading="isSaving || uiFlags.isCreating"
-          :disabled="isFormInvalid"
+          :disabled="isFormInvalid || isSaving"
           @click="addWindow"
         />
       </div>

@@ -46,6 +46,7 @@ const startsAt = () => {
 };
 
 const confirm = async () => {
+  if (isSaving.value) return;
   isSaving.value = true;
   const payload = {
     contact_id: props.armedEntry.contact_id,
@@ -132,6 +133,7 @@ const cancel = () => emit('cancel');
             : t('CALENDARIO.WAITLIST.QUICK_BOOK.CONFIRM')
         "
         :is-loading="isSaving"
+        :disabled="isSaving"
         @click="confirm"
       />
     </div>

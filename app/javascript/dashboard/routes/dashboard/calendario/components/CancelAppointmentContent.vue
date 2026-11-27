@@ -27,6 +27,7 @@ const isFormInvalid = computed(
 const onClose = () => emit('close');
 
 const submit = async () => {
+  if (isSaving.value) return;
   isSaving.value = true;
   try {
     // Nunca pisar las notas existentes de la cita -- el motivo de
@@ -116,7 +117,7 @@ const submit = async () => {
         type="submit"
         :label="t('CALENDARIO.APPOINTMENTS.CANCEL_APPOINTMENT.SUBMIT')"
         :is-loading="isSaving"
-        :disabled="isFormInvalid"
+        :disabled="isFormInvalid || isSaving"
       />
     </div>
   </form>

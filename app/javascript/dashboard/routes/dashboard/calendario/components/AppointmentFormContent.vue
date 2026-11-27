@@ -343,6 +343,10 @@ const isFormInvalid = computed(
 const onClose = () => emit('close');
 
 const submit = async () => {
+  // Doble clic o Enter repetido mientras la peticion esta en curso creaba
+  // 2 citas identicas (bug real: contacto 7215, misma hora/servicio, 2
+  // mensajes de confirmacion idénticos enviados por WhatsApp).
+  if (isSaving.value) return;
   isSaving.value = true;
   const payload = {
     contact_id: selectedContactId.value,
@@ -634,7 +638,7 @@ const submit = async () => {
             : t('CALENDARIO.APPOINTMENTS.FORM.CREATE')
         "
         :is-loading="isSaving"
-        :disabled="isFormInvalid"
+        :disabled="isFormInvalid || isSaving"
       />
     </div>
   </form>

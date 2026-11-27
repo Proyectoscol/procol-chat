@@ -31,6 +31,7 @@ const isFormInvalid = computed(() => !name.value.trim());
 const onClose = () => emit('close');
 
 const submit = async () => {
+  if (isSaving.value) return;
   isSaving.value = true;
   const payload = { name: name.value, active: active.value };
   try {
@@ -95,7 +96,7 @@ const submit = async () => {
               : t('CALENDARIO.SPECIALTIES.FORM.CREATE')
           "
           :is-loading="isSaving"
-          :disabled="isFormInvalid"
+          :disabled="isFormInvalid || isSaving"
         />
       </div>
     </form>

@@ -39,6 +39,7 @@ const isFormInvalid = computed(
 const onClose = () => emit('close');
 
 const submit = async () => {
+  if (isSaving.value) return;
   isSaving.value = true;
   try {
     await store.dispatch('calendarioMessageTemplates/create', {
@@ -127,7 +128,7 @@ const submit = async () => {
           type="submit"
           :label="t('CALENDARIO.TEMPLATE_LIBRARY.FORM.CREATE')"
           :is-loading="isSaving"
-          :disabled="isFormInvalid"
+          :disabled="isFormInvalid || isSaving"
         />
       </div>
     </form>

@@ -85,6 +85,7 @@ const warningMessage = warning => {
 const onClose = () => emit('close');
 
 const submit = async () => {
+  if (isSaving.value) return;
   isSaving.value = true;
   const newStartsAt = startsAt.value;
   const newEndsAt = new Date(
@@ -172,7 +173,7 @@ const submit = async () => {
             : t('CALENDARIO.APPOINTMENTS.RESCHEDULE.SUBMIT')
         "
         :is-loading="isSaving"
-        :disabled="isFormInvalid"
+        :disabled="isFormInvalid || isSaving"
       />
     </div>
   </form>
