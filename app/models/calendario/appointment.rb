@@ -38,6 +38,8 @@
 #  fk_rails_...  (service_id => calendario_services.id) ON DELETE => cascade
 #
 class Calendario::Appointment < ApplicationRecord
+  include Events::Types
+
   self.table_name = 'calendario_appointments'
 
   enum :status, { pending: 0, confirmed: 1, attended: 2, no_show: 3, cancelled: 4 }
@@ -109,6 +111,13 @@ class Calendario::Appointment < ApplicationRecord
   after_update :log_status_change, if: :saved_change_to_status?
   after_update :run_on_status_change_triggers, if: :saved_change_to_status?
   after_update :grant_included_session_credits, if: :saved_change_to_status?
+  # Bug real en produccion 2026-11-27: confirmar una cita por el boton de
+  # WhatsApp (bot) cambiaba el estado real en la base de datos, pero el
+  # panel lateral de la conversacion seguia mostrando "pendiente" hasta que
+  # el agente refrescaba la pagina -- no existia ningun broadcast hacia el
+  # frontend para cambios de Calendario::Appointment (a diferencia de
+  # Conversation/Contact, que si usan este mismo patron de dispatcher).
+  after_update :dispatch_status_changed_event, if: :saved_change_to_status?
   after_update :log_cancellation_to_chat, if: -> { saved_change_to_status? && cancelled? }
 
   # La EPS/asegurador es un dato del contacto, no de la cita -- la tarifa se
@@ -181,6 +190,10 @@ class Calendario::Appointment < ApplicationRecord
     )
   end
 
+  def dispatch_status_changed_event
+    Rails.configuration.dispatcher.dispatch(APPOINTMENT_STATUS_CHANGED, Time.zone.now, appointment: self)
+  end
+
   def applicable_triggers(scope)
     account.calendario_appointment_event_triggers.active.merge(scope).select { |trigger| trigger.applies_to?(self) }
   end
@@ -204,7 +217,7 @@ class Calendario::Appointment < ApplicationRecord
     ).each do |trigger|
       if trigger.delay_minutes.positive?
         Calendario::AppointmentTriggerReminderJob.set(wait_until: trigger.delay_minutes.minutes.from_now)
-                                                  .perform_later(trigger.id, id)
+                                                 .perform_later(trigger.id, id)
       else
         Calendario::AppointmentTriggerRunner.new(trigger: trigger, appointment: self).perform
       end
@@ -288,7 +301,7 @@ class Calendario::Appointment < ApplicationRecord
     return if contact.blank?
     return if available_credit.present?
     return if contact.calendario_appointments.attended.where.not(id: id)
-                      .joins(:service).merge(Calendario::Service.where(kind: %i[consultation procedure])).exists?
+                     .joins(:service).merge(Calendario::Service.where(kind: %i[consultation procedure])).exists?
 
     errors.add(:service, 'requires a prior attended consultation or procedure for this contact')
   end

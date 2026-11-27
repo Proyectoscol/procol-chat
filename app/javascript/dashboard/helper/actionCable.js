@@ -39,6 +39,7 @@ class ActionCableConnector extends BaseActionCableConnector {
       'presence.update': this.onPresenceUpdate,
       'contact.deleted': this.onContactDelete,
       'contact.updated': this.onContactUpdate,
+      'appointment.status_changed': this.onAppointmentStatusChanged,
       'conversation.mentioned': this.onConversationMentioned,
       'notification.created': this.onNotificationCreated,
       'notification.deleted': this.onNotificationDeleted,
@@ -246,6 +247,21 @@ class ActionCableConnector extends BaseActionCableConnector {
 
   onContactUpdate = data => {
     this.app.$store.dispatch('contacts/updateContact', data);
+  };
+
+  // Refresca el panel de citas del sidebar sin F5 -- solo si el contacto
+  // abierto ahora mismo es el de la cita que cambio de estado (ej. el
+  // paciente confirmo por WhatsApp mientras el agente ya tenia esa
+  // conversacion abierta). Ver Calendario::Appointment#dispatch_status_changed_event.
+  onAppointmentStatusChanged = data => {
+    const openContactId =
+      this.app.$store.getters.getSelectedChat?.meta?.sender?.id;
+    if (openContactId && openContactId === data.contact_id) {
+      this.app.$store.dispatch(
+        'calendarioAppointments/getByContact',
+        data.contact_id
+      );
+    }
   };
 
   onNotificationCreated = data => {

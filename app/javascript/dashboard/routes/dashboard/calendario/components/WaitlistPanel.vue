@@ -23,6 +23,12 @@ const props = defineProps({
   // Solo en modo inline: el filtro de servicio pasa a ser compartido con
   // Agendas (ver effectiveServiceId mas abajo) en vez del ref interno.
   serviceId: { type: [Number, String], default: null },
+  // Pedido explicito del usuario: desde el panel lateral de una conversacion
+  // (boton "agregar a lista de espera" junto a "agendar cita" en
+  // ContactInfo.vue), el contacto ya esta seleccionado -- al abrir, salta
+  // directo al formulario de agregar con el contacto fijo, en vez de la
+  // busqueda normal.
+  presetContact: { type: Object, default: null },
 });
 const emit = defineEmits(['close', 'book', 'update:serviceId']);
 
@@ -222,15 +228,36 @@ const professionalOptions = computed(() => [
 
 const resetAddForm = () => {
   editingEntryId.value = null;
-  contactQuery.value = '';
-  selectedContactId.value = '';
-  selectedContactName.value = '';
+  contactQuery.value = props.presetContact?.name || '';
+  selectedContactId.value = props.presetContact?.id || '';
+  selectedContactName.value = props.presetContact?.name || '';
   newEntryServiceId.value = '';
   newEntryProfessionalId.value = '';
   newEntryNotes.value = '';
   isDuplicate.value = false;
   showCreateContactForm.value = false;
 };
+
+// Con presetContact, el contacto ya quedo elegido desde la conversacion --
+// no tiene sentido permitir buscar/cambiarlo desde aca (mismo criterio que
+// al editar una entrada existente).
+const contactLocked = computed(
+  () => !!editingEntryId.value || !!props.presetContact
+);
+
+// Con presetContact, abrir el panel debe saltar directo al formulario de
+// agregar (con el contacto ya fijo) en vez de mostrar primero la lista --
+// ese es el pedido explicito: "muy simple, agregar servicio y profesional,
+// y ya".
+watch(
+  () => props.show,
+  show => {
+    if (show && props.presetContact) {
+      resetAddForm();
+      showAddForm.value = true;
+    }
+  }
+);
 
 const toggleAddForm = () => {
   showAddForm.value = !showAddForm.value;
@@ -540,14 +567,14 @@ defineExpose({ fetchEntries });
         }}</label>
         <input
           v-model="contactQuery"
-          :disabled="!!editingEntryId"
+          :disabled="contactLocked"
           :placeholder="t('CALENDARIO.WAITLIST.ADD_FORM.CONTACT_PLACEHOLDER')"
           class="w-full rounded-lg border border-n-weak bg-transparent px-3 py-2 text-sm disabled:opacity-60"
           @input="onContactQueryInput"
         />
         <ul
           v-if="
-            !editingEntryId &&
+            !contactLocked &&
             contactQuery.trim().length >= 2 &&
             !selectedContactId &&
             contactResults.length
@@ -572,7 +599,7 @@ defineExpose({ fetchEntries });
         existe, y este boton no deberia verse (pedido explicito). -->
         <button
           v-if="
-            !editingEntryId &&
+            !contactLocked &&
             !selectedContactId &&
             contactQuery.trim().length >= 2 &&
             !contactResults.length &&

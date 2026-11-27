@@ -175,6 +175,12 @@ class ActionCableListener < BaseListener
     broadcast(account, [account_token(account)], CONTACT_DELETED, contact_data)
   end
 
+  def appointment_status_changed(event)
+    appointment = event.data[:appointment]
+    data = { appointment_id: appointment.id, contact_id: appointment.contact_id, status: appointment.status }
+    broadcast(appointment.account, [account_token(appointment.account)], APPOINTMENT_STATUS_CHANGED, data)
+  end
+
   def conversation_mentioned(event)
     conversation, account = extract_conversation_and_account(event)
     user = event.data[:user]

@@ -12,11 +12,11 @@ import Avatar from 'next/avatar/Avatar.vue';
 import EditContact from './EditContact.vue';
 import ContactMergeModal from 'dashboard/modules/contact/ContactMergeModal.vue';
 import ContactDeleteModal from 'dashboard/modules/contact/ContactDeleteModal.vue';
-import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import VoiceCallButton from 'dashboard/components-next/Contacts/VoiceCallButton.vue';
 import InlineInput from 'dashboard/components-next/inline-input/InlineInput.vue';
 import AppointmentFormModal from 'dashboard/routes/dashboard/calendario/components/AppointmentFormModal.vue';
+import WaitlistPanel from 'dashboard/routes/dashboard/calendario/components/WaitlistPanel.vue';
 
 export default {
   components: {
@@ -24,12 +24,12 @@ export default {
     ContactInfoRow,
     EditContact,
     Avatar,
-    ComposeConversation,
     ContactMergeModal,
     ContactDeleteModal,
     VoiceCallButton,
     InlineInput,
     AppointmentFormModal,
+    WaitlistPanel,
   },
   props: {
     contact: {
@@ -58,6 +58,7 @@ export default {
       isEditingName: false,
       editName: '',
       showAppointmentModal: false,
+      showWaitlistModal: false,
     };
   },
   computed: {
@@ -130,6 +131,9 @@ export default {
     },
     toggleAppointmentModal() {
       this.showAppointmentModal = !this.showAppointmentModal;
+    },
+    toggleWaitlistModal() {
+      this.showWaitlistModal = !this.showWaitlistModal;
     },
     findCountryFlag(countryCode, cityAndCountry) {
       try {
@@ -309,17 +313,6 @@ export default {
         </div>
       </div>
       <div class="flex items-center w-full mt-0.5 gap-2">
-        <ComposeConversation :contact-id="String(contact.id)">
-          <template #trigger>
-            <NextButton
-              v-tooltip.top-end="$t('CONTACT_PANEL.NEW_MESSAGE')"
-              icon="i-ph-chat-circle-dots"
-              slate
-              faded
-              sm
-            />
-          </template>
-        </ComposeConversation>
         <VoiceCallButton
           :phone="contact.phone_number"
           :contact-id="contact.id"
@@ -345,6 +338,14 @@ export default {
           faded
           sm
           @click="toggleAppointmentModal"
+        />
+        <NextButton
+          v-tooltip.top-end="$t('CONTACT_PANEL.ADD_TO_WAITLIST')"
+          icon="i-lucide-list-plus"
+          slate
+          faded
+          sm
+          @click="toggleWaitlistModal"
         />
         <ContactMergeModal :primary-contact="contact">
           <template #trigger>
@@ -391,6 +392,11 @@ export default {
           @close="toggleAppointmentModal"
         />
       </woot-modal>
+      <WaitlistPanel
+        :show="showWaitlistModal"
+        :preset-contact="contact"
+        @close="toggleWaitlistModal"
+      />
     </div>
   </div>
 </template>

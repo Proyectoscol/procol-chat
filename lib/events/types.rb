@@ -61,4 +61,7 @@ module Events::Types
 
   # copilot events
   COPILOT_MESSAGE_CREATED = 'copilot.message.created'
+
+  # calendario events
+  APPOINTMENT_STATUS_CHANGED = 'appointment.status_changed'
 end
