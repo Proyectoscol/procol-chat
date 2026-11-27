@@ -33,19 +33,26 @@ class WebTracking::AttributionLookupJob < ApplicationJob
     return if visitor.blank?
 
     update_contact_attributes(contact, visitor)
-    apply_traffic_source_label(conversation, visitor['traffic_source_category'])
+    apply_traffic_source_label(conversation, visitor['trafficSourceCategory'])
   end
 
   private
 
+  # tracking-api es Node/Drizzle -- el JSON que devuelve usa los nombres de
+  # columna en camelCase (ver tracking-api/src/db/schema.ts), no snake_case.
+  # Un mismatch aqui no truena nada (todo con [] en Ruby devuelve nil para
+  # una key que no existe) asi que pasaba totalmente silencioso: el job
+  # corria, loggeaba "match", pero guardaba todos los campos en nil salvo
+  # visited_pages (que sobrevivia el .compact por quedar en "" en vez de
+  # nil) -- confirmado real 2026-11-27, conversacion #349.
   def update_contact_attributes(contact, visitor)
     attributes = {
-      'web_landing_page' => visitor['landing_page'],
-      'web_utm_source' => visitor['utm_source'],
-      'web_utm_medium' => visitor['utm_medium'],
-      'web_utm_campaign' => visitor['utm_campaign'],
-      'web_visit_count' => visitor['visit_count'],
-      'web_visited_pages' => Array(visitor['visited_pages']).first(15).join(', ')
+      'web_landing_page' => visitor['landingPage'],
+      'web_utm_source' => visitor['utmSource'],
+      'web_utm_medium' => visitor['utmMedium'],
+      'web_utm_campaign' => visitor['utmCampaign'],
+      'web_visit_count' => visitor['visitCount'],
+      'web_visited_pages' => Array(visitor['visitedPages']).first(15).join(', ')
     }.compact
 
     return if attributes.blank?
