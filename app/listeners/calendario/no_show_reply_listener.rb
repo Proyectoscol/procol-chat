@@ -24,6 +24,15 @@ class Calendario::NoShowReplyListener < BaseListener
   def message_created(event)
     message, account = extract_message_and_account(event)
     return if skip?(message)
+    # Bug real encontrado en auditoria con Codex 2026-11-27: este listener
+    # corre sobre CUALQUIER mensaje entrante del contacto, sin mirar si hay
+    # una sesion de bot activa esperando respuesta para OTRA cita mas
+    # reciente en la misma conversacion (ej. el bot de bienvenida/triaje
+    # general, o un recordatorio interactivo) -- un simple "Cancelar" dirigido
+    # a esa cita nueva terminaba cancelando, por error, una cita de no-show
+    # vieja y completamente distinta. Si hay una sesion activa, esa
+    # respuesta es suya, no de este listener basado en keywords.
+    return if Calendario::BotSession.active.exists?(conversation: message.conversation)
 
     appointment = recent_no_show_appointment_for(message.conversation)
     return if appointment.blank?

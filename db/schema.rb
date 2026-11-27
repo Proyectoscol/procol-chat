@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_26_163133) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_27_064500) do
   # These extensions should be enabled to support this database
   enable_extension "btree_gist"
   enable_extension "pg_stat_statements"
@@ -486,8 +486,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_26_163133) do
     t.datetime "fired_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "occurrence_token", default: "", null: false
     t.index ["appointment_id"], name: "index_calendario_appointment_trigger_firings_on_appointment_id"
-    t.index ["trigger_id", "appointment_id"], name: "index_calendario_trigger_firings_on_trigger_and_appointment", unique: true
+    t.index ["trigger_id", "appointment_id", "occurrence_token"], name: "index_calendario_trigger_firings_on_trigger_appt_occurrence", unique: true
     t.index ["trigger_id"], name: "index_calendario_appointment_trigger_firings_on_trigger_id"
   end
 

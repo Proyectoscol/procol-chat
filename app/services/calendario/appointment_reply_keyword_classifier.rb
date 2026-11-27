@@ -6,10 +6,17 @@ module Calendario::AppointmentReplyKeywordClassifier
   RESCHEDULE_KEYWORDS = %w[reprogramar reagendar].freeze
   CANCEL_KEYWORDS = %w[cancelar].freeze
 
+  # Bug real encontrado en auditoria con Codex 2026-11-27: un `include?` por
+  # substring clasificaba cualquier frase que CONTUVIERA la palabra como la
+  # intencion opuesta -- "No quiero cancelar mi cita" cancelaba la cita igual
+  # que un simple "Cancelar". El boton real solo manda su etiqueta exacta
+  # ("Reprogramar"/"Cancelar", ver comentario de clase de NoShowReplyListener),
+  # asi que el match debe ser por igualdad (recortando espacios), no
+  # contencion.
   def classify_appointment_reply(content)
-    normalized = content.to_s.downcase.unicode_normalize(:nfkd).gsub(/[^\x00-\x7F]/, '')
-    return :reschedule if RESCHEDULE_KEYWORDS.any? { |word| normalized.include?(word) }
-    return :cancel if CANCEL_KEYWORDS.any? { |word| normalized.include?(word) }
+    normalized = content.to_s.strip.downcase.unicode_normalize(:nfkd).gsub(/[^\x00-\x7F]/, '')
+    return :reschedule if RESCHEDULE_KEYWORDS.include?(normalized)
+    return :cancel if CANCEL_KEYWORDS.include?(normalized)
 
     nil
   end

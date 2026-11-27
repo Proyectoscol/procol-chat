@@ -13,24 +13,70 @@
 # crea una nota privada en la conversacion con el texto que se habria
 # enviado. Nunca sale un mensaje real mientras test_mode este activo.
 class Calendario::AppointmentTriggerRunner
+  # Tolerancia para el guard de "job viejo de antes de un reagendado" (ver
+  # #stale_before_start_run?) -- margen chico para no rechazar por latencia
+  # normal de cola, pero suficiente para detectar un job que quedo apuntando
+  # a una hora que ya no es la real.
+  STALE_BEFORE_START_TOLERANCE = 2.minutes
+
   # defer_attempt: cuantas veces ya se aplazo este mismo envio por choque de
   # sesion de bot activa (ver Calendario::AppointmentReminderBotSession) --
   # 0 en el primer intento, lo incrementa AppointmentTriggerReminderJob cada
   # vez que se reencola.
-  pattr_initialize [:trigger!, :appointment!, { defer_attempt: 0 }]
+  #
+  # occurrence_token: solo lo pasa Calendario::Appointment#run_on_status_change_triggers
+  # para el camino demorado -- ver comentario ahi y en #resolved_occurrence_token.
+  pattr_initialize [:trigger!, :appointment!, { defer_attempt: 0 }, { occurrence_token: nil }]
 
+  # Bug real encontrado en auditoria con Codex 2026-11-27 (hallazgos #3 y #4):
+  # antes, el orden era "chequear ya_se_envio -> enviar -> grabar ya_se_envio",
+  # lo cual (a) marcaba como "enviado" un intento que en realidad fallo en
+  # Twilio (bloqueando para siempre cualquier reintento futuro de esa misma
+  # ocurrencia), y (b) no protegia contra dos workers corriendo el mismo job
+  # en paralelo (ambos pasaban el chequeo antes de que ninguno grabara nada).
+  # Ahora la fila de "ya_se_envio" se RESERVA primero (atomico via el indice
+  # unico de la base de datos: solo uno de dos workers concurrentes logra
+  # crearla), y si el envio real despues falla, se borra la reserva para que
+  # un reintento futuro si pueda volver a intentarlo.
   def perform
-    return :already_fired if already_fired?
-    return :inactive unless trigger.active? && appointment_still_applies?
-    return :no_phone if appointment.contact.phone_number.blank?
-    return :deferred if deferred_for_session_conflict?
+    blocked = blocking_status
+    return blocked if blocked
 
-    trigger.test_mode? ? create_private_note : send_template_message
-    record_firing!
-    :sent
+    firing = reserve_firing!
+    return :already_fired if firing.blank?
+
+    # Bug real #5 de la auditoria (parte 2): entre el chequeo de arriba y
+    # este punto pasan varios pasos (reservar la fila, resolver variables,
+    # buscar/crear la conversacion) -- si justo en ese hueco alguien cancelo
+    # la cita desde otro lado (UI, otro mensaje), sin este re-chequeo se
+    # mandaria igual un recordatorio "confirma tu cita" contradiciendo el
+    # mensaje de cancelacion que ya salio. appointment.reload trae el estado
+    # mas fresco posible justo antes de disparar.
+    appointment.reload
+    unless appointment_still_applies?
+      firing.destroy!
+      return :inactive
+    end
+
+    success = dispatch!
+    firing.destroy! unless success
+    success ? :sent : :send_failed
   end
 
   private
+
+  def blocking_status
+    return :inactive unless trigger.active? && appointment_still_applies?
+    return :stale if stale_before_start_run?
+    return :no_phone if appointment.contact.phone_number.blank?
+    return :deferred if deferred_for_session_conflict?
+
+    nil
+  end
+
+  def dispatch!
+    trigger.test_mode? ? create_private_note.present? : send_template_message
+  end
 
   def deferred_for_session_conflict?
     !trigger.test_mode? && bot_session.defer?(find_or_create_conversation)
@@ -40,23 +86,79 @@ class Calendario::AppointmentTriggerRunner
   delegate :channel, to: :inbox
   delegate :contact, :account, to: :appointment
 
-  def already_fired?
-    Calendario::AppointmentTriggerFiring.exists?(trigger_id: trigger.id, appointment_id: appointment.id)
+  def reserve_firing!
+    Calendario::AppointmentTriggerFiring.create!(
+      trigger: trigger, appointment: appointment, occurrence_token: resolved_occurrence_token, fired_at: Time.current
+    )
+  rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid
+    nil
   end
 
-  # Para before_start: si ya se confirmo/atendio/cancelo/no-show desde que se
-  # encolo el recordatorio, ya no aplica -- esto es lo que detiene la
-  # escalera de recordatorios sin necesitar cancelar el ActiveJob encolado
-  # (no hay forma nativa de cancelarlo en este stack; el guard en el momento
-  # de ejecutar es el patron ya usado en el resto del codebase).
+  # Distingue cada OCURRENCIA real del evento, no solo el par trigger+cita --
+  # bug real #2 de la auditoria: con una llave permanente, un segundo
+  # reagendado o un confirmada->pendiente->confirmada nunca volvian a
+  # notificar porque la fila vieja ya "consumia" la llave para siempre.
   #
-  # Para on_status_change con delay_minutes>0: mismo problema -- si el
-  # estado volvio a cambiar durante la espera (ej. marcada "atendida" por
-  # error y corregida a "no_show" antes de que corriera el job demorado),
-  # ya no tiene sentido mandar el mensaje del estado viejo.
+  # before_start: la hora actual de la cita -- un reagendado a una hora
+  # distinta es una ocurrencia nueva (el job viejo, para la hora anterior,
+  # ademas queda bloqueado por #stale_before_start_run? antes de llegar aca).
+  # on_reschedule: reschedules_count ya es un contador que Calendario::Appointment
+  # incrementa en cada reagendado (ver #log_reschedule), perfecto como version.
+  # on_status_change: el occurrence_token explicito (capturado al encolar,
+  # ver Calendario::Appointment#run_on_status_change_triggers) para el camino
+  # demorado, o el ultimo audit_log de status_changed para el inmediato.
+  # on_create: siempre la misma ocurrencia (una cita solo se crea una vez).
+  def resolved_occurrence_token
+    return occurrence_token if occurrence_token.present?
+
+    case trigger.trigger_kind
+    when 'before_start' then appointment.starts_at.to_i.to_s
+    when 'on_reschedule' then appointment.reschedules_count.to_s
+    when 'on_status_change' then appointment.status_change_occurrence_token
+    else ''
+    end
+  end
+
+  # Bug real #1 de la auditoria: reagendar una cita encola un job NUEVO para
+  # el antes-de-la-cita correcto, pero no hay forma de cancelar el job VIEJO
+  # ya encolado para la hora anterior -- si corre de todas formas, antes
+  # solo chequeaba el ESTADO de la cita (seguia pendiente/confirmada), nunca
+  # si la hora para la que fue programado seguia siendo la real. Resultado:
+  # el job viejo enviaba "tu cita es en 1 hora" con la hora VIEJA, en el
+  # momento equivocado, y encima bloqueaba (via la llave de ya_se_envio) el
+  # job nuevo y correcto que si tenia la hora buena.
+  def stale_before_start_run?
+    return false unless trigger.before_start?
+    return true if appointment.starts_at <= Time.current
+
+    expected_fire_at = appointment.starts_at - trigger.offset_minutes.minutes
+    expected_fire_at > STALE_BEFORE_START_TOLERANCE.from_now
+  end
+
+  # Para before_start: antes de hoy, "pendiente o confirmada" bastaba para
+  # seguir aplicando -- pero un recordatorio INTERACTIVO (con botones,
+  # pensado para pedir "confirma tu asistencia") no tiene sentido repetirlo
+  # una vez el paciente YA confirmo (bug real #5 de la auditoria: el
+  # comentario de este metodo decia explicitamente que debia detenerse al
+  # confirmar, pero el codigo seguia permitiendolo). Un before_start NO
+  # interactivo (ej. las recomendaciones de preparacion, que no piden nada)
+  # si debe seguir aplicando mientras no este cancelada/atendida/no-show,
+  # haya confirmado o no -- no es una pregunta, es informativo.
+  #
+  # Para on_status_change con delay_minutes>0: si el estado volvio a cambiar
+  # durante la espera (ej. marcada "atendida" por error y corregida a
+  # "no_show" antes de que corriera el job demorado), ya no tiene sentido
+  # mandar el mensaje del estado viejo.
   def appointment_still_applies?
-    return appointment.pending? || appointment.confirmed? if trigger.before_start?
+    return before_start_still_applies? if trigger.before_start?
     return appointment.status == trigger.target_status if trigger.on_status_change?
+
+    true
+  end
+
+  def before_start_still_applies?
+    return false unless appointment.pending? || appointment.confirmed?
+    return appointment.pending? if bot_session.interactive?
 
     true
   end
@@ -86,17 +188,18 @@ class Calendario::AppointmentTriggerRunner
     return send_twilio_template_message if twilio_whatsapp_with_content_sid?
 
     processed = processed_template_params
-    return if processed.blank?
+    return false if processed.blank?
 
     processor = Whatsapp::TemplateProcessorService.new(channel: channel, template_params: processed)
     name, namespace, lang_code, parameters = processor.call
-    return if name.blank?
+    return false if name.blank?
 
     channel.send_template(contact.phone_number, {
                             name: name, namespace: namespace, lang_code: lang_code, parameters: parameters
-                          }, nil)
+                          }, nil).present?
   rescue StandardError => e
     ChatwootExceptionTracker.new(e, account: account).capture_exception
+    false
   end
 
   # Bandejas Twilio no tienen catalogo de plantillas de Meta -- el trigger
@@ -108,39 +211,44 @@ class Calendario::AppointmentTriggerRunner
     inbox.twilio_whatsapp? && trigger.template_params['content_sid'].present?
   end
 
+  # Bug real #3 de la auditoria: antes se arrancaba la sesion interactiva (o
+  # se aplicaba la exencion del bot de bienvenida) ANTES de intentar el
+  # envio real -- si Twilio rechazaba el mensaje, quedaba una sesion activa
+  # esperando la respuesta a un mensaje que el paciente nunca recibio. Ahora
+  # eso solo pasa DESPUES de confirmar que el envio fue exitoso.
   def send_twilio_template_message
     conversation = find_or_create_conversation
-    return if conversation.blank?
+    return false if conversation.blank?
 
     content_variables = resolve_content_variables
     if incomplete_variable_mapping?(content_variables)
       warn_incomplete_variable_mapping(conversation, content_variables)
-      return
+      return false
     end
 
+    # BUG REAL encontrado 2026-11-26: contact.phone_number no lleva el
+    # prefijo "whatsapp:" -- Twilio lo rechaza con error 21910 ("Invalid
+    # From and To pair. From and To should be of the same channel") porque
+    # el messaging_service_sid configurado es de WhatsApp. conversation.contact_inbox.source_id
+    # ya trae el prefijo correcto -- mismo patron que
+    # Calendario::WelcomeBotMessaging#send_whatsapp_buttons, que nunca tuvo este bug.
+    message = build_twilio_message(conversation)
+    result = Twilio::SendOnTwilioService.new(message: message).send_csat_template_message(
+      phone_number: conversation.contact_inbox.source_id, content_sid: trigger.template_params['content_sid'],
+      content_variables: content_variables
+    )
+    return false unless apply_send_result(message, result)
+
+    start_or_exempt_bot_session(conversation)
+    true
+  end
+
+  def start_or_exempt_bot_session(conversation)
     if bot_session.interactive?
       bot_session.start!(conversation)
     else
       Calendario::WelcomeBotExemption.new(conversation: conversation).apply!
     end
-
-    message = build_twilio_message(conversation)
-    # BUG REAL encontrado 2026-11-26: contact.phone_number no lleva el
-    # prefijo "whatsapp:" -- Twilio lo rechaza con error 21910 ("Invalid
-    # From and To pair. From and To should be of the same channel") porque
-    # el messaging_service_sid configurado es de WhatsApp. El envio con
-    # plantilla fallaba SIEMPRE (en los 8 disparadores activos), pero el
-    # registro del mensaje ya quedaba creado -- el pipeline generico de
-    # Chatwoot (Message#send_reply, disparado porque source_id seguia nil
-    # tras el fallo) lo reenviaba como texto plano con el preview roto
-    # ("Cita confirmada, 1"), que SI llegaba al paciente. conversation.contact_inbox.source_id
-    # ya trae el prefijo correcto -- mismo patron que
-    # Calendario::WelcomeBotMessaging#send_whatsapp_buttons, que nunca tuvo este bug.
-    result = Twilio::SendOnTwilioService.new(message: message).send_csat_template_message(
-      phone_number: conversation.contact_inbox.source_id, content_sid: trigger.template_params['content_sid'],
-      content_variables: content_variables
-    )
-    apply_send_result(message, result)
   end
 
   # Red de seguridad: si al disparador le falta mapear alguna variable del
@@ -185,9 +293,11 @@ class Calendario::AppointmentTriggerRunner
   end
 
   def apply_send_result(message, result)
-    message.source_id = result[:message_id] if result[:success] && result[:message_id].present?
-    message.status = :failed unless result[:success]
+    success = result[:success].present?
+    message.source_id = result[:message_id] if success && result[:message_id].present?
+    message.status = :failed unless success
     message.save!
+    success
   end
 
   # El mapeo { "1" => "appointment.date", "2" => "contact.name", ... } se
@@ -295,9 +405,5 @@ class Calendario::AppointmentTriggerRunner
     existing || Conversation.create!(
       account: account, inbox: inbox, contact: contact, contact_inbox: contact_inbox
     )
-  end
-
-  def record_firing!
-    Calendario::AppointmentTriggerFiring.create!(trigger: trigger, appointment: appointment, fired_at: Time.current)
   end
 end

@@ -142,6 +142,14 @@ class Calendario::Appointment < ApplicationRecord
     update!(status: :cancelled)
   end
 
+  # Identifica la ocurrencia especifica de ESTE cambio de estado (no solo la
+  # cita) -- lo consulta Calendario::AppointmentTriggerRunner para que la
+  # llave de "ya_se_envio" no sea permanente por cita (ver auditoria con
+  # Codex 2026-11-27, hallazgo #2).
+  def status_change_occurrence_token
+    audit_logs.where(event_type: :status_changed).order(:id).last&.id.to_s
+  end
+
   private
 
   def log_creation
@@ -212,14 +220,23 @@ class Calendario::Appointment < ApplicationRecord
   # job encolado con wait_until que ya usa schedule_before_start_triggers,
   # solo que contado desde "ahora" en vez de desde starts_at.
   def run_on_status_change_triggers
+    # Bug real encontrado en auditoria con Codex 2026-11-27: si el token de
+    # ocurrencia se recalculara al CORRER el job demorado en vez de al
+    # encolarlo, un vaiven de estado durante la espera (ej. "atendida" por
+    # error corregido a "no_show" antes de que corriera) haria que el job
+    # viejo calculara el token del estado NUEVO (el ultimo audit_log en ese
+    # momento) y mandara el mensaje equivocado como si fuera el correcto.
+    # Capturarlo aqui, al encolar, lo deja fijo a ESTE cambio de estado
+    # especifico.
+    token = status_change_occurrence_token
     applicable_triggers(
       Calendario::AppointmentEventTrigger.for_kind('on_status_change').where(target_status: status)
     ).each do |trigger|
       if trigger.delay_minutes.positive?
         Calendario::AppointmentTriggerReminderJob.set(wait_until: trigger.delay_minutes.minutes.from_now)
-                                                 .perform_later(trigger.id, id)
+                                                 .perform_later(trigger.id, id, 0, token)
       else
-        Calendario::AppointmentTriggerRunner.new(trigger: trigger, appointment: self).perform
+        Calendario::AppointmentTriggerRunner.new(trigger: trigger, appointment: self, occurrence_token: token).perform
       end
     end
   end

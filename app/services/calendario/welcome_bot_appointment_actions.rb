@@ -55,32 +55,43 @@ class Calendario::WelcomeBotAppointmentActions
   # guardo en session.answers via Calendario::WelcomeBotFlowRunner#advance!)
   # -- usar message.content directamente evita adivinar que indice de
   # answers corresponde al paso anterior si hubiera ramificaciones.
+  # Bug real encontrado en auditoria con Codex 2026-11-27 (hallazgo #8): esto
+  # no tenia NINGUN guard de estado -- una accion tardia (ej. el paciente
+  # toca "Cancelar" en un mensaje viejo de WhatsApp despues de que la cita ya
+  # quedo "atendida" o ya fue cancelada por otro medio) sobreescribia un
+  # estado ya definitivo. Mismo criterio que perform_confirmation_step: si no
+  # esta en un estado donde cancelar tiene sentido (pendiente/confirmada), se
+  # trata como cita no encontrada -- se transfiere a recepcion en vez de
+  # mutar un estado inconsistente. appointment.with_lock cierra tambien la
+  # carrera de dos respuestas casi simultaneas para el mismo boton (ambas
+  # pasando el chequeo antes de que ninguna escribiera).
   def perform_cancellation_step(session, step)
     appointment = located_appointment(session)
     return handoff_for_missing_appointment(session, step) if appointment.blank?
 
-    wants_waitlist = normalize(message.content).include?(
-      normalize(step['waitlist_keyword'].presence || DEFAULT_WAITLIST_KEYWORD)
-    )
+    cancelled = appointment.with_lock do
+      next false unless cancellable_state?(appointment)
 
-    appointment.cancel!
-    Calendario::WaitlistFulfillmentService.new(appointment: appointment).reactivate! if wants_waitlist
+      appointment.cancel!
+      true
+    end
+    return handoff_for_missing_appointment(session, step) unless cancelled
 
-    assign_available_agent if conversation.assignee_id.blank?
-    create_private_note(
-      "Cita ##{appointment.id} cancelada vía bot de bienvenida " \
-      "(#{wants_waitlist ? 'reactivo lista de espera' : 'cancelacion definitiva'})."
-    )
-    send_text_question('ask' => resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_HANDOFF_ACK_MESSAGE))
-
-    end_session!(session)
+    finish_cancellation(session, step, appointment, wants_waitlist?(step))
   end
 
   def perform_reschedule_step(session, step)
     appointment = located_appointment(session)
     return handoff_for_missing_appointment(session, step) if appointment.blank?
 
-    appointment.update!(status: :pending)
+    reopened = appointment.with_lock do
+      next false unless cancellable_state?(appointment)
+
+      appointment.update!(status: :pending)
+      true
+    end
+    return handoff_for_missing_appointment(session, step) unless reopened
+
     assign_available_agent if conversation.assignee_id.blank?
     create_private_note("Cita ##{appointment.id}: el paciente solicitó reagendar vía bot de bienvenida. Reagendar manualmente.")
     ack_text = resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_RESCHEDULE_ACK_MESSAGE)
@@ -101,15 +112,21 @@ class Calendario::WelcomeBotAppointmentActions
     appointment = located_appointment(session)
     return handoff_for_missing_appointment(session, step) if appointment.blank?
 
-    if appointment.confirmed?
+    outcome = appointment.with_lock do
+      next :already_confirmed if appointment.confirmed?
+      next :invalid unless appointment.pending?
+
+      appointment.confirm!
+      :confirmed
+    end
+
+    if outcome == :already_confirmed
       send_text_question('ask' => resolved_text(step, 'already_confirmed_message_key', 'already_confirmed_message',
                                                 DEFAULT_ALREADY_CONFIRMED_MESSAGE))
       return end_session!(session)
     end
+    return handoff_for_missing_appointment(session, step) if outcome == :invalid
 
-    return handoff_for_missing_appointment(session, step) unless appointment.pending?
-
-    appointment.confirm!
     assign_available_agent if conversation.assignee_id.blank?
     create_private_note("Cita ##{appointment.id} confirmada por el paciente vía bot de bienvenida.")
     send_text_question('ask' => resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_CONFIRMATION_ACK_MESSAGE))
@@ -126,6 +143,31 @@ class Calendario::WelcomeBotAppointmentActions
   end
 
   private
+
+  # Unico criterio compartido por las 3 acciones de sesion (cancelar,
+  # reagendar, confirmar): solo tiene sentido actuar sobre un estado NO
+  # definitivo. Una vez atendida/no-show/cancelada, cualquier accion tardia
+  # se trata como cita no encontrada.
+  def cancellable_state?(appointment)
+    appointment.pending? || appointment.confirmed?
+  end
+
+  def wants_waitlist?(step)
+    normalize(message.content).include?(normalize(step['waitlist_keyword'].presence || DEFAULT_WAITLIST_KEYWORD))
+  end
+
+  def finish_cancellation(session, step, appointment, wants_waitlist)
+    Calendario::WaitlistFulfillmentService.new(appointment: appointment).reactivate! if wants_waitlist
+
+    assign_available_agent if conversation.assignee_id.blank?
+    create_private_note(
+      "Cita ##{appointment.id} cancelada vía bot de bienvenida " \
+      "(#{wants_waitlist ? 'reactivo lista de espera' : 'cancelacion definitiva'})."
+    )
+    send_text_question('ask' => resolved_text(step, 'ack_message_key', 'ack_message', DEFAULT_HANDOFF_ACK_MESSAGE))
+
+    end_session!(session)
+  end
 
   def handle_no_upcoming_appointment(session, step)
     empty_message = resolved_text(step, 'empty_message_key', 'empty_message', DEFAULT_EMPTY_APPOINTMENT_MESSAGE)

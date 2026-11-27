@@ -1,17 +1,24 @@
 class Calendario::WelcomeBotListener < BaseListener
   def message_created(event)
     message, account = extract_message_and_account(event)
-    return unless message.incoming? && !message.private?
-    # Nunca reaccionar a un mensaje historico importado (ej. bulk-import de
-    # exports de WhatsApp) -- ver incidente documentado en
-    # data_imports/.../INCIDENTE_welcome_bot_import.md: sin este guard, 166
-    # conversaciones importadas se confundieron con conversaciones nuevas de
-    # verdad y el bot mando 674 mensajes reales por Twilio a pacientes reales.
-    return if message.content_attributes['historical_import']
+    return if skip?(message)
 
     conversation = message.conversation
+    # Bug real encontrado en auditoria con Codex 2026-11-27 (hallazgo #10):
+    # un recordatorio interactivo (ej. el boton Confirmar de antes-de-la-
+    # cita) arranca su propia Calendario::BotSession con el flujo que el
+    # trigger configuro (template_params['bot_flow_id']), que puede estar
+    # INACTIVO a proposito (pensado solo como destino de un recordatorio,
+    # nunca como punto de entrada del triaje general). match_for solo busca
+    # entre flujos ACTIVOS -- si el triaje general esta apagado, o el texto
+    # de la respuesta no matchea ningun flujo activo, esto devolvia nil y
+    # el listener se detenia aqui SIN LLEGAR a WelcomeBotFlowRunner, aunque
+    # SI hubiera una sesion activa esperando esa respuesta (que no necesita
+    # flow para avanzar, ver WelcomeBotFlowRunner#advance!). El guard
+    # correcto es: sin sesion activa, hace falta matchear un flujo para
+    # arrancar una nueva; con sesion activa, siempre debe llegar al runner.
     flow = Calendario::WelcomeBotFlow.match_for(conversation.inbox, message.content, conversation: conversation)
-    return if flow.blank?
+    return if flow.blank? && !active_session?(conversation)
     return if already_handled_today?(conversation, message)
 
     Calendario::WelcomeBotFlowRunner.new(conversation: conversation, message: message, flow: flow).perform
@@ -20,6 +27,21 @@ class Calendario::WelcomeBotListener < BaseListener
   end
 
   private
+
+  # Nunca reaccionar a un mensaje historico importado (ej. bulk-import de
+  # exports de WhatsApp) -- ver incidente documentado en
+  # data_imports/.../INCIDENTE_welcome_bot_import.md: sin este guard, 166
+  # conversaciones importadas se confundieron con conversaciones nuevas de
+  # verdad y el bot mando 674 mensajes reales por Twilio a pacientes reales.
+  def skip?(message)
+    return true unless message.incoming? && !message.private?
+
+    message.content_attributes['historical_import'].present?
+  end
+
+  def active_session?(conversation)
+    Calendario::BotSession.active.exists?(conversation: conversation)
+  end
 
   # Una vez entregada a un agente (triage completo o escalamiento por
   # recordatorios sin respuesta, ver Calendario::WelcomeBotFlowRunner#finish!
