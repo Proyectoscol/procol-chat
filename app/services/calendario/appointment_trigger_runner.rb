@@ -235,8 +235,33 @@ class Calendario::AppointmentTriggerRunner
   # personal -- header/body/footer de processed_params en texto plano en vez
   # de la forma de "componentes" que espera la API de Meta (eso solo le
   # sirve al provider real, no a una persona leyendo la nota).
+  #
+  # BUG REAL encontrado 2026-11-26: para plantillas Twilio, processed_params.body
+  # usa placeholders numerados estilo Twilio ("{{1}}", "{{2}}"...), no
+  # expresiones Liquid -- pasarlos por el Liquid de preview_template_params
+  # los interpreta como literales numericos y el preview mostraba "Hola 1,
+  # tu cita de 2 es hoy a las 3" en vez de los datos reales (el envio real a
+  # Twilio seguia bien, solo este texto local/nota de prueba salia roto).
   def preview_text
-    params = preview_template_params&.dig('processed_params')
+    numbered_placeholder_preview_text || liquid_preview_text
+  end
+
+  def numbered_placeholder_preview_text
+    mapping = trigger.template_params['variable_mapping']
+    return if mapping.blank? || mapping.keys.none? { |key| key.to_s.match?(/\A\d+\z/) }
+
+    text = join_sections(trigger.effective_template_params['processed_params'])
+    return if text.blank?
+
+    content_variables = resolve_content_variables
+    text.gsub(/\{\{\s*(\d+)\s*\}\}/) { content_variables[Regexp.last_match(1)].presence || Regexp.last_match(0) }
+  end
+
+  def liquid_preview_text
+    join_sections(preview_template_params&.dig('processed_params'))
+  end
+
+  def join_sections(params)
     return if params.blank?
 
     sections = %w[header body footer].filter_map do |section|
