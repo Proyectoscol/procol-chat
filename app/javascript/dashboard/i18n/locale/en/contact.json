@@ -81,7 +81,7 @@
   },
   "CONTACT_FORM": {
     "FORM": {
-      "SUBMIT": "Submit",
+      "SUBMIT": "Save",
       "CANCEL": "Cancel",
       "NAME": {
         "PLACEHOLDER": "Enter the full name of the contact",
@@ -117,7 +117,8 @@
       },
       "PAYER": {
         "LABEL": "Insurer / EPS",
-        "PLACEHOLDER": "No insurer assigned"
+        "PLACEHOLDER": "No insurer assigned",
+        "ERROR": "Select an insurer/EPS before continuing"
       },
       "LOCATION": {
         "PLACEHOLDER": "Enter the location of the contact",

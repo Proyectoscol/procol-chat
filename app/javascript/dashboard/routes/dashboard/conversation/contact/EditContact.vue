@@ -8,14 +8,19 @@ import Button from 'dashboard/components-next/button/Button.vue';
 const props = defineProps({
   show: { type: Boolean, default: false },
   contact: { type: Object, default: () => ({}) },
+  requirePayer: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['cancel']);
+const emit = defineEmits(['cancel', 'saved']);
 
 const store = useStore();
 const uiFlags = useMapGetter('contacts/getUIFlags');
 
 const onCancel = () => emit('cancel');
+// Distinto de onCancel -- el caller (ContactInfo.vue) necesita saber si el
+// panel se cerro porque SI se guardo (para retomar la cita/lista de espera
+// que estaba pendiente) o porque el usuario cancelo sin guardar nada.
+const onSaved = () => emit('saved');
 
 const onSubmit = async contactItem => {
   await store.dispatch('contacts/update', contactItem);
@@ -61,8 +66,9 @@ useKeyboardEvents({
       <ContactForm
         :contact="contact"
         :in-progress="uiFlags.isUpdating"
+        :require-payer="requirePayer"
         :on-submit="onSubmit"
-        @success="onCancel"
+        @success="onSaved"
         @cancel="onCancel"
       />
     </div>

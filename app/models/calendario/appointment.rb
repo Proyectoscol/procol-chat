@@ -212,6 +212,24 @@ class Calendario::Appointment < ApplicationRecord
     applicable_triggers(Calendario::AppointmentEventTrigger.for_kind('on_create')).each do |trigger|
       Calendario::AppointmentTriggerRunner.new(trigger: trigger, appointment: self).perform
     end
+    warn_if_payer_missing
+  end
+
+  # Bug real encontrado 2026-11-27: un contacto sin EPS/pagador hace que
+  # NINGUN disparador aplique (payer_kinds nunca matchea un payer nulo, ver
+  # AppointmentEventTrigger#applies_to?) -- la cita se crea bien, pero
+  # ningun mensaje de confirmacion sale, en completo silencio. El frontend
+  # ya exige completar el contacto ANTES de poder llegar aqui desde los
+  # botones normales (ver ContactInfo.vue), pero esto es la red de
+  # seguridad para cualquier otro camino de creacion (ej. Agendas).
+  def warn_if_payer_missing
+    return if contact.payer.present? || conversation.blank?
+
+    conversation.messages.create!(
+      account: account, inbox: conversation.inbox, private: true, message_type: :outgoing,
+      content: "⚠️ Cita ##{id} creada sin EPS/pagador en el contacto -- no se envio ningun mensaje de confirmacion " \
+               'automatico (ningun disparador aplica sin esa informacion). Completa el contacto y reenvia manualmente si corresponde.'
+    )
   end
 
   # Pedido explicito del usuario: "atendida"/"no_show"/vuelta a "pendiente"

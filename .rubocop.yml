@@ -21,6 +21,7 @@ Metrics/ClassLength:
     - 'app/services/calendario/account_data_import_service.rb'
     - 'app/listeners/action_cable_listener.rb'
     - 'app/services/calendario/appointment_trigger_runner.rb'
+    - 'app/models/calendario/appointment.rb'
 
 Metrics/MethodLength:
   Max: 19
