@@ -21,8 +21,14 @@ class WebTracking::VisitorLookupService
   # distintos clickearon en el mismo minuto -- una ventana corta es
   # segura. tracking-api se niega a adivinar si hay 0 o 2+ candidatos en
   # la ventana (404), este metodo simplemente devuelve nil en ese caso.
-  def by_recent_click(whatsapp_number:, within_minutes: 2)
-    get('/api/internal/attribution-from-recent-click', phone: digits_only(whatsapp_number), within_minutes: within_minutes)
+  # message_text: el primer mensaje real entrante -- sirve para desambiguar
+  # cuando hay 2+ clicks al mismo numero en la ventana (ver internal.ts),
+  # comparando contra el texto precargado de cada click. Nunca es
+  # obligatorio: con 1 solo candidato la atribucion no depende de el (la
+  # persona pudo borrar el texto precargado y escribir cualquier cosa).
+  def by_recent_click(whatsapp_number:, within_minutes: 2, message_text: nil)
+    get('/api/internal/attribution-from-recent-click', phone: digits_only(whatsapp_number), within_minutes: within_minutes,
+                                                       message_text: message_text)
   end
 
   # Respaldo: solo encuentra algo si el contacto alguna vez lleno su

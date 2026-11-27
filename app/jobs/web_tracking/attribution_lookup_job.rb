@@ -24,11 +24,13 @@ class WebTracking::AttributionLookupJob < ApplicationJob
     return if contact.blank?
 
     service = WebTracking::VisitorLookupService.new(phone_number: contact.phone_number)
+    first_message = conversation.messages.incoming.order(:created_at).first
     # Ruta real primero: correlacion por tiempo contra un click reciente de
     # "whatsapp_cta_click" al numero DEL INBOX (ver VisitorLookupService) --
     # el telefono del contacto es solo el respaldo (formulario del sitio,
-    # minoria de los casos), nunca el metodo principal.
-    visitor = service.by_recent_click(whatsapp_number: conversation.inbox.channel.phone_number)
+    # minoria de los casos), nunca el metodo principal. message_text solo
+    # se usa para desempatar si hay 2+ clicks en la ventana (ver internal.ts).
+    visitor = service.by_recent_click(whatsapp_number: conversation.inbox.channel.phone_number, message_text: first_message&.content)
     visitor ||= service.by_phone
     return if visitor.blank?
 
