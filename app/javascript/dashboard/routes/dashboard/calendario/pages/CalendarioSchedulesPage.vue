@@ -272,6 +272,9 @@ const isHiddenByFilters = openDay =>
 // rompería el habito. Lo "reciente primero" se logra mostrando solo la
 // cola mas nueva del arreglo y arrancando la pagina con scroll al fondo
 // (ver fetchForActiveProfessional), no invirtiendo el orden.
+const windowLabel = timeWindow =>
+  t(`CALENDARIO.SCHEDULES.TIME_WINDOW.${timeWindow.toUpperCase()}`);
+
 const groupedByDate = computed(() => {
   const groups = new Map();
   openDays.value.forEach(openDay => {
@@ -279,12 +282,25 @@ const groupedByDate = computed(() => {
     groups.get(openDay.date).push(openDay);
   });
   return [...groups.entries()]
-    .map(([date, entries]) => ({
-      date,
-      openDaysForDate: [...entries].sort(
+    .map(([date, entries]) => {
+      const sorted = [...entries].sort(
         (a, b) => WINDOW_ORDER[a.time_window] - WINDOW_ORDER[b.time_window]
-      ),
-    }))
+      );
+      const withNotes = sorted.filter(openDay => openDay.notes);
+      // Pedido explicito del usuario: la nota se ve junto a la fecha, no
+      // escondida bajo cada franja -- si hay mas de una franja con nota
+      // distinta ese mismo dia, se antepone la franja para no perderla.
+      const dateNotes =
+        withNotes.length > 1
+          ? withNotes
+              .map(
+                openDay =>
+                  `${windowLabel(openDay.time_window)}: ${openDay.notes}`
+              )
+              .join(' · ')
+          : withNotes[0]?.notes || '';
+      return { date, openDaysForDate: sorted, dateNotes };
+    })
     .sort((a, b) => a.date.localeCompare(b.date));
 });
 
@@ -344,9 +360,6 @@ const formatOpenDayDate = dateString =>
     month: 'long',
     year: 'numeric',
   });
-
-const windowLabel = timeWindow =>
-  t(`CALENDARIO.SCHEDULES.TIME_WINDOW.${timeWindow.toUpperCase()}`);
 
 const openConversation = appointment => {
   if (!appointment.conversation_id) return;
@@ -824,9 +837,14 @@ onMounted(async () => {
                 :key="group.date"
                 class="flex flex-col gap-3 rounded-xl border border-n-weak p-3"
               >
-                <span class="font-medium text-n-slate-12 capitalize">{{
-                  formatOpenDayDate(group.date)
-                }}</span>
+                <div class="flex items-baseline gap-2 flex-wrap">
+                  <span class="font-medium text-n-slate-12 capitalize">{{
+                    formatOpenDayDate(group.date)
+                  }}</span>
+                  <span v-if="group.dateNotes" class="text-xs text-n-slate-10">
+                    {{ group.dateNotes }}
+                  </span>
+                </div>
 
                 <div
                   v-for="(openDay, index) in group.openDaysForDate"
@@ -865,9 +883,6 @@ onMounted(async () => {
                       />
                     </div>
                   </div>
-                  <p v-if="openDay.notes" class="text-xs text-n-slate-10">
-                    {{ openDay.notes }}
-                  </p>
 
                   <WaitlistQuickBookPopover
                     v-if="armedEntry && openQuickBookWindow === openDay.id"

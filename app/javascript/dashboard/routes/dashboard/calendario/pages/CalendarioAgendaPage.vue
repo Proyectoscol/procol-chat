@@ -38,6 +38,7 @@ const appointments = useMapGetter(
 );
 const uiFlags = useMapGetter('calendarioAppointments/getUIFlags');
 const accountId = useMapGetter('getCurrentAccountId');
+const openDays = useMapGetter('calendarioOpenDays/getOpenDays');
 const professionals = useMapGetter('calendarioProfessionals/getProfessionals');
 const specialties = useMapGetter('calendarioSpecialties/getSpecialties');
 
@@ -112,6 +113,39 @@ const viewedDateLabel = computed(() => {
   });
 });
 
+const windowLabel = timeWindow =>
+  t(`CALENDARIO.SCHEDULES.TIME_WINDOW.${timeWindow.toUpperCase()}`);
+
+// Nota de "abrir agenda" (OpenDay) del dia que se esta viendo, por
+// profesional -- pedido explicito del usuario: debe verse al lado del
+// nombre del profesional en esta pagina, igual que ya se ve al lado de la
+// fecha en Agendas (CalendarioSchedulesPage).
+const openDayNotesByProfessional = computed(() => {
+  const activeDate = viewedDate.value || todayKey();
+  const notesByProfessional = new Map();
+  openDays.value
+    .filter(openDay => openDay.date === activeDate && openDay.notes)
+    .forEach(openDay => {
+      const existing = notesByProfessional.get(openDay.professional_id) || [];
+      existing.push(openDay);
+      notesByProfessional.set(openDay.professional_id, existing);
+    });
+  const result = new Map();
+  notesByProfessional.forEach((entries, professionalId) => {
+    result.set(
+      professionalId,
+      entries.length > 1
+        ? entries
+            .map(
+              openDay => `${windowLabel(openDay.time_window)}: ${openDay.notes}`
+            )
+            .join(' · ')
+        : entries[0].notes
+    );
+  });
+  return result;
+});
+
 // Linea roja de "ahora" -- solo tiene sentido mirando el dia de hoy, nunca
 // en "Siguiente dia con citas" (pedido explicito del usuario: "para que me
 // quede facil guiarme en que paciente vamos", esto por profesional). Se
@@ -149,6 +183,7 @@ const groupedByProfessional = computed(() => {
     const key = appointment.professional_id;
     if (!groups.has(key)) {
       groups.set(key, {
+        professionalId: key,
         professionalName: appointment.professional_name,
         appointments: [],
       });
@@ -274,6 +309,10 @@ onMounted(async () => {
       fetchAgenda(),
       store.dispatch('calendarioProfessionals/get'),
       store.dispatch('calendarioSpecialties/get'),
+      // Sin professionalId -- esta vista junta a todos los doctores de un
+      // mismo dia, asi que trae todos los dias abiertos de una sola vez
+      // (ver openDaysNotesByProfessional, que filtra por fecha en memoria).
+      store.dispatch('calendarioOpenDays/get'),
     ]);
   } catch (error) {
     useAlert(t('CALENDARIO.AGENDA.FETCH_ERROR'));
@@ -354,9 +393,17 @@ onMounted(async () => {
         class="flex flex-col gap-2"
         :class="index > 0 ? 'border-t border-n-weak pt-3' : ''"
       >
-        <span class="font-medium text-n-slate-12">{{
-          group.professionalName
-        }}</span>
+        <div class="flex items-baseline gap-2 flex-wrap">
+          <span class="font-medium text-n-slate-12">{{
+            group.professionalName
+          }}</span>
+          <span
+            v-if="openDayNotesByProfessional.get(group.professionalId)"
+            class="text-xs text-n-slate-10"
+          >
+            {{ openDayNotesByProfessional.get(group.professionalId) }}
+          </span>
+        </div>
 
         <div class="flex flex-col divide-y divide-n-weak">
           <template
