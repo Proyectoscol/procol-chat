@@ -513,6 +513,12 @@ defineExpose({ fetchEntries });
                 </div>
                 <p class="text-xs text-n-slate-10">
                   {{ entry.contact_phone_number }}
+                  <span v-if="entry.contact_payer_name">
+                    · {{ entry.contact_payer_name }}
+                  </span>
+                  <span v-else class="text-n-ruby-11">
+                    · {{ t('CALENDARIO.WAITLIST.NO_PAYER') }}
+                  </span>
                 </p>
                 <p class="text-xs text-n-slate-10">
                   {{ daysWaitingLabel(entry) }}

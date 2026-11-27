@@ -308,6 +308,7 @@
       "TITLE": "Lista de espera",
       "OPEN_BUTTON": "Lista de espera",
       "EMPTY": "No hay nadie en la lista de espera.",
+      "NO_PAYER": "Sin entidad/EPS",
       "BOOK_BUTTON": "Agendar",
       "ADD_BUTTON": "Agregar",
       "ORIGIN_CANCELLATION_BADGE": "Por cancelación",

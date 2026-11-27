@@ -309,6 +309,7 @@
       "TITLE": "Waitlist",
       "OPEN_BUTTON": "Waitlist",
       "EMPTY": "No one on the waitlist.",
+      "NO_PAYER": "No insurer set",
       "BOOK_BUTTON": "Book",
       "ADD_BUTTON": "Add",
       "ORIGIN_CANCELLATION_BADGE": "From cancellation",

@@ -5,7 +5,7 @@ class Api::V1::Accounts::Calendario::WaitlistEntriesController < Api::V1::Accoun
   before_action :fetch_entry, only: [:update, :destroy]
 
   def index
-    entries = Current.account.calendario_waitlist_entries.includes(:contact, :professional, :service).pending
+    entries = Current.account.calendario_waitlist_entries.includes(:professional, :service, contact: :payer).pending
     entries = entries.for_professional(params[:professional_id]) if params[:professional_id].present?
     render json: entries.order(created_at: :asc).map { |entry| serialize(entry) }
   end
@@ -55,6 +55,7 @@ class Api::V1::Accounts::Calendario::WaitlistEntriesController < Api::V1::Accoun
     {
       id: entry.id, status: entry.status, notes: entry.notes, origin: entry.origin, created_at: entry.created_at,
       contact_id: entry.contact_id, contact_name: entry.contact.name, contact_phone_number: entry.contact.phone_number,
+      contact_payer_name: entry.contact.payer&.name,
       professional_id: entry.professional_id, professional_name: entry.professional.name,
       service_id: entry.service_id, service_name: entry.service.name
     }
