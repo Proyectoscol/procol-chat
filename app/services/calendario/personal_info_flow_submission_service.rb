@@ -2,42 +2,21 @@
 # informacion_personal" (ver espacio-trabajo/.../create_personal_info_flow_
 # template.rb) y actualiza el contacto automaticamente.
 #
-# Twilio::InteractiveMessageParser ya guarda el JSON crudo en
-# message.content_attributes['interactive_data'] = { 'pages' => [{ 'items'
-# => [{ 'label' => ..., 'value' => ... }] }] }. Esta clase solo se activa si
-# reconoce AL MENOS un label propio del formulario (nunca toca el contacto
-# por un Flow distinto que no conozca).
-#
-# Los SINGLE_SELECT (tipo de documento, EPS) pueden volver con el "id" de
-# la opcion o con su "title" visible -- la docs de Twilio no lo deja claro,
-# asi que se intentan ambos antes de rendirse. Si no se puede resolver algo
-# con certeza, se deja una nota privada con el valor crudo en vez de
-# adivinar y guardar un dato incorrecto en la historia clinica.
+# Confirmado con un envio real 2026-11-27 (conversacion #366):
+# message.content_attributes['interactive_data']['pages'] es un array de
+# { 'pageId' => <id de la pagina>, 'items' => [{ 'label' => <name del
+# campo>, 'value' => <valor> }] } -- OJO: 'label' aqui NO es el texto
+# visible que se definio ("Lugar de nacimiento"), es el atributo "name"
+# del layout del Flow (p. ej. "ciudad_nacimiento"). 'flow_data' tambien
+# llega pero como un STRING con JSON anidado por pagina -- 'interactive_
+# data' ya viene parseado y es mas simple de leer, por eso se usa este.
 class Calendario::PersonalInfoFlowSubmissionService
   pattr_initialize [:message!]
 
-  LABEL_FIRST_NAME = 'Primer nombre'.freeze
-  LABEL_SECOND_NAME = 'Segundo nombre'.freeze
-  LABEL_FIRST_LAST_NAME = 'Primer apellido'.freeze
-  LABEL_SECOND_LAST_NAME = 'Segundo apellido'.freeze
-  LABEL_DOCUMENT_TYPE = 'Tipo de documento'.freeze
-  LABEL_DOCUMENT_NUMBER = 'Número de documento'.freeze
-  LABEL_SECONDARY_PHONE = 'Un segundo número de contacto'.freeze
-  LABEL_DATE_OF_BIRTH = 'Fecha de nacimiento'.freeze
-  LABEL_BIRTH_CITY = 'Lugar de nacimiento'.freeze
-  LABEL_ADDRESS = 'Dirección'.freeze
-  LABEL_PAYER = 'Entidad / EPS'.freeze
-
-  RECOGNIZED_LABELS = [
-    LABEL_FIRST_NAME, LABEL_SECOND_NAME, LABEL_FIRST_LAST_NAME, LABEL_SECOND_LAST_NAME, LABEL_DOCUMENT_TYPE,
-    LABEL_DOCUMENT_NUMBER, LABEL_SECONDARY_PHONE, LABEL_DATE_OF_BIRTH, LABEL_BIRTH_CITY, LABEL_ADDRESS, LABEL_PAYER
+  FIELD_NAMES = %w[
+    primer_nombre segundo_nombre primer_apellido segundo_apellido tipo_documento numero_documento
+    telefono_secundario fecha_nacimiento ciudad_nacimiento direccion payer_id
   ].freeze
-
-  DOCUMENT_TYPE_TITLES = {
-    'cédula de ciudadanía' => 'cc', 'tarjeta de identidad' => 'ti', 'cédula de extranjería' => 'ce',
-    'pasaporte' => 'pa', 'registro civil' => 'rc', 'permiso especial de permanencia' => 'pep',
-    'permiso de protección temporal' => 'ppt'
-  }.freeze
 
   def perform
     return unless flow_submission?
@@ -58,36 +37,32 @@ class Calendario::PersonalInfoFlowSubmissionService
     @account ||= message.account
   end
 
-  def items
-    @items ||= (message.content_attributes['interactive_data'] || {})['pages'].to_a.flat_map { |page| page['items'] || [] }
-  end
-
-  def value_for(label)
-    items.find { |item| item['label'] == label }&.dig('value')
+  def items_by_name
+    pages = message.content_attributes.dig('interactive_data', 'pages') || []
+    @items_by_name ||= pages.flat_map { |page| page['items'] || [] }.each_with_object({}) do |item, acc|
+      acc[item['label']] = item['value']
+    end
   end
 
   def flow_submission?
-    items.any? { |item| RECOGNIZED_LABELS.include?(item['label']) }
+    FIELD_NAMES.any? { |name| items_by_name.key?(name) }
   end
 
   def full_name
-    [value_for(LABEL_FIRST_NAME), value_for(LABEL_SECOND_NAME), value_for(LABEL_FIRST_LAST_NAME),
-     value_for(LABEL_SECOND_LAST_NAME)].compact_blank.join(' ')
+    %w[primer_nombre segundo_nombre primer_apellido segundo_apellido].filter_map { |n| items_by_name[n] }.compact_blank.join(' ')
   end
 
   def document_type
-    raw = value_for(LABEL_DOCUMENT_TYPE).to_s.downcase.strip
-    return raw if Contact.document_types.key?(raw)
-
-    DOCUMENT_TYPE_TITLES[raw]
+    raw = items_by_name['tipo_documento'].to_s.downcase.strip
+    raw if Contact.document_types.key?(raw)
   end
 
   def contact_attributes
     {
       name: full_name.presence || contact.name,
       document_type: document_type,
-      identifier: value_for(LABEL_DOCUMENT_NUMBER).presence || contact.identifier,
-      secondary_phone_number: value_for(LABEL_SECONDARY_PHONE).presence || contact.secondary_phone_number,
+      identifier: items_by_name['numero_documento'].presence || contact.identifier,
+      secondary_phone_number: items_by_name['telefono_secundario'].presence || contact.secondary_phone_number,
       custom_attributes: contact.custom_attributes.merge(custom_attribute_updates),
       additional_attributes: contact.additional_attributes.merge(additional_attribute_updates)
     }.compact
@@ -95,21 +70,23 @@ class Calendario::PersonalInfoFlowSubmissionService
 
   def custom_attribute_updates
     {
-      'date_of_birth' => value_for(LABEL_DATE_OF_BIRTH),
-      'address' => value_for(LABEL_ADDRESS)
+      'date_of_birth' => items_by_name['fecha_nacimiento'],
+      'address' => items_by_name['direccion']
     }.compact_blank
   end
 
   def additional_attribute_updates
-    { 'city' => value_for(LABEL_BIRTH_CITY) }.compact_blank
+    { 'city' => items_by_name['ciudad_nacimiento'] }.compact_blank
   end
 
+  # El id de la opcion del SINGLE_SELECT de EPS es el payer_id REAL (ver
+  # script de creacion de la plantilla) -- nunca se adivina por nombre.
   def apply_payer
-    raw = value_for(LABEL_PAYER)
+    raw = items_by_name['payer_id']
     return if raw.blank?
     return if raw.to_s == 'otra'
 
-    payer = account.calendario_payers.find_by(id: raw) || account.calendario_payers.find_by(name: raw)
+    payer = account.calendario_payers.find_by(id: raw)
     if payer
       contact.payer_id = payer.id
     else
